@@ -10,6 +10,7 @@ use ShippingBridge\InSales\AppSettingsHandler;
 use ShippingBridge\InSales\CarrierJsonHandler;
 use ShippingBridge\InSales\ExternalCheckoutHandler;
 use ShippingBridge\InSales\InstallHandlers;
+use ShippingBridge\InSales\ManualInstallHandler;
 use ShippingBridge\CalculatorContext;
 use ShippingBridge\ShopDeliveryContext;
 use ShippingBridge\InSales\InSalesClient;
@@ -100,6 +101,10 @@ if (str_starts_with($uri, '/insales/')) {
     try {
         $pdo = Db::pdo($config);
         $shops = new ShopRepository($pdo);
+        if ($uri === '/insales/manual-install' && ($method === 'GET' || $method === 'POST')) {
+            ManualInstallHandler::handle($config, $shops, $method);
+            exit;
+        }
         if ($uri === '/insales/install' && $method === 'GET') {
             InstallHandlers::install($config, $shops);
             exit;

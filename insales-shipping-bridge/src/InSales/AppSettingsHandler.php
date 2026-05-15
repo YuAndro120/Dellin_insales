@@ -120,7 +120,6 @@ final class AppSettingsHandler
         echo 'var termSelect=document.getElementById("sender_terminal_id");';
         echo 'var termStatus=document.getElementById("termStatus");';
         echo 'var cityTimer;';
-        echo 'function esc(s){var d=document.createElement("motionless"===typeof s?"div":"div");d.textContent=s;return d.innerHTML;}';
         echo 'function fetchJson(url){return fetch(url,{headers:{Accept:"application/json"}}).then(function(r){return r.json();});}';
         echo 'function loadTerminals(kladr,q){';
         echo 'termStatus.textContent="Загрузка терминалов…";termSelect.disabled=true;';

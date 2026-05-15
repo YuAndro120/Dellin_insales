@@ -1,8 +1,6 @@
 -- MySQL 8+ / MariaDB 10.3+, utf8mb4
-CREATE DATABASE IF NOT EXISTS `shipping_bridge`
-  DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE `shipping_bridge`;
+-- Создайте БД заранее, затем: mysql -u USER -p ИМЯ_БД < database/schema.sql
+-- Имя БД должно совпадать с MYSQL_DATABASE в .env (например insales_bridge).
 
 CREATE TABLE IF NOT EXISTS `insales_shops` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

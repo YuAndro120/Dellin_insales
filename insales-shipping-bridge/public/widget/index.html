@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Карта пунктов выдачи — тест бриджа</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #panel { padding: 12px 16px; background: #1a1d23; color: #e8eaed; }
+    #panel label { display: block; margin: 6px 0 2px; font-size: 12px; opacity: .85; }
+    #panel input, #panel button { font-size: 14px; padding: 8px 10px; border-radius: 6px; border: 1px solid #3c424c; background: #2a2f3a; color: #fff; }
+    #panel button { cursor: pointer; background: #3d5afe; border-color: #5c6bc0; }
+    #panel button:disabled { opacity: .5; cursor: not-allowed; }
+    #map { width: 100%; height: calc(100vh - 200px); min-height: 320px; }
+    #status { font-size: 13px; margin-top: 8px; color: #aab0bc; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+    .row > div { flex: 1; min-width: 140px; }
+  </style>
+</head>
+<body>
+  <div id="panel">
+    <div class="row">
+      <div>
+        <label for="apiBase">Базовый URL бриджа (без / в конце)</label>
+        <input id="apiBase" type="url" style="width:100%" placeholder="https://bridge.example.com">
+      </div>
+      <div>
+        <label for="token">X-Bridge-Token (если задан BRIDGE_SECRET)</label>
+        <input id="token" type="password" style="width:100%" placeholder="секрет" autocomplete="off">
+      </div>
+      <div>
+        <label for="kladr">КЛАДР города (префикс, например 77 для Москвы)</label>
+        <input id="kladr" type="text" value="77" maxlength="13" style="width:100%">
+      </div>
+      <div>
+        <label for="cargoW">Вес, кг</label>
+        <input id="cargoW" type="number" step="0.1" value="2" min="0.01" style="width:100%">
+      </div>
+      <div>
+        <button type="button" id="btnLoad">Загрузить ПВЗ</button>
+      </div>
+    </div>
+    <div id="status">Укажите URL бриджа и нажмите «Загрузить ПВЗ». Точки появятся на карте; клик — расчёт до выбранного терминала.</div>
+  </div>
+  <div id="map"></div>
+  <script>
+(function () {
+  const qs = new URLSearchParams(location.search);
+  const ymapKey = qs.get('ymapkey') || '';
+  const ymapUrl = 'https://api-maps.yandex.ru/2.1/?lang=ru_RU' + (ymapKey ? '&apikey=' + encodeURIComponent(ymapKey) : '');
+  const defaultBase = qs.get('bridge') || localStorage.getItem('shipping_bridge_base') || '';
+
+  function loadScript(src, onload) {
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.onload = onload;
+    document.head.appendChild(s);
+  }
+
+  function debounce(fn, ms) {
+    var t;
+    return function () {
+      clearTimeout(t);
+      var a = arguments;
+      t = setTimeout(function () { fn.apply(null, a); }, ms);
+    };
+  }
+
+  loadScript(ymapUrl, function () {
+    document.getElementById('apiBase').value = defaultBase;
+
+    var map, clusterer;
+
+    function headers() {
+      var tok = document.getElementById('token').value.trim();
+      var h = { 'Accept': 'application/json' };
+      if (tok) h['X-Bridge-Token'] = tok;
+      return h;
+    }
+
+    function setStatus(msg) {
+      document.getElementById('status').textContent = msg;
+    }
+
+    function apiBase() {
+      return document.getElementById('apiBase').value.replace(/\/+$/, '');
+    }
+
+    async function calculateForTerminal(t) {
+      var base = apiBase();
+      var w = parseFloat(document.getElementById('cargoW').value) || 1;
+      var kladrInput = document.getElementById('kladr').value.trim();
+      var fallbackKladr = (kladrInput.length >= 13) ? kladrInput : (kladrInput + '00000000000').substring(0, 13);
+      var body = {
+        arrival_terminal_id: t.id,
+        arrival_city_kladr: t.city_kladr || fallbackKladr,
+        cargo: { weight: w, volume: 0.05, length: 0.3, width: 0.2, height: 0.2, quantity: 1, stated_value: 0 }
+      };
+      setStatus('Расчёт для терминала ' + t.id + '…');
+      try {
+        var r = await fetch(base + '/v1/calculate', {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, headers()),
+          body: JSON.stringify(body)
+        });
+        var j = await r.json();
+        if (j.ok && j.price != null) {
+          setStatus('Терминал ' + t.id + ': ' + j.price + ' ' + (j.currency || 'RUB')
+            + (j.days != null ? ', срок ~' + j.days + ' дн.' : ''));
+        } else {
+          setStatus('Калькулятор: ' + (j.error || JSON.stringify(j.errors || j)));
+        }
+      } catch (e) {
+        setStatus('Ошибка расчёта: ' + e.message);
+      }
+    }
+
+    async function loadTerminalsInView(force) {
+      var base = apiBase();
+      if (!base) { setStatus('Укажите базовый URL бриджа.'); return; }
+
+      var bounds = map.getBounds();
+      var sw = bounds[0];
+      var ne = bounds[1];
+      var kladr = document.getElementById('kladr').value.trim();
+      var limit = 400;
+      var url = base + '/v1/terminals?limit=' + limit
+        + '&sw_lat=' + encodeURIComponent(sw[0])
+        + '&sw_lng=' + encodeURIComponent(sw[1])
+        + '&ne_lat=' + encodeURIComponent(ne[0])
+        + '&ne_lng=' + encodeURIComponent(ne[1])
+        + (kladr ? '&city_kladr=' + encodeURIComponent(kladr) : '');
+
+      setStatus('Загрузка терминалов…');
+      document.getElementById('btnLoad').disabled = true;
+      try {
+        var r = await fetch(url, { headers: headers() });
+        var j = await r.json();
+        if (!j.ok) throw new Error(j.error || JSON.stringify(j));
+        clusterer.removeAll();
+        (j.terminals || []).forEach(function (t) {
+          var pm = new ymaps.Placemark([t.lat, t.lng], {
+            balloonContentHeader: t.name,
+            balloonContentBody: (t.address || '') + '<br>ID: ' + t.id + '<br>КЛАДР: ' + (t.city_kladr || ''),
+            hintContent: t.name
+          }, { preset: 'islands#violetIcon' });
+          pm.events.add('click', function () { calculateForTerminal(t); });
+          clusterer.add(pm);
+        });
+        setStatus('Загружено точек: ' + (j.count || 0) + (force ? '' : ' (авто по области карты)'));
+      } catch (e) {
+        setStatus('Ошибка: ' + e.message);
+      } finally {
+        document.getElementById('btnLoad').disabled = false;
+      }
+    }
+
+    ymaps.ready(function initMap() {
+      map = new ymaps.Map('map', {
+        center: [55.75, 37.62],
+        zoom: 10,
+        controls: ['zoomControl', 'geolocationControl']
+      });
+      clusterer = new ymaps.Clusterer({ preset: 'islands#nightClusterIcons', groupByCoordinates: false });
+      map.geoObjects.add(clusterer);
+
+      map.events.add('boundschange', debounce(function () {
+        loadTerminalsInView(false);
+      }, 800));
+
+      document.getElementById('btnLoad').addEventListener('click', function () {
+        localStorage.setItem('shipping_bridge_base', apiBase());
+        loadTerminalsInView(true);
+      });
+    });
+  });
+})();
+  </script>
+</body>
+</html>

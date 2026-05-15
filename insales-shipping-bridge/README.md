@@ -46,6 +46,8 @@ mysql -u root -p < database/schema.sql
 
 **Как протестировать на тестовом магазине:** см. [docs/TESTING_INSALES.md](docs/TESTING_INSALES.md).
 
+**Checkout без «Доставки inSales»:** [docs/CHECKOUT_INSALES.md](docs/CHECKOUT_INSALES.md) — внешний способ доставки API v2 (`/insales/external/v2/*`).
+
 Для уже развёрнутой БД выполните миграцию:
 
 ```bash

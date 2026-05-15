@@ -8,6 +8,7 @@ use ShippingBridge\Db;
 use ShippingBridge\Http\Response;
 use ShippingBridge\InSales\AppSettingsHandler;
 use ShippingBridge\InSales\CarrierJsonHandler;
+use ShippingBridge\InSales\ExternalCheckoutHandler;
 use ShippingBridge\InSales\InstallHandlers;
 use ShippingBridge\CalculatorContext;
 use ShippingBridge\ShopDeliveryContext;
@@ -35,6 +36,38 @@ if ($method === 'OPTIONS') {
 
 if ($uri === '/health' || $uri === '/v1/health') {
     Response::json(['ok' => true, 'service' => 'insales-shipping-bridge', 'version' => 'mvp-3'], 200, $cors);
+    exit;
+}
+
+$externalCheckoutUris = [
+    '/insales/external/v2/courier',
+    '/insales/external/v2/pickup_points',
+    '/insales/external/v2/pickup_point',
+];
+if (in_array($uri, $externalCheckoutUris, true)) {
+    if ($method === 'OPTIONS') {
+        http_response_code(204);
+        foreach (ExternalCheckoutHandler::corsHeadersForError() as $h) {
+            header($h);
+        }
+        exit;
+    }
+    if ($method !== 'POST') {
+        Response::json(['errors' => ['Method not allowed']], 405, ExternalCheckoutHandler::corsHeadersForError());
+        exit;
+    }
+    try {
+        $config = Config::fromEnv();
+    } catch (Throwable $e) {
+        Response::json(['errors' => [$e->getMessage()]], 500, ExternalCheckoutHandler::corsHeadersForError());
+        exit;
+    }
+    if (!$config->hasDatabase()) {
+        Response::json(['errors' => ['Database not configured']], 503, ExternalCheckoutHandler::corsHeadersForError());
+        exit;
+    }
+    $pdo = Db::pdo($config);
+    ExternalCheckoutHandler::handle($uri, $config, new ShopRepository($pdo));
     exit;
 }
 

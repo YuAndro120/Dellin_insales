@@ -92,6 +92,21 @@ final class AppSettingsHandler
         if ($tid !== '') {
             echo '<br><strong>Терминал отгрузки:</strong> ID ' . $h($tid);
         }
+        echo '<br><strong>account_id для checkout:</strong> ' . $h($s->insalesId);
+        echo '</div>';
+
+        $base = trim((string) (getenv('PUBLIC_BRIDGE_URL') ?: ''));
+        if ($base === '') {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $base = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+        }
+        $base = rtrim($base, '/');
+        echo '<div class="info" style="margin-top:1rem">';
+        echo '<strong>Checkout (внешний способ доставки, API v2)</strong><br>';
+        echo 'Без договора «Доставка inSales». URL — в админке магазина → Доставка.<br>';
+        echo '<small>Курьер:</small> <code style="word-break:break-all">' . $h($base . '/insales/external/v2/courier') . '</code><br>';
+        echo '<small>ПВЗ список:</small> <code style="word-break:break-all">' . $h($base . '/insales/external/v2/pickup_points') . '</code><br>';
+        echo '<small>ПВЗ точка:</small> <code style="word-break:break-all">' . $h($base . '/insales/external/v2/pickup_point') . '</code>';
         echo '</div>';
 
         if ($saved) {

@@ -133,6 +133,25 @@ SQL;
         return $row;
     }
 
+    /** @return array{insales_id: string, shop_host: string, api_password: string}|null */
+    public function findApiAuthByInsalesId(string $insalesId): ?array
+    {
+        $row = $this->fetchRow(
+            'SELECT insales_id, shop_host, api_password FROM insales_shops
+             WHERE insales_id = :iid AND uninstalled_at IS NULL LIMIT 1',
+            [':iid' => $insalesId]
+        );
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'insales_id' => (string) $row['insales_id'],
+            'shop_host' => (string) $row['shop_host'],
+            'api_password' => (string) $row['api_password'],
+        ];
+    }
+
     /** @param array<string, scalar|null> $params */
     private function fetchRow(string $sql, array $params): ?array
     {

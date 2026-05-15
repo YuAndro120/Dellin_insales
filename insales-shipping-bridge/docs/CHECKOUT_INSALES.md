@@ -29,18 +29,21 @@
 
 ---
 
-## 3. Способ доставки «ПВЗ» (самовывоз)
+## 3. Способ доставки «ПВЗ» (терминалы Деловых Линий)
 
-**Админка магазина** → **Настройки** → **Доставка** → добавить способ доставки с точками самовывоза.
+Тип inSales: **`DeliveryVariant::PickUp`** — на checkout показывается карта/список ПВЗ.
 
-При создании укажите **источник данных** (pick-up source):
+В **admin2** нет формы с двумя URL. Способ создаётся **через API магазина**:
 
-- **URL списка точек:** `.../insales/external/v2/pickup_points`
-- **URL информации о точке:** `.../insales/external/v2/pickup_point`
-- **Метод:** POST
+1. Откройте настройки приложения: `/insales/app?shop=ВАШ_МАГАЗИН.myinsales.ru&insales_id=...`
+2. Нажмите **«Создать способ доставки «Деловые Линии — терминал»»** — бридж вызовет `POST /admin/delivery_variants.json` с `pick_up_sources_attributes`:
+   - **URL списка:** `.../insales/external/v2/pickup_points` (POST)
+   - **URL точки:** `.../insales/external/v2/pickup_point` (POST)
+
+Либо вручную через curl (логин = `INSALES_APP_ID`, пароль = пароль установки из БД).
 
 inSales на checkout отправит JSON с `order` (позиции, КЛАДР, `account_id`).  
-Бридж сопоставляет `account_id` с магазином из таблицы `insales_shops` (поле при установке приложения).
+Бридж сопоставляет `account_id` с магазином из таблицы `insales_shops`.
 
 ---
 

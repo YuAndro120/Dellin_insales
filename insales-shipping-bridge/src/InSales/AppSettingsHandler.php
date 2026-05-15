@@ -37,9 +37,21 @@ final class AppSettingsHandler
         }
 
         $saved = false;
+        $deliveryCreated = null;
         $error = null;
 
-        if ($method === 'POST') {
+        if ($method === 'POST' && isset($_POST['create_pickup_delivery'])) {
+            try {
+                $auth = $shops->findApiAuthByInsalesId($settings->insalesId);
+                if ($auth === null) {
+                    throw new \RuntimeException('Нет данных авторизации магазина. Переустановите приложение.');
+                }
+                $setup = new InSalesDeliverySetup(new InSalesClient(), $config);
+                $deliveryCreated = $setup->createPickUpDeliveryVariant($auth['shop_host'], $auth['api_password']);
+            } catch (\Throwable $e) {
+                $error = $e->getMessage();
+            }
+        } elseif ($method === 'POST') {
             try {
                 $shops->saveDeliverySettings($settings->insalesId, [
                     'sender_terminal_id' => (int) ($_POST['sender_terminal_id'] ?? 0),
@@ -59,11 +71,19 @@ final class AppSettingsHandler
         }
 
         http_response_code(200);
-        self::renderForm($settings, $saved, $error);
+        self::renderForm($settings, $config, $saved, $deliveryCreated, $error);
     }
 
-    private static function renderForm(ShopSettings $s, bool $saved, ?string $error): void
-    {
+    /**
+     * @param array{id: int, title: string}|null $deliveryCreated
+     */
+    private static function renderForm(
+        ShopSettings $s,
+        Config $config,
+        bool $saved,
+        ?array $deliveryCreated,
+        ?string $error,
+    ): void {
         $h = static fn (string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
         $tid = $s->senderTerminalId !== null && $s->senderTerminalId > 0 ? (string) $s->senderTerminalId : '';
 
@@ -102,19 +122,30 @@ final class AppSettingsHandler
         }
         $base = rtrim($base, '/');
         echo '<div class="info" style="margin-top:1rem">';
-        echo '<strong>Checkout (внешний способ доставки, API v2)</strong><br>';
-        echo 'Без договора «Доставка inSales». URL — в админке магазина → Доставка.<br>';
-        echo '<small>Курьер:</small> <code style="word-break:break-all">' . $h($base . '/insales/external/v2/courier') . '</code><br>';
-        echo '<small>ПВЗ список:</small> <code style="word-break:break-all">' . $h($base . '/insales/external/v2/pickup_points') . '</code><br>';
-        echo '<small>ПВЗ точка:</small> <code style="word-break:break-all">' . $h($base . '/insales/external/v2/pickup_point') . '</code>';
+        echo '<strong>Checkout — доставка до терминала</strong><br>';
+        echo 'В админке inSales нет формы с двумя URL. Кнопка ниже создаёт способ <em>PickUp</em> через API магазина.<br>';
+        echo '<small>ПВЗ:</small> <code style="word-break:break-all">' . $h($base . '/insales/external/v2/pickup_points') . '</code><br>';
+        echo '<small>Точка:</small> <code style="word-break:break-all">' . $h($base . '/insales/external/v2/pickup_point') . '</code>';
         echo '</div>';
 
+        if ($deliveryCreated !== null) {
+            echo '<p class="ok">Способ доставки создан: <strong>' . $h($deliveryCreated['title']) . '</strong> (id '
+                . $h((string) $deliveryCreated['id']) . '). Проверьте <a href="https://'
+                . $h($s->shopHost) . '/admin2/delivery_variants" target="_blank" rel="noopener">Способы доставки</a>.</p>';
+        }
         if ($saved) {
             echo '<p class="ok">Настройки сохранены.</p>';
         }
         if ($error !== null) {
             echo '<p class="err">' . $h($error) . '</p>';
         }
+
+        echo '<form method="post" action="/insales/app" style="margin-bottom:1rem">';
+        echo '<input type="hidden" name="shop" value="' . $h($s->shopHost) . '">';
+        echo '<input type="hidden" name="insales_id" value="' . $h($s->insalesId) . '">';
+        echo '<input type="hidden" name="create_pickup_delivery" value="1">';
+        echo '<button type="submit" style="background:#0d7a3e;margin-top:0">Создать способ доставки «Деловые Линии — терминал»</button>';
+        echo '</form>';
 
         echo '<form method="post" action="/insales/app">';
         echo '<input type="hidden" name="shop" value="' . $h($s->shopHost) . '">';

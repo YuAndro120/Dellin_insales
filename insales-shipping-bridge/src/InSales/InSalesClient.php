@@ -97,9 +97,86 @@ final class InSalesClient
         return 'https://' . $user . ':' . $pw . '@' . $host . $path;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function getJsonPath(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        string $path,
+    ): array {
+        $url = $this->buildUrl($shopHost, $applicationLogin, $apiPasswordMd5, $path);
+
+        return $this->getJson($url);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    public function postJson(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        string $path,
+        array $payload,
+    ): array {
+        return $this->requestJson('POST', $shopHost, $applicationLogin, $apiPasswordMd5, $path, $payload);
+    }
+
+    /**
+     * @param array<string, mixed>|null $payload
+     * @return array<string, mixed>
+     */
+    private function requestJson(
+        string $method,
+        string $shopHost,
+        string $login,
+        string $pass,
+        string $path,
+        ?array $payload,
+    ): array {
+        $url = $this->buildUrl($shopHost, $login, $pass, $path);
+        $ch = curl_init($url);
+        if ($ch === false) {
+            throw new \RuntimeException('curl_init failed');
+        }
+        $headers = [
+            'Accept: application/json',
+            'Content-Type: application/json',
+        ];
+        $opts = [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_TIMEOUT => 60,
+            CURLOPT_CUSTOMREQUEST => $method,
+        ];
+        if ($payload !== null) {
+            $opts[CURLOPT_POSTFIELDS] = json_encode($payload, JSON_UNESCAPED_UNICODE);
+        }
+        curl_setopt_array($ch, $opts);
+        $body = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($body === false) {
+            throw new \RuntimeException('InSales HTTP error');
+        }
+        $data = json_decode($body, true);
+        if ($code >= 400) {
+            throw new \RuntimeException("InSales API HTTP {$code}: " . mb_substr((string) $body, 0, 1500));
+        }
+
+        return is_array($data) ? $data : [];
+    }
+
     /** @return array<string,mixed> */
     private function getJson(string $url): array
     {
+        $host = parse_url($url, PHP_URL_HOST);
+        if (!is_string($host) || $host === '') {
+            throw new \RuntimeException('Invalid InSales URL');
+        }
         $ch = curl_init($url);
         if ($ch === false) {
             throw new \RuntimeException('curl_init failed');
@@ -120,8 +197,9 @@ final class InSalesClient
         }
         $data = json_decode($body, true);
         if ($code >= 400) {
-            throw new \RuntimeException("InSales API HTTP {$code}: " . mb_substr($body, 0, 1500));
+            throw new \RuntimeException("InSales API HTTP {$code}: " . mb_substr((string) $body, 0, 1500));
         }
+
         return is_array($data) ? $data : [];
     }
 }

@@ -44,12 +44,17 @@
 
 Ссылки `/admin/applications/dellin_ship_AnY/install` **часто не работают** для неопубликованных приложений — это нормально.
 
-### Ручная установка (рекомендуется)
+### Ручная установка (если ссылка install в магазине не открывается)
 
 1. На сервере в `.env`: `MANUAL_INSTALL_SECRET=любая-длинная-строка`
-2. В админке магазина откройте: `https://myshop-ddy891.myinsales.ru/admin/account.json` — скопируйте `"id"`
-3. Откройте: `http://176.53.160.91/insales/manual-install?secret=ВАШ_СЕКРЕТ`
-4. Укажите shop и insales_id → **Установить** → настройки `/insales/app`
+2. **Сначала получите token:** в кабинете разработчика нажмите установку на магазин **или** откройте в браузере  
+   `https://ВАШ-МАГАЗИН.myinsales.ru/admin/applications/INSALES_APP_ID/install`  
+   inSales перенаправит на `http://176.53.160.91/insales/install?token=...` — скопируйте значение `token`.
+3. В админке магазина: `/admin/account.json` — поле `"id"` (insales_id).
+4. `http://176.53.160.91/insales/manual-install?secret=ВАШ_СЕКРЕТ` — shop, insales_id, **token** (обязательно).
+
+Без настоящего token API магазина вернёт **401 Access denied** (кнопка «Создать способ доставки»).
+Token можно вставить позже в `/insales/app` → **Обновить пароль API**.
 
 ---
 
@@ -94,5 +99,6 @@ mysql -u bridge_user insales_bridge < ./insales-shipping-bridge/database/migrati
 |---------|---------|
 | Нет пункта «Приложения» в админке | Убедитесь, что зашли в **магазин**, а не в кабинет разработчика |
 | Ошибка при установке | Проверьте URL приложения, MySQL, `INSALES_APP_SECRET` |
+| `401 Access denied` при создании доставки | Нужен **token** установки inSales (не случайный пароль). Обновите в `/insales/app` или переустановите |
 | Пустой список терминалов | `SHIPPING_API_APPKEY` в `.env`, права на `var/cache/` |
 | `could not find driver` | Установите `php-mysql` / `mariadb-server`, перезапустите php-fpm |

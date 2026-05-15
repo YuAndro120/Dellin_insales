@@ -32,7 +32,7 @@ final class InstallHandlers
             return;
         }
 
-        $apiPassword = md5($token . $config->insalesAppSecret);
+        $apiPassword = InSalesApiPassword::compute($token, $config->insalesAppSecret);
         $shops->upsertOnInstall($insalesId, $shop, $apiPassword);
 
         http_response_code(200);

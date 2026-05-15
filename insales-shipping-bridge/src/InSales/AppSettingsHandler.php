@@ -37,10 +37,43 @@ final class AppSettingsHandler
         }
 
         $saved = false;
+        $apiAuthUpdated = false;
         $deliveryCreated = null;
         $error = null;
 
-        if ($method === 'POST' && isset($_POST['create_pickup_delivery'])) {
+        $secret = $config->insalesAppSecret ?? '';
+        $installTokenRaw = trim((string) ($_GET['token'] ?? ''));
+        if ($installTokenRaw !== '' && $secret !== '') {
+            try {
+                $token = InSalesApiPassword::parseInstallToken($installTokenRaw);
+                $shops->updateApiPassword(
+                    $settings->insalesId,
+                    InSalesApiPassword::compute($token, $secret)
+                );
+                $apiAuthUpdated = true;
+            } catch (\Throwable $e) {
+                $error = $e->getMessage();
+            }
+        }
+
+        if ($method === 'POST' && isset($_POST['update_install_token'])) {
+            try {
+                if ($secret === '') {
+                    throw new \RuntimeException('INSALES_APP_SECRET не задан в .env на сервере');
+                }
+                $token = InSalesApiPassword::parseInstallToken((string) ($_POST['install_token'] ?? ''));
+                if ($token === '') {
+                    throw new \RuntimeException('Укажите token из URL установки inSales');
+                }
+                $shops->updateApiPassword(
+                    $settings->insalesId,
+                    InSalesApiPassword::compute($token, $secret)
+                );
+                $apiAuthUpdated = true;
+            } catch (\Throwable $e) {
+                $error = $e->getMessage();
+            }
+        } elseif ($method === 'POST' && isset($_POST['create_pickup_delivery'])) {
             try {
                 $auth = $shops->findApiAuthByInsalesId($settings->insalesId);
                 if ($auth === null) {
@@ -49,7 +82,7 @@ final class AppSettingsHandler
                 $setup = new InSalesDeliverySetup(new InSalesClient(), $config);
                 $deliveryCreated = $setup->createPickUpDeliveryVariant($auth['shop_host'], $auth['api_password']);
             } catch (\Throwable $e) {
-                $error = $e->getMessage();
+                $error = self::formatApiError($e);
             }
         } elseif ($method === 'POST') {
             try {
@@ -71,7 +104,18 @@ final class AppSettingsHandler
         }
 
         http_response_code(200);
-        self::renderForm($settings, $config, $saved, $deliveryCreated, $error);
+        self::renderForm($settings, $config, $saved, $apiAuthUpdated, $deliveryCreated, $error);
+    }
+
+    private static function formatApiError(\Throwable $e): string
+    {
+        $msg = $e->getMessage();
+        if (str_contains($msg, '401') || str_contains($msg, 'Access denied')) {
+            return $msg . ' — пароль API неверный. При ручной установке без token inSales отклоняет запросы. '
+                . 'Вставьте token ниже или откройте URL установки приложения в магазине (редирект с ?token=).';
+        }
+
+        return $msg;
     }
 
     /**
@@ -81,6 +125,7 @@ final class AppSettingsHandler
         ShopSettings $s,
         Config $config,
         bool $saved,
+        bool $apiAuthUpdated,
         ?array $deliveryCreated,
         ?string $error,
     ): void {
@@ -115,6 +160,17 @@ final class AppSettingsHandler
         echo '<br><strong>account_id для checkout:</strong> ' . $h($s->insalesId);
         echo '</div>';
 
+        $appId = trim((string) ($config->insalesAppId ?? ''));
+        if ($appId !== '') {
+            echo '<div class="info" style="margin-top:1rem">';
+            echo '<strong>Ошибка 401 Access denied</strong><br>';
+            echo 'Пароль API = MD5(token + INSALES_APP_SECRET). Token выдаёт inSales только при установке.<br>';
+            $installUrl = 'https://' . $s->shopHost . '/admin/applications/' . rawurlencode($appId) . '/install';
+            echo '<a href="' . $h($installUrl) . '" target="_blank" rel="noopener">Установить приложение в магазине</a>';
+            echo ' — после редиректа скопируйте <code>token</code> из URL или вставьте в форму ниже.';
+            echo '</div>';
+        }
+
         $base = trim((string) (getenv('PUBLIC_BRIDGE_URL') ?: ''));
         if ($base === '') {
             $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
@@ -128,6 +184,9 @@ final class AppSettingsHandler
         echo '<small>Точка:</small> <code style="word-break:break-all">' . $h($base . '/insales/external/v2/pickup_point') . '</code>';
         echo '</div>';
 
+        if ($apiAuthUpdated) {
+            echo '<p class="ok">Пароль API магазина обновлён по token установки. Можно снова нажать кнопку создания доставки.</p>';
+        }
         if ($deliveryCreated !== null) {
             echo '<p class="ok">Способ доставки создан: <strong>' . $h($deliveryCreated['title']) . '</strong> (id '
                 . $h((string) $deliveryCreated['id']) . '). Проверьте <a href="https://'
@@ -139,6 +198,15 @@ final class AppSettingsHandler
         if ($error !== null) {
             echo '<p class="err">' . $h($error) . '</p>';
         }
+
+        echo '<form method="post" action="/insales/app" style="margin-bottom:1rem">';
+        echo '<label for="install_token">Token установки inSales</label>';
+        echo '<input type="text" id="install_token" name="install_token" placeholder="из ?token=... в адресе после установки">';
+        echo '<input type="hidden" name="shop" value="' . $h($s->shopHost) . '">';
+        echo '<input type="hidden" name="insales_id" value="' . $h($s->insalesId) . '">';
+        echo '<input type="hidden" name="update_install_token" value="1">';
+        echo '<button type="submit" style="margin-top:.5rem">Обновить пароль API</button>';
+        echo '</form>';
 
         echo '<form method="post" action="/insales/app" style="margin-bottom:1rem">';
         echo '<input type="hidden" name="shop" value="' . $h($s->shopHost) . '">';

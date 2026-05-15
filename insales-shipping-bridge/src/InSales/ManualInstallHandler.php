@@ -47,8 +47,13 @@ final class ManualInstallHandler
                 echo '<p>Укажите shop и insales_id.</p>';
                 return;
             }
-            $token = bin2hex(random_bytes(16));
-            $apiPassword = md5($token . $config->insalesAppSecret);
+            $installToken = InSalesApiPassword::parseInstallToken((string) ($_POST['install_token'] ?? ''));
+            if ($installToken === '') {
+                http_response_code(400);
+                echo '<p>Укажите <strong>token</strong> установки из inSales (см. подсказку на форме). Без него API магазина вернёт 401.</p>';
+                return;
+            }
+            $apiPassword = InSalesApiPassword::compute($installToken, $config->insalesAppSecret);
             $shops->upsertOnInstall($insalesId, $shop, $apiPassword);
             $q = http_build_query(['shop' => $shop, 'insales_id' => $insalesId]);
             header('Location: /insales/app?' . $q, true, 302);
@@ -76,6 +81,11 @@ final class ManualInstallHandler
         echo '<input name="insales_id" required placeholder="число из account.json">';
         echo '<p class="hint">Как узнать id: войдите в админку магазина и откройте<br>';
         echo '<code>/admin/account.json</code> — поле <code>id</code>.</p>';
+        echo '<label>token установки (обязательно)</label>';
+        echo '<input name="install_token" required placeholder="из URL /insales/install?token=...">';
+        echo '<p class="hint">Откройте в магазине ссылку установки приложения (кабинет разработчика → URL установки).';
+        echo ' inSales перенаправит на ваш сервер с параметром <code>token</code> в адресной строке — скопируйте его сюда.';
+        echo ' Либо вставьте полный URL редиректа.</p>';
         echo '<button type="submit">Установить и открыть настройки</button>';
         echo '</form></body></html>';
     }

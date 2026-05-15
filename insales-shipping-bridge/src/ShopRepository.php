@@ -45,6 +45,17 @@ SQL;
         $st->execute([':iid' => $insalesId]);
     }
 
+    public function updateApiPassword(string $insalesId, string $apiPasswordMd5): void
+    {
+        $st = $this->pdo->prepare(
+            'UPDATE insales_shops SET api_password = :pass WHERE insales_id = :iid AND uninstalled_at IS NULL'
+        );
+        $st->execute([':pass' => $apiPasswordMd5, ':iid' => $insalesId]);
+        if ($st->rowCount() === 0) {
+            throw new \RuntimeException('Магазин не найден для обновления пароля API');
+        }
+    }
+
     /**
      * @param array{
      *   sender_terminal_id: int,

@@ -34,15 +34,19 @@ final class VariantQuoteService
             throw new \InvalidArgumentException('shop, lines[], arrival_terminal_id required');
         }
 
-        $row = $this->shops->findActiveByHost($shop);
-        if ($row === null) {
+        $auth = $this->shops->findActiveByHost($shop);
+        if ($auth === null) {
             throw new \RuntimeException('Shop not installed or unknown host: ' . $shop);
         }
         $login = $this->config->insalesAppId ?? '';
         if ($login === '') {
             throw new \RuntimeException('INSALES_APP_ID is not configured');
         }
-        $pass = $row['api_password'];
+        $pass = $auth['api_password'];
+
+        $settings = ShopDeliveryContext::resolveSettings(array_merge($body, ['shop' => $shop]), $this->shops, $this->config);
+        $senderTerminalId = ShopDeliveryContext::requireSenderTerminalId($settings);
+        $calcCtx = CalculatorContext::fromShopSettings($settings);
 
         $resolved = [];
         foreach ($linesIn as $line) {
@@ -68,15 +72,17 @@ final class VariantQuoteService
             throw new \InvalidArgumentException('No valid lines');
         }
 
-        $senderTerminalId = ShopDeliveryContext::resolveSenderTerminalId(
-            array_merge($body, ['shop' => $shop]),
-            $this->shops
-        );
-
-        $cargo = CargoFromVariants::aggregate($resolved);
+        $cargo = CargoFromVariants::aggregate($resolved, $settings);
         $paymentKladr = $this->kladrResolver?->resolve($kladr, $terminalId);
         $sid = $this->carrier->login();
-        $calc = $this->carrier->calculateToTerminal($sid, $senderTerminalId, $terminalId, $paymentKladr, $cargo);
+        $calc = $this->carrier->calculateToTerminal(
+            $sid,
+            $senderTerminalId,
+            $terminalId,
+            $paymentKladr,
+            $cargo,
+            $calcCtx
+        );
 
         return [
             'ok' => $calc['price'] !== null,

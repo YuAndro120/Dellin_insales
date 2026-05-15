@@ -17,11 +17,15 @@ final class CargoFromVariants
      * @param list<array{variant: array<string,mixed>, quantity: int}> $lines
      * @return array{weight:float,volume:float,length:float,width:float,height:float,quantity:int,stated_value:float}
      */
-    public static function aggregate(array $lines): array
+    public static function aggregate(array $lines, ?ShopSettings $defaults = null): array
     {
         if ($lines === []) {
             throw new \InvalidArgumentException('No lines');
         }
+
+        $fallbackWeight = $defaults?->defaultWeightKg ?? 1.0;
+        $fallbackDims = $defaults?->defaultDimensionsCm ?? '20x20x20';
+        $fallbackStated = $defaults?->defaultStatedValue ?? 0.0;
 
         $totalWeight = 0.0;
         $totalVolume = 0.0;
@@ -35,8 +39,12 @@ final class CargoFromVariants
             if (!is_array($v)) {
                 continue;
             }
-            $w = self::parseWeight((string) ($v['weight'] ?? '0'));
-            [$l, $wd, $h] = self::parseDimensionsCmToMeters((string) ($v['dimensions'] ?? ''));
+            $wRaw = trim((string) ($v['weight'] ?? ''));
+            $dimsRaw = trim((string) ($v['dimensions'] ?? ''));
+            $w = $wRaw !== '' ? self::parseWeight($wRaw) : $fallbackWeight;
+            [$l, $wd, $h] = $dimsRaw !== ''
+                ? self::parseDimensionsCmToMeters($dimsRaw)
+                : self::parseDimensionsCmToMeters($fallbackDims);
 
             $totalWeight += $w * $qty;
             $totalVolume += $l * $wd * $h * $qty;
@@ -59,7 +67,7 @@ final class CargoFromVariants
             'width' => round($maxW, 2),
             'height' => round($maxH, 2),
             'quantity' => 1,
-            'stated_value' => 0.0,
+            'stated_value' => round(max(0.0, $fallbackStated), 2),
         ];
     }
 

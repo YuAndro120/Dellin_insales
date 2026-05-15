@@ -59,22 +59,28 @@ final class CarrierApi
         int $senderTerminalId,
         int $arrivalTerminalId,
         ?string $arrivalCityKladr,
-        array $cargo
+        array $cargo,
+        CalculatorContext $calcCtx,
     ): array {
         if ($senderTerminalId <= 0) {
             throw new \InvalidArgumentException('Sender terminal is not configured for this shop');
         }
-        $body = $this->buildCalculatorBody($sessionId, $senderTerminalId, $arrivalTerminalId, $arrivalCityKladr, $cargo);
+        $body = $this->buildCalculatorBody($sessionId, $senderTerminalId, $arrivalTerminalId, $arrivalCityKladr, $cargo, $calcCtx);
         $res = $this->postJson(self::URL_CALC, $body);
         return $this->parseCalculatorResponse($res);
     }
 
-    public function calculateToCity(string $sessionId, int $senderTerminalId, string $arrivalCityKladr, array $cargo): array
-    {
+    public function calculateToCity(
+        string $sessionId,
+        int $senderTerminalId,
+        string $arrivalCityKladr,
+        array $cargo,
+        CalculatorContext $calcCtx,
+    ): array {
         if ($senderTerminalId <= 0) {
             throw new \InvalidArgumentException('Sender terminal is not configured for this shop');
         }
-        $body = $this->buildCalculatorBodyCityArrival($sessionId, $senderTerminalId, $arrivalCityKladr, $cargo);
+        $body = $this->buildCalculatorBodyCityArrival($sessionId, $senderTerminalId, $arrivalCityKladr, $cargo, $calcCtx);
         $res = $this->postJson(self::URL_CALC, $body);
         return $this->parseCalculatorResponse($res);
     }
@@ -101,17 +107,18 @@ final class CarrierApi
         int $senderTerminalId,
         int $arrivalTerminalId,
         ?string $arrivalCityKladr,
-        array $cargo
+        array $cargo,
+        CalculatorContext $calcCtx,
     ): array {
-        $produce = date('Y-m-d', strtotime('+2 days'));
+        $produce = date('Y-m-d', strtotime('+' . $calcCtx->produceDaysOffset . ' days'));
         $c = $this->normalizeCargo($cargo);
 
         $requester = [
             'role' => 'sender',
-            'email' => $this->config->senderRequesterEmail,
+            'email' => $calcCtx->requesterEmail,
         ];
-        if ($this->config->senderCounteragentUid !== null && $this->config->senderCounteragentUid !== '') {
-            $requester['uid'] = $this->config->senderCounteragentUid;
+        if ($calcCtx->counteragentUid !== null && $calcCtx->counteragentUid !== '') {
+            $requester['uid'] = $calcCtx->counteragentUid;
         }
 
         return [
@@ -149,17 +156,18 @@ final class CarrierApi
         string $sessionId,
         int $senderTerminalId,
         string $arrivalCityKladr,
-        array $cargo
+        array $cargo,
+        CalculatorContext $calcCtx,
     ): array {
-        $produce = date('Y-m-d', strtotime('+2 days'));
+        $produce = date('Y-m-d', strtotime('+' . $calcCtx->produceDaysOffset . ' days'));
         $c = $this->normalizeCargo($cargo);
 
         $requester = [
             'role' => 'sender',
-            'email' => $this->config->senderRequesterEmail,
+            'email' => $calcCtx->requesterEmail,
         ];
-        if ($this->config->senderCounteragentUid !== null && $this->config->senderCounteragentUid !== '') {
-            $requester['uid'] = $this->config->senderCounteragentUid;
+        if ($calcCtx->counteragentUid !== null && $calcCtx->counteragentUid !== '') {
+            $requester['uid'] = $calcCtx->counteragentUid;
         }
 
         return [

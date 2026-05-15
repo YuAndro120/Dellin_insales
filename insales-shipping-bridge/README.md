@@ -42,12 +42,15 @@ mysql -u root -p < database/schema.sql
 
 См. `.env.example`: блок **перевозчика** (`SHIPPING_*`), **MySQL** (`MYSQL_*` или `DATABASE_URL`), **приложение inSales** (`INSALES_APP_ID`, `INSALES_APP_SECRET` — как в кабинете разработчика).
 
-**Терминал отгрузки** (`sender_terminal_id`) **не задаётся в `.env`**. После установки приложения владелец магазина открывает **URL входа** (`/insales/app`) и сохраняет ID терминала отправителя. Для API расчёта передайте `shop` (хост `*.myinsales.ru`) — значение подставится из БД.
+**Настройки на магазин** (не в `.env`): терминал отгрузки, email отправителя, UID контрагента, вес/габариты по умолчанию, объявленная стоимость, дней до отгрузки, вкл/выкл расчёт — форма **`/insales/app`**. Для API передайте `shop` (`*.myinsales.ru`).
+
+**Как протестировать на тестовом магазине:** см. [docs/TESTING_INSALES.md](docs/TESTING_INSALES.md).
 
 Для уже развёрнутой БД выполните миграцию:
 
 ```bash
-mysql -u root -p shipping_bridge < database/migrations/002_sender_terminal_per_shop.sql
+mysql -u root -p insales_bridge < database/migrations/002_sender_terminal_per_shop.sql
+mysql -u root -p insales_bridge < database/migrations/003_shop_delivery_settings.sql
 ```
 
 В форме приложения inSales укажите:

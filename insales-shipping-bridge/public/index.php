@@ -9,6 +9,7 @@ use ShippingBridge\Http\Response;
 use ShippingBridge\InSales\AppSettingsHandler;
 use ShippingBridge\InSales\CarrierJsonHandler;
 use ShippingBridge\InSales\InstallHandlers;
+use ShippingBridge\CalculatorContext;
 use ShippingBridge\ShopDeliveryContext;
 use ShippingBridge\InSales\InSalesClient;
 use ShippingBridge\ShopRepository;
@@ -71,7 +72,7 @@ if (str_starts_with($uri, '/insales/')) {
             exit;
         }
         if ($uri === '/insales/app' && ($method === 'GET' || $method === 'POST')) {
-            AppSettingsHandler::handle($shops, $method);
+            AppSettingsHandler::handle($shops, $config, $method);
             exit;
         }
         if ($uri === '/insales/uninstall' && ($method === 'GET' || $method === 'POST')) {
@@ -161,7 +162,9 @@ try {
         $pdo = $config->hasDatabase() ? Db::pdo($config) : null;
         $shops = $pdo !== null ? new ShopRepository($pdo) : null;
         try {
-            $senderTerminalId = ShopDeliveryContext::resolveSenderTerminalId($body, $shops);
+            $shopSettings = ShopDeliveryContext::resolveSettings($body, $shops, $config);
+            $senderTerminalId = ShopDeliveryContext::requireSenderTerminalId($shopSettings);
+            $calcCtx = CalculatorContext::fromShopSettings($shopSettings);
         } catch (Throwable $e) {
             Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
             exit;
@@ -173,7 +176,7 @@ try {
             $terminalId
         );
         $sid = $api->login();
-        $calc = $api->calculateToTerminal($sid, $senderTerminalId, $terminalId, $paymentKladr, $cargo);
+        $calc = $api->calculateToTerminal($sid, $senderTerminalId, $terminalId, $paymentKladr, $cargo, $calcCtx);
         Response::json([
             'ok' => $calc['price'] !== null,
             'price' => $calc['price'],
@@ -196,14 +199,16 @@ try {
         $pdo = $config->hasDatabase() ? Db::pdo($config) : null;
         $shops = $pdo !== null ? new ShopRepository($pdo) : null;
         try {
-            $senderTerminalId = ShopDeliveryContext::resolveSenderTerminalId($body, $shops);
+            $shopSettings = ShopDeliveryContext::resolveSettings($body, $shops, $config);
+            $senderTerminalId = ShopDeliveryContext::requireSenderTerminalId($shopSettings);
+            $calcCtx = CalculatorContext::fromShopSettings($shopSettings);
         } catch (Throwable $e) {
             Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
             exit;
         }
         $api = new CarrierApi($config);
         $sid = $api->login();
-        $calc = $api->calculateToCity($sid, $senderTerminalId, $arrivalKladr, $cargo);
+        $calc = $api->calculateToCity($sid, $senderTerminalId, $arrivalKladr, $cargo, $calcCtx);
         Response::json([
             'ok' => $calc['price'] !== null,
             'price' => $calc['price'],

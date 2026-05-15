@@ -7,6 +7,7 @@ use ShippingBridge\Config;
 use ShippingBridge\Db;
 use ShippingBridge\Http\Response;
 use ShippingBridge\InSales\AppSettingsHandler;
+use ShippingBridge\InSales\CarrierJsonHandler;
 use ShippingBridge\InSales\InstallHandlers;
 use ShippingBridge\ShopDeliveryContext;
 use ShippingBridge\InSales\InSalesClient;
@@ -46,6 +47,15 @@ if (str_starts_with($uri, '/insales/')) {
         exit;
     }
     $cors = Response::corsHeaders($config->corsOrigin);
+
+    if ($uri === '/insales/cities/search' && $method === 'GET') {
+        CarrierJsonHandler::citiesSearch($config);
+        exit;
+    }
+    if ($uri === '/insales/terminals' && $method === 'GET') {
+        CarrierJsonHandler::terminals($config);
+        exit;
+    }
 
     if (!$config->hasDatabase()) {
         http_response_code(500);

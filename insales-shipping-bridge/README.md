@@ -16,7 +16,9 @@ PHP-сервис: JSON API для расчёта, ПВЗ на карте, уст
 | `POST /v1/calculate-from-variants` | Загрузка вариантов из inSales + расчёт (нужны БД и установка приложения) |
 | `GET /v1/cities/search?q=` | Подсказка городов (КЛАДР) |
 | `GET /insales/install` | Установка приложения (параметры `token`, `shop`, `insales_id`) |
-| `GET`/`POST /insales/app` | Настройки магазина: **ID терминала отгрузки** (после установки) |
+| `GET`/`POST /insales/app` | Настройки: выбор **терминала отгрузки** из API перевозчика |
+| `GET /insales/terminals` | Список ПВЗ по `city_kladr` / `q` (для страницы настроек) |
+| `GET /insales/cities/search` | Подсказка городов (КЛАДР) |
 | `GET`/`POST /insales/uninstall` | Отключение (`insales_id`) |
 | `public/widget/index.html` | Демо карты |
 

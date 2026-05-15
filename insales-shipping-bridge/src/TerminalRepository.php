@@ -78,6 +78,44 @@ final class TerminalRepository
         return $out;
     }
 
+    /**
+     * Поиск терминалов для выбора в настройках (по префиксу КЛАДР и/или тексту).
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function search(?string $cityKladrPrefix, ?string $textQuery, int $limit = 100): array
+    {
+        $scanLimit = min(max($limit * 5, 200), 3000);
+        $points = $this->getPoints($cityKladrPrefix, null, null, null, null, $scanLimit);
+        if ($textQuery === null || $textQuery === '') {
+            return array_slice($points, 0, $limit);
+        }
+
+        $needle = mb_strtolower($textQuery);
+        $filtered = [];
+        foreach ($points as $t) {
+            $hay = mb_strtolower(
+                ($t['name'] ?? '') . ' ' . ($t['address'] ?? '') . ' ' . ($t['city'] ?? '') . ' ' . ($t['id'] ?? '')
+            );
+            if (str_contains($hay, $needle)) {
+                $filtered[] = $t;
+                if (count($filtered) >= $limit) {
+                    break;
+                }
+            }
+        }
+
+        return $filtered;
+    }
+
+    public function invalidateCache(): void
+    {
+        $path = rtrim($this->config->cacheDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . self::CACHE_NAME;
+        if (is_file($path)) {
+            unlink($path);
+        }
+    }
+
     /** КЛАДР населённого пункта по ID терминала (из справочника v3). */
     public function findCityKladrByTerminalId(int $terminalId): ?string
     {

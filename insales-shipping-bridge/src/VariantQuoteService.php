@@ -16,6 +16,7 @@ final class VariantQuoteService
         private readonly ShopRepository $shops,
         private readonly InSalesClient $insales,
         private readonly CarrierApi $carrier,
+        private readonly ?ArrivalKladrResolver $kladrResolver = null,
     ) {
     }
 
@@ -29,8 +30,8 @@ final class VariantQuoteService
         $terminalId = (int) ($body['arrival_terminal_id'] ?? 0);
         $kladr = (string) ($body['arrival_city_kladr'] ?? '');
         $linesIn = $body['lines'] ?? [];
-        if ($shop === '' || $terminalId <= 0 || strlen($kladr) < 10 || !is_array($linesIn) || $linesIn === []) {
-            throw new \InvalidArgumentException('shop, lines[], arrival_terminal_id, arrival_city_kladr required');
+        if ($shop === '' || $terminalId <= 0 || !is_array($linesIn) || $linesIn === []) {
+            throw new \InvalidArgumentException('shop, lines[], arrival_terminal_id required');
         }
 
         $row = $this->shops->findActiveByHost($shop);
@@ -67,9 +68,15 @@ final class VariantQuoteService
             throw new \InvalidArgumentException('No valid lines');
         }
 
+        $senderTerminalId = ShopDeliveryContext::resolveSenderTerminalId(
+            array_merge($body, ['shop' => $shop]),
+            $this->shops
+        );
+
         $cargo = CargoFromVariants::aggregate($resolved);
+        $paymentKladr = $this->kladrResolver?->resolve($kladr, $terminalId);
         $sid = $this->carrier->login();
-        $calc = $this->carrier->calculateToTerminal($sid, $terminalId, $kladr, $cargo);
+        $calc = $this->carrier->calculateToTerminal($sid, $senderTerminalId, $terminalId, $paymentKladr, $cargo);
 
         return [
             'ok' => $calc['price'] !== null,

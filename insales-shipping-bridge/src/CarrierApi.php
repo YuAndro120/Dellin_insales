@@ -50,16 +50,31 @@ final class CarrierApi
      * @param array{weight?:float,volume?:float,length?:float,width?:float,height?:float,quantity?:int,stated_value?:float} $cargo
      * @return array{price:float|null,days:int|null,metadata:array,raw?:array,errors?:mixed}
      */
-    public function calculateToTerminal(string $sessionId, int $arrivalTerminalId, string $arrivalCityKladr, array $cargo): array
-    {
-        $body = $this->buildCalculatorBody($sessionId, $arrivalTerminalId, $arrivalCityKladr, $cargo);
+    /**
+     * Расчёт «терминал → терминал». КЛАДР города получателя не обязателен:
+     * в delivery достаточно terminalID; paymentCity передаётся только если известен.
+     */
+    public function calculateToTerminal(
+        string $sessionId,
+        int $senderTerminalId,
+        int $arrivalTerminalId,
+        ?string $arrivalCityKladr,
+        array $cargo
+    ): array {
+        if ($senderTerminalId <= 0) {
+            throw new \InvalidArgumentException('Sender terminal is not configured for this shop');
+        }
+        $body = $this->buildCalculatorBody($sessionId, $senderTerminalId, $arrivalTerminalId, $arrivalCityKladr, $cargo);
         $res = $this->postJson(self::URL_CALC, $body);
         return $this->parseCalculatorResponse($res);
     }
 
-    public function calculateToCity(string $sessionId, string $arrivalCityKladr, array $cargo): array
+    public function calculateToCity(string $sessionId, int $senderTerminalId, string $arrivalCityKladr, array $cargo): array
     {
-        $body = $this->buildCalculatorBodyCityArrival($sessionId, $arrivalCityKladr, $cargo);
+        if ($senderTerminalId <= 0) {
+            throw new \InvalidArgumentException('Sender terminal is not configured for this shop');
+        }
+        $body = $this->buildCalculatorBodyCityArrival($sessionId, $senderTerminalId, $arrivalCityKladr, $cargo);
         $res = $this->postJson(self::URL_CALC, $body);
         return $this->parseCalculatorResponse($res);
     }
@@ -81,8 +96,13 @@ final class CarrierApi
         return is_array($data) ? $data : [];
     }
 
-    private function buildCalculatorBody(string $sessionId, int $arrivalTerminalId, string $arrivalCityKladr, array $cargo): array
-    {
+    private function buildCalculatorBody(
+        string $sessionId,
+        int $senderTerminalId,
+        int $arrivalTerminalId,
+        ?string $arrivalCityKladr,
+        array $cargo
+    ): array {
         $produce = date('Y-m-d', strtotime('+2 days'));
         $c = $this->normalizeCargo($cargo);
 
@@ -106,7 +126,7 @@ final class CarrierApi
                 ],
                 'derival' => [
                     'variant' => 'terminal',
-                    'terminalID' => $this->config->senderTerminalId,
+                    'terminalID' => $senderTerminalId,
                     'produceDate' => $produce,
                     'requirements' => [],
                 ],
@@ -116,11 +136,7 @@ final class CarrierApi
             'members' => [
                 'requester' => $requester,
             ],
-            'payment' => [
-                'paymentCity' => $arrivalCityKladr,
-                'type' => 'noncash',
-                'primaryPayer' => 'sender',
-            ],
+            'payment' => $this->buildPayment($arrivalCityKladr),
             'productInfo' => [
                 'type' => 4,
                 'productType' => 5,
@@ -129,8 +145,12 @@ final class CarrierApi
         ];
     }
 
-    private function buildCalculatorBodyCityArrival(string $sessionId, string $arrivalCityKladr, array $cargo): array
-    {
+    private function buildCalculatorBodyCityArrival(
+        string $sessionId,
+        int $senderTerminalId,
+        string $arrivalCityKladr,
+        array $cargo
+    ): array {
         $produce = date('Y-m-d', strtotime('+2 days'));
         $c = $this->normalizeCargo($cargo);
 
@@ -154,7 +174,7 @@ final class CarrierApi
                 ],
                 'derival' => [
                     'variant' => 'terminal',
-                    'terminalID' => $this->config->senderTerminalId,
+                    'terminalID' => $senderTerminalId,
                     'produceDate' => $produce,
                     'requirements' => [],
                 ],
@@ -164,17 +184,31 @@ final class CarrierApi
             'members' => [
                 'requester' => $requester,
             ],
-            'payment' => [
-                'paymentCity' => $arrivalCityKladr,
-                'type' => 'noncash',
-                'primaryPayer' => 'sender',
-            ],
+            'payment' => $this->buildPayment($arrivalCityKladr),
             'productInfo' => [
                 'type' => 4,
                 'productType' => 5,
                 'info' => [['param' => 'shipping-bridge', 'value' => 'mvp-1-city']],
             ],
         ];
+    }
+
+    /**
+     * paymentCity в API калькулятора опционален; при расчёте только по terminalID можно не передавать.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildPayment(?string $paymentCityKladr): array
+    {
+        $payment = [
+            'type' => 'noncash',
+            'primaryPayer' => 'sender',
+        ];
+        if ($paymentCityKladr !== null && $paymentCityKladr !== '') {
+            $payment['paymentCity'] = $paymentCityKladr;
+        }
+
+        return $payment;
     }
 
     /** @param array<string,mixed> $cargo */

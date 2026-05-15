@@ -16,7 +16,7 @@ PHP-сервис: JSON API для расчёта, ПВЗ на карте, уст
 | `POST /v1/calculate-from-variants` | Загрузка вариантов из inSales + расчёт (нужны БД и установка приложения) |
 | `GET /v1/cities/search?q=` | Подсказка городов (КЛАДР) |
 | `GET /insales/install` | Установка приложения (параметры `token`, `shop`, `insales_id`) |
-| `GET /insales/app` | Заглушка страницы приложения |
+| `GET`/`POST /insales/app` | Настройки магазина: **ID терминала отгрузки** (после установки) |
 | `GET`/`POST /insales/uninstall` | Отключение (`insales_id`) |
 | `public/widget/index.html` | Демо карты |
 
@@ -40,6 +40,14 @@ mysql -u root -p < database/schema.sql
 
 См. `.env.example`: блок **перевозчика** (`SHIPPING_*`), **MySQL** (`MYSQL_*` или `DATABASE_URL`), **приложение inSales** (`INSALES_APP_ID`, `INSALES_APP_SECRET` — как в кабинете разработчика).
 
+**Терминал отгрузки** (`sender_terminal_id`) **не задаётся в `.env`**. После установки приложения владелец магазина открывает **URL входа** (`/insales/app`) и сохраняет ID терминала отправителя. Для API расчёта передайте `shop` (хост `*.myinsales.ru`) — значение подставится из БД.
+
+Для уже развёрнутой БД выполните миграцию:
+
+```bash
+mysql -u root -p shipping_bridge < database/migrations/002_sender_terminal_per_shop.sql
+```
+
 В форме приложения inSales укажите:
 
 - **URL установки** — `https://ваш-домен/insales/install`
@@ -47,6 +55,10 @@ mysql -u root -p < database/schema.sql
 - **URL деинсталляции** — `https://ваш-домен/insales/uninstall`
 
 Для локальной разработки используйте туннель (ngrok, Cloudflare Tunnel, Herd expose) с HTTPS.
+
+## `POST /v1/calculate` и `POST /v1/calculate-city`
+
+В теле укажите `shop` (установленный магазин с настроенным терминалом отгрузки) либо для отладки — `sender_terminal_id` напрямую.
 
 ## `POST /v1/calculate-from-variants`
 
@@ -63,6 +75,8 @@ mysql -u root -p < database/schema.sql
   "arrival_city_kladr": "7700000000000"
 }
 ```
+
+`arrival_city_kladr` **необязателен**, если передан `arrival_terminal_id` — КЛАДР подставится из справочника ПВЗ; в теле калькулятора `paymentCity` передаётся только при наличии значения.
 
 Поле `product_id` **желательно**: иначе выполняется медленный обход страниц `GET /admin/products.json`.
 

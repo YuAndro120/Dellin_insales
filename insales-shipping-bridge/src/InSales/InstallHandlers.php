@@ -37,19 +37,9 @@ final class InstallHandlers
 
         http_response_code(200);
         echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Установка</title></head><body>';
+        $q = http_build_query(['shop' => $shop, 'insales_id' => $insalesId]);
         echo '<p>Приложение установлено. Магазин: ' . htmlspecialchars($shop, ENT_QUOTES, 'UTF-8') . '</p>';
-        echo '<p><a href="/insales/app">Страница приложения</a></p>';
-        echo '</body></html>';
-    }
-
-    public static function appPage(): void
-    {
-        header('Content-Type: text/html; charset=utf-8');
-        http_response_code(200);
-        echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Доставка</title></head><body>';
-        echo '<h1>Интеграция доставки</h1>';
-        echo '<p>JSON API бриджа: <code>/v1/calculate-from-variants</code>, <code>/v1/terminals</code> и др.</p>';
-        echo '<p>Виджет карты: <a href="/widget/index.html">/widget/index.html</a></p>';
+        echo '<p><a href="/insales/app?' . htmlspecialchars($q, ENT_QUOTES, 'UTF-8') . '">Перейти к настройкам (терминал отгрузки)</a></p>';
         echo '</body></html>';
     }
 

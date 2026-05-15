@@ -6,10 +6,13 @@ use ShippingBridge\CarrierApi;
 use ShippingBridge\Config;
 use ShippingBridge\Db;
 use ShippingBridge\Http\Response;
+use ShippingBridge\InSales\AppSettingsHandler;
 use ShippingBridge\InSales\InstallHandlers;
+use ShippingBridge\ShopDeliveryContext;
 use ShippingBridge\InSales\InSalesClient;
 use ShippingBridge\ShopRepository;
 use ShippingBridge\TerminalRepository;
+use ShippingBridge\ArrivalKladrResolver;
 use ShippingBridge\VariantQuoteService;
 
 require dirname(__DIR__) . '/bootstrap.php';
@@ -29,20 +32,21 @@ if ($method === 'OPTIONS') {
 }
 
 if ($uri === '/health' || $uri === '/v1/health') {
-    Response::json(['ok' => true, 'service' => 'insales-shipping-bridge', 'version' => 'mvp-2'], 200, $cors);
+    Response::json(['ok' => true, 'service' => 'insales-shipping-bridge', 'version' => 'mvp-3'], 200, $cors);
     exit;
 }
-
-try {
-    $config = Config::fromEnv();
-} catch (Throwable $e) {
-    Response::json(['ok' => false, 'error' => $e->getMessage()], 500, $cors);
-    exit;
-}
-
-$cors = Response::corsHeaders($config->corsOrigin);
 
 if (str_starts_with($uri, '/insales/')) {
+    try {
+        $config = Config::fromEnvForInsales();
+    } catch (Throwable $e) {
+        http_response_code(500);
+        header('Content-Type: text/html; charset=utf-8');
+        echo '<p>' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p>';
+        exit;
+    }
+    $cors = Response::corsHeaders($config->corsOrigin);
+
     if (!$config->hasDatabase()) {
         http_response_code(500);
         header('Content-Type: text/html; charset=utf-8');
@@ -56,8 +60,8 @@ if (str_starts_with($uri, '/insales/')) {
             InstallHandlers::install($config, $shops);
             exit;
         }
-        if ($uri === '/insales/app' && $method === 'GET') {
-            InstallHandlers::appPage();
+        if ($uri === '/insales/app' && ($method === 'GET' || $method === 'POST')) {
+            AppSettingsHandler::handle($shops, $method);
             exit;
         }
         if ($uri === '/insales/uninstall' && ($method === 'GET' || $method === 'POST')) {
@@ -73,6 +77,15 @@ if (str_starts_with($uri, '/insales/')) {
     Response::json(['ok' => false, 'error' => 'Not found', 'path' => $uri], 404, $cors);
     exit;
 }
+
+try {
+    $config = Config::fromEnv();
+} catch (Throwable $e) {
+    Response::json(['ok' => false, 'error' => $e->getMessage()], 500, $cors);
+    exit;
+}
+
+$cors = Response::corsHeaders($config->corsOrigin);
 
 $checkAuth = static function () use ($config): void {
     if ($config->bridgeSecret === '') {
@@ -130,15 +143,27 @@ try {
         $checkAuth();
         $body = $readJson();
         $terminalId = (int) ($body['arrival_terminal_id'] ?? 0);
-        $arrivalKladr = (string) ($body['arrival_city_kladr'] ?? '');
-        if ($terminalId <= 0 || strlen($arrivalKladr) < 10) {
-            Response::json(['ok' => false, 'error' => 'arrival_terminal_id and arrival_city_kladr required'], 422, $cors);
+        if ($terminalId <= 0) {
+            Response::json(['ok' => false, 'error' => 'arrival_terminal_id required'], 422, $cors);
             exit;
         }
         $cargo = is_array($body['cargo'] ?? null) ? $body['cargo'] : [];
+        $pdo = $config->hasDatabase() ? Db::pdo($config) : null;
+        $shops = $pdo !== null ? new ShopRepository($pdo) : null;
+        try {
+            $senderTerminalId = ShopDeliveryContext::resolveSenderTerminalId($body, $shops);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
+            exit;
+        }
         $api = new CarrierApi($config);
+        $repo = new TerminalRepository($config, $api);
+        $paymentKladr = (new ArrivalKladrResolver($repo))->resolve(
+            isset($body['arrival_city_kladr']) ? (string) $body['arrival_city_kladr'] : null,
+            $terminalId
+        );
         $sid = $api->login();
-        $calc = $api->calculateToTerminal($sid, $terminalId, $arrivalKladr, $cargo);
+        $calc = $api->calculateToTerminal($sid, $senderTerminalId, $terminalId, $paymentKladr, $cargo);
         Response::json([
             'ok' => $calc['price'] !== null,
             'price' => $calc['price'],
@@ -158,9 +183,17 @@ try {
             exit;
         }
         $cargo = is_array($body['cargo'] ?? null) ? $body['cargo'] : [];
+        $pdo = $config->hasDatabase() ? Db::pdo($config) : null;
+        $shops = $pdo !== null ? new ShopRepository($pdo) : null;
+        try {
+            $senderTerminalId = ShopDeliveryContext::resolveSenderTerminalId($body, $shops);
+        } catch (Throwable $e) {
+            Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
+            exit;
+        }
         $api = new CarrierApi($config);
         $sid = $api->login();
-        $calc = $api->calculateToCity($sid, $arrivalKladr, $cargo);
+        $calc = $api->calculateToCity($sid, $senderTerminalId, $arrivalKladr, $cargo);
         Response::json([
             'ok' => $calc['price'] !== null,
             'price' => $calc['price'],
@@ -182,7 +215,8 @@ try {
         $shops = new ShopRepository($pdo);
         $insales = new InSalesClient();
         $carrier = new CarrierApi($config);
-        $svc = new VariantQuoteService($config, $shops, $insales, $carrier);
+        $termRepo = new TerminalRepository($config, $carrier);
+        $svc = new VariantQuoteService($config, $shops, $insales, $carrier, new ArrivalKladrResolver($termRepo));
         try {
             $out = $svc->quoteFromCartLines($body);
         } catch (Throwable $e) {

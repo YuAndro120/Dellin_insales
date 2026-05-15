@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS `insales_shops` (
   `insales_id` VARCHAR(32) NOT NULL COMMENT 'Стабильный ID магазина из параметра установки',
   `shop_host` VARCHAR(255) NOT NULL COMMENT 'Например shop.myinsales.ru',
   `api_password` CHAR(32) NOT NULL COMMENT 'MD5(token+secret) для Basic Auth к API магазина',
+  `sender_terminal_id` INT UNSIGNED NULL DEFAULT NULL COMMENT 'Терминал отгрузки — задаётся в настройках приложения',
   `installed_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `uninstalled_at` TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (`id`),

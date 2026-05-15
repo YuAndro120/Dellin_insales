@@ -78,6 +78,38 @@ final class TerminalRepository
         return $out;
     }
 
+    /** КЛАДР населённого пункта по ID терминала (из справочника v3). */
+    public function findCityKladrByTerminalId(int $terminalId): ?string
+    {
+        if ($terminalId <= 0) {
+            return null;
+        }
+
+        $dataset = $this->loadDataset();
+        $citiesRaw = $dataset['city'] ?? [];
+        if (!is_array($citiesRaw)) {
+            return null;
+        }
+        $cities = array_is_list($citiesRaw) ? $citiesRaw : array_values($citiesRaw);
+
+        foreach ($cities as $city) {
+            if (!is_array($city)) {
+                continue;
+            }
+            $cityCode = (string) ($city['code'] ?? '');
+            if ($cityCode === '') {
+                continue;
+            }
+            foreach ($this->normalizeTerminalList($city['terminals']['terminal'] ?? $city['terminals'] ?? null) as $t) {
+                if (is_array($t) && (int) ($t['id'] ?? 0) === $terminalId) {
+                    return $cityCode;
+                }
+            }
+        }
+
+        return null;
+    }
+
     /** @return array<string,mixed> */
     private function loadDataset(): array
     {

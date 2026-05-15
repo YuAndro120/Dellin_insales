@@ -10,8 +10,6 @@ final class Config
         public readonly string $appkey,
         public readonly string $login,
         public readonly string $password,
-        public readonly string $senderCityKladr,
-        public readonly int $senderTerminalId,
         public readonly string $senderRequesterEmail,
         public readonly ?string $senderCounteragentUid,
         public readonly string $bridgeSecret,
@@ -25,13 +23,10 @@ final class Config
     ) {
     }
 
+    /** Полная конфигурация для API расчёта и справочников. */
     public static function fromEnv(): self
     {
-        $root = dirname(__DIR__);
-        $envFile = $root . '/.env';
-        if (is_file($envFile)) {
-            self::loadDotEnv($envFile);
-        }
+        self::bootstrapDotEnv();
 
         [$dsn, $dbUser, $dbPass] = self::databaseFromEnv();
 
@@ -39,18 +34,46 @@ final class Config
             appkey: self::req('SHIPPING_API_APPKEY'),
             login: self::req('SHIPPING_API_LOGIN'),
             password: self::req('SHIPPING_API_PASSWORD'),
-            senderCityKladr: self::req('SHIPPING_SENDER_CITY_KLADR'),
-            senderTerminalId: (int) self::req('SHIPPING_SENDER_TERMINAL_ID'),
             senderRequesterEmail: self::req('SHIPPING_REQUESTER_EMAIL'),
-            senderCounteragentUid: getenv('SHIPPING_COUNTERAGENT_UID') ?: null,
-            bridgeSecret: getenv('BRIDGE_SECRET') ?: '',
-            corsOrigin: getenv('CORS_ORIGIN') ?: '*',
-            cacheDir: getenv('CACHE_DIR') ?: $root . '/var/cache',
+            senderCounteragentUid: self::opt('SHIPPING_COUNTERAGENT_UID'),
+            bridgeSecret: self::opt('BRIDGE_SECRET') ?? '',
+            corsOrigin: self::opt('CORS_ORIGIN') ?? '*',
+            cacheDir: self::opt('CACHE_DIR') ?? dirname(__DIR__) . '/var/cache',
             databaseDsn: $dsn,
             databaseUser: $dbUser,
             databasePassword: $dbPass,
-            insalesAppId: getenv('INSALES_APP_ID') ?: null,
-            insalesAppSecret: getenv('INSALES_APP_SECRET') ?: null,
+            insalesAppId: self::opt('INSALES_APP_ID'),
+            insalesAppSecret: self::opt('INSALES_APP_SECRET'),
+        );
+    }
+
+    /**
+     * Минимальная конфигурация для /insales/* (установка приложения).
+     * Ключи API перевозчика не обязательны — на установке не используются.
+     */
+    public static function fromEnvForInsales(): self
+    {
+        self::bootstrapDotEnv();
+
+        [$dsn, $dbUser, $dbPass] = self::databaseFromEnv();
+        if ($dsn === null || $dsn === '') {
+            throw new \RuntimeException('Database is not configured (MYSQL_* or DATABASE_URL).');
+        }
+
+        return new self(
+            appkey: self::opt('SHIPPING_API_APPKEY') ?? '',
+            login: self::opt('SHIPPING_API_LOGIN') ?? '',
+            password: self::opt('SHIPPING_API_PASSWORD') ?? '',
+            senderRequesterEmail: self::opt('SHIPPING_REQUESTER_EMAIL') ?? 'noreply@localhost',
+            senderCounteragentUid: self::opt('SHIPPING_COUNTERAGENT_UID'),
+            bridgeSecret: self::opt('BRIDGE_SECRET') ?? '',
+            corsOrigin: self::opt('CORS_ORIGIN') ?? '*',
+            cacheDir: self::opt('CACHE_DIR') ?? dirname(__DIR__) . '/var/cache',
+            databaseDsn: $dsn,
+            databaseUser: $dbUser,
+            databasePassword: $dbPass,
+            insalesAppId: self::opt('INSALES_APP_ID'),
+            insalesAppSecret: self::opt('INSALES_APP_SECRET'),
         );
     }
 
@@ -81,11 +104,33 @@ final class Config
 
     private static function req(string $key): string
     {
-        $v = getenv($key);
-        if ($v === false || $v === '') {
+        $v = self::opt($key);
+        if ($v === null) {
             throw new \RuntimeException("Missing required environment variable: {$key}");
         }
         return $v;
+    }
+
+    private static function opt(string $key): ?string
+    {
+        $v = getenv($key);
+        if ($v === false || $v === '') {
+            return null;
+        }
+        return $v;
+    }
+
+    private static function bootstrapDotEnv(): void
+    {
+        static $loaded = false;
+        if ($loaded) {
+            return;
+        }
+        $envFile = dirname(__DIR__) . '/.env';
+        if (is_file($envFile)) {
+            self::loadDotEnv($envFile);
+        }
+        $loaded = true;
     }
 
     private static function loadDotEnv(string $path): void

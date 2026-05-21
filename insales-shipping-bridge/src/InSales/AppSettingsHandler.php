@@ -65,6 +65,25 @@ final class AppSettingsHandler
         } elseif (!$settings->hasDellinAuth) {
             self::renderAuthForm($settings, $error);
             return;
+        } elseif ($method === 'POST' && isset($_POST['update_install_token'])) {
+            try {
+                $secret = $config->insalesAppSecret ?? '';
+                if ($secret === '') {
+                    throw new \RuntimeException('INSALES_APP_SECRET не задан в .env');
+                }
+                $token = InSalesApiPassword::parseInstallToken((string) ($_POST['install_token'] ?? ''));
+                if ($token === '') {
+                    throw new \RuntimeException('Вставьте token из URL после установки приложения в магазине');
+                }
+                $shops->updateApiPassword(
+                    $settings->insalesId,
+                    InSalesApiPassword::compute($token, $secret)
+                );
+                $saved = true;
+            } catch (\Throwable $e) {
+                $error = $e->getMessage();
+            }
+            $settings = $shops->findSettingsByInsalesId($settings->insalesId, $config) ?? $settings;
         } elseif ($method === 'POST' && isset($_POST['create_pickup_delivery'])) {
             try {
                 $auth = $shops->findApiAuthByInsalesId($settings->insalesId);
@@ -248,7 +267,18 @@ final class AppSettingsHandler
         echo '<button type="submit">Сохранить</button>';
         echo '</form>';
 
-        echo '<form method="post" action="/insales/app" style="margin-top:1.5rem">';
+        echo '<h2>Доступ к API inSales</h2>';
+        echo '<p class="hint">Нужен для кнопки создания способа доставки. Token — из адреса после установки приложения (<code>?token=...</code>).</p>';
+        echo '<form method="post" action="/insales/app">';
+        echo '<input type="hidden" name="shop" value="' . $h($s->shopHost) . '">';
+        echo '<input type="hidden" name="insales_id" value="' . $h($s->insalesId) . '">';
+        echo '<input type="hidden" name="update_install_token" value="1">';
+        echo '<label for="install_token">Token установки</label>';
+        echo '<input type="text" id="install_token" name="install_token" placeholder="из URL установки приложения">';
+        echo '<button type="submit" class="btn-secondary">Обновить доступ</button>';
+        echo '</form>';
+
+        echo '<form method="post" action="/insales/app" style="margin-top:1rem">';
         echo '<input type="hidden" name="shop" value="' . $h($s->shopHost) . '">';
         echo '<input type="hidden" name="insales_id" value="' . $h($s->insalesId) . '">';
         echo '<input type="hidden" name="create_pickup_delivery" value="1">';

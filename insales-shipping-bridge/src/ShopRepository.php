@@ -52,9 +52,7 @@ SQL;
             'UPDATE insales_shops SET api_password = :pass WHERE insales_id = :iid AND uninstalled_at IS NULL'
         );
         $st->execute([':pass' => $apiPasswordMd5, ':iid' => $insalesId]);
-        if ($st->rowCount() === 0) {
-            throw new \RuntimeException('Магазин не найден для обновления пароля API');
-        }
+        $this->assertActiveShop($insalesId);
     }
 
     public function saveDellinCredentials(string $insalesId, string $appkey, string $pat, string $bridgeSecret): void
@@ -71,9 +69,7 @@ SQL;
              WHERE insales_id = :iid AND uninstalled_at IS NULL'
         );
         $st->execute([':key' => $appkey, ':pat' => $enc, ':iid' => $insalesId]);
-        if ($st->rowCount() === 0) {
-            throw new \RuntimeException('Shop not found: ' . $insalesId);
-        }
+        $this->assertActiveShop($insalesId);
     }
 
     public function findCarrierCredentials(string $insalesId, string $bridgeSecret): ?CarrierCredentials
@@ -194,7 +190,16 @@ SQL;
             ':enabled' => $data['is_enabled'] ? 1 : 0,
             ':iid' => $insalesId,
         ]);
-        if ($st->rowCount() === 0) {
+        $this->assertActiveShop($insalesId);
+    }
+
+    private function assertActiveShop(string $insalesId): void
+    {
+        $row = $this->fetchRow(
+            'SELECT 1 FROM insales_shops WHERE insales_id = :iid AND uninstalled_at IS NULL LIMIT 1',
+            [':iid' => $insalesId]
+        );
+        if ($row === null) {
             throw new \RuntimeException('Shop not found or not active: ' . $insalesId);
         }
     }

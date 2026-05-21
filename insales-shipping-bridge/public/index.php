@@ -92,6 +92,10 @@ if (str_starts_with($uri, '/insales/')) {
     try {
         $pdo = Db::pdo($config);
         $shops = new ShopRepository($pdo);
+        if ($uri === '/insales/counteragents' && $method === 'GET') {
+            CarrierJsonHandler::counteragents($config, $shops);
+            exit;
+        }
         if ($uri === '/insales/cities/search' && $method === 'GET') {
             CarrierJsonHandler::citiesSearch($config, $shops);
             exit;

@@ -11,6 +11,7 @@ final class CarrierApi
 {
     private const URL_LOGIN_V4 = 'https://api.dellin.ru/v4/auth/login.json';
     private const URL_LOGIN_V1 = 'https://api.dellin.ru/v1/customers/login.json';
+    private const URL_BOOK_COUNTERAGENTS = 'https://api.dellin.ru/v2/book/counteragents.json';
     private const URL_CALC = 'https://api.dellin.ru/v2/calculator.json';
     private const URL_KLADR = 'https://api.dellin.ru/v2/public/kladr.json';
     private const URL_TERMINALS_MANIFEST = 'https://api.dellin.ru/v3/public/terminals.json';
@@ -43,6 +44,31 @@ final class CarrierApi
         return $this->extractSessionId($res);
     }
 
+    /**
+     * Контрагенты, доступные по PAT (сначала из ответа login, иначе адресная книга).
+     *
+     * @return list<DellinCounteragent>
+     */
+    public function listCounteragents(CarrierCredentials $credentials): array
+    {
+        $loginRes = $this->postJson(self::URL_LOGIN_V4, [
+            'appkey' => $credentials->appkey,
+            'pat' => $credentials->pat,
+        ]);
+        $list = $this->parseCounteragents($loginRes);
+        if ($list !== []) {
+            return $list;
+        }
+
+        $sid = $this->extractSessionId($loginRes);
+        $bookRes = $this->postJson(self::URL_BOOK_COUNTERAGENTS, [
+            'appkey' => $credentials->appkey,
+            'sessionID' => $sid,
+        ]);
+
+        return $this->parseCounteragents($bookRes);
+    }
+
     /** @deprecated Логин/пароль ЛК — только fallback из .env */
     private function loginLegacyV1(): string
     {
@@ -53,6 +79,84 @@ final class CarrierApi
         ]);
 
         return $this->extractSessionId($res);
+    }
+
+    /**
+     * @param array<string, mixed> $res
+     * @return list<DellinCounteragent>
+     */
+    private function parseCounteragents(array $res): array
+    {
+        if (!empty($res['errors'])) {
+            return [];
+        }
+
+        $raw = $res['data']['counteragents']
+            ?? $res['counteragents']
+            ?? $res['data']['counterAgents']
+            ?? $res['counterAgents']
+            ?? $res['data']['members']
+            ?? $res['members']
+            ?? null;
+
+        if ($raw === null && isset($res['data']) && is_array($res['data']) && array_is_list($res['data'])) {
+            $raw = $res['data'];
+        }
+
+        $items = $this->normalizeList($raw);
+        $byUid = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $uid = $item['uid'] ?? $item['UID'] ?? $item['counteragentUID'] ?? $item['id'] ?? null;
+            if ($uid === null || $uid === '') {
+                continue;
+            }
+            $uid = (string) $uid;
+            $name = trim((string) (
+                $item['name']
+                ?? $item['brand']
+                ?? $item['juridicalName']
+                ?? $item['fullName']
+                ?? $item['title']
+                ?? ''
+            ));
+            if ($name === '') {
+                $name = 'Контрагент ' . $uid;
+            }
+            $inn = trim((string) ($item['inn'] ?? ''));
+            if ($inn !== '') {
+                $name .= ' (ИНН ' . $inn . ')';
+            }
+            $byUid[$uid] = new DellinCounteragent($uid, $name);
+        }
+
+        $list = array_values($byUid);
+        usort($list, static fn (DellinCounteragent $a, DellinCounteragent $b): int => strcasecmp($a->name, $b->name));
+
+        return $list;
+    }
+
+    private function normalizeList(mixed $raw): array
+    {
+        if ($raw === null) {
+            return [];
+        }
+        if (is_array($raw) && array_is_list($raw)) {
+            return $raw;
+        }
+        if (is_array($raw)) {
+            foreach (['counteragent', 'counteragents', 'member', 'members'] as $key) {
+                if (isset($raw[$key])) {
+                    return $this->normalizeList($raw[$key]);
+                }
+            }
+
+            return array_values($raw);
+        }
+
+        return [];
     }
 
     /** @param array<string,mixed> $res */

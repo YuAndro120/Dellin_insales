@@ -6,6 +6,7 @@ namespace ShippingBridge\InSales;
 
 use ShippingBridge\CarrierApi;
 use ShippingBridge\Config;
+use ShippingBridge\DellinCounteragent;
 use ShippingBridge\Http\Response;
 use ShippingBridge\ShopRepository;
 use ShippingBridge\TerminalRepository;
@@ -30,6 +31,29 @@ final class CarrierJsonHandler
         $api = new CarrierApi($config);
         $list = $api->searchCities($q, $creds);
         Response::json(['ok' => true, 'cities' => $list], 200, self::cors($config));
+    }
+
+    public static function counteragents(Config $config, ShopRepository $shops): void
+    {
+        $creds = self::resolveCredentials($shops, $config);
+        if ($creds === null) {
+            return;
+        }
+
+        try {
+            $api = new CarrierApi($config);
+            $list = $api->listCounteragents($creds);
+            Response::json([
+                'ok' => true,
+                'counteragents' => array_map(
+                    static fn (DellinCounteragent $c): array => ['uid' => $c->uid, 'name' => $c->name],
+                    $list,
+                ),
+                'count' => count($list),
+            ], 200, self::cors($config));
+        } catch (\Throwable $e) {
+            Response::json(['ok' => false, 'error' => $e->getMessage()], 422, self::cors($config));
+        }
     }
 
     public static function terminals(Config $config, ShopRepository $shops): void

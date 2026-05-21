@@ -75,7 +75,30 @@ final class InsalesOrderParser
 
         return $out;
     }
+    
+    /** @param array<string, mixed> $body */
+    public static function street(array $body): ?string
+    {
+        $order = self::order($body);
+        $loc = $order['shipping_address']['location'] ?? null;
+        if (!is_array($loc)) {
+            return null;
+        }
+        $street = trim((string) ($loc['street'] ?? ''));
+        return $street !== '' ? $street : null;
+    }
 
+    /** @param array<string, mixed> $body */
+    public static function house(array $body): ?string
+    {
+        $order = self::order($body);
+        $loc = $order['shipping_address']['location'] ?? null;
+        if (!is_array($loc)) {
+            return null;
+        }
+        $house = trim((string) ($loc['house'] ?? ''));
+        return $house !== '' ? $house : null;
+    }
     /** @param array<string, mixed> $body */
     private static function order(array $body): array
     {

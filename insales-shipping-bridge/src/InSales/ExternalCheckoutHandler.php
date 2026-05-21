@@ -87,8 +87,16 @@ final class ExternalCheckoutHandler
             return;
         }
 
+        $street = InsalesOrderParser::street($body);
+        $house  = InsalesOrderParser::house($body);
+
+        if ($street === null || $house === null) {
+            self::jsonError(['errors' => ['Укажите улицу и дом для курьерской доставки']], 422, $cors);
+            return;
+        }
+
         $sid = $api->login($creds);
-        $calc = $api->calculateToCity($sid, $senderId, $kladr, $cargo, $calcCtx, $creds);
+        $calc = $api->calculateToCity($sid, $senderId, $kladr, $street, $house, $cargo, $calcCtx, $creds);
         if ($calc['price'] === null) {
             $msg = is_array($calc['errors'] ?? null)
                 ? json_encode($calc['errors'], JSON_UNESCAPED_UNICODE)
@@ -101,8 +109,8 @@ final class ExternalCheckoutHandler
             'price' => (float) $calc['price'],
             'tariff_id' => 'dellin_courier',
             'shipping_company_handle' => self::COMPANY,
-            'title' => 'Доставка до терминала в городе получателя',
-            'description' => 'Перевозчик: терминал → терминал/город',
+            'title' => 'Курьерская доставка до двери',
+            'description' => 'Перевозчик доставит груз по указанному адресу',
             'delivery_interval' => self::interval($calc['days']),
             'fields_values' => [
                 ['handle' => 'dellin_delivery_type', 'value' => 'courier'],
@@ -157,7 +165,8 @@ final class ExternalCheckoutHandler
                 );
                 $price = $calc['price'];
                 $days = $calc['days'];
-            } catch (\Throwable) {
+            } catch (\Throwable $ex) {
+                error_log('DELLIN CALC ERROR terminal ' . $tid . ': ' . $ex->getMessage());
                 continue;
             }
             if ($price === null) {

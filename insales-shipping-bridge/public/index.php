@@ -83,15 +83,6 @@ if (str_starts_with($uri, '/insales/')) {
     }
     $cors = Response::corsHeaders($config->corsOrigin);
 
-    if ($uri === '/insales/cities/search' && $method === 'GET') {
-        CarrierJsonHandler::citiesSearch($config);
-        exit;
-    }
-    if ($uri === '/insales/terminals' && $method === 'GET') {
-        CarrierJsonHandler::terminals($config);
-        exit;
-    }
-
     if (!$config->hasDatabase()) {
         http_response_code(500);
         header('Content-Type: text/html; charset=utf-8');
@@ -101,6 +92,14 @@ if (str_starts_with($uri, '/insales/')) {
     try {
         $pdo = Db::pdo($config);
         $shops = new ShopRepository($pdo);
+        if ($uri === '/insales/cities/search' && $method === 'GET') {
+            CarrierJsonHandler::citiesSearch($config, $shops);
+            exit;
+        }
+        if ($uri === '/insales/terminals' && $method === 'GET') {
+            CarrierJsonHandler::terminals($config, $shops);
+            exit;
+        }
         if ($uri === '/insales/manual-install' && ($method === 'GET' || $method === 'POST')) {
             ManualInstallHandler::handle($config, $shops, $method);
             exit;

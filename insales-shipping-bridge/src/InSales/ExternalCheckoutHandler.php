@@ -6,9 +6,11 @@ namespace ShippingBridge\InSales;
 
 use ShippingBridge\CalculatorContext;
 use ShippingBridge\CarrierApi;
+use ShippingBridge\CarrierCredentials;
 use ShippingBridge\CargoFromInsalesOrder;
 use ShippingBridge\Config;
 use ShippingBridge\Http\Response;
+use ShippingBridge\ShopDeliveryContext;
 use ShippingBridge\ShopRepository;
 use ShippingBridge\ShopSettings;
 use ShippingBridge\TerminalRepository;
@@ -36,15 +38,13 @@ final class ExternalCheckoutHandler
 
         try {
             $settings = self::resolveShop($body, $shops, $config);
+            ShopDeliveryContext::assertDerivalConfigured($settings);
             $calcCtx = CalculatorContext::fromShopSettings($settings);
-            $senderId = $settings->senderTerminalId;
-            if ($senderId === null || $senderId <= 0) {
-                self::jsonError(['errors' => ['Настройте терминал отгрузки в приложении inSales']], 422, $cors);
-                return;
-            }
+            $senderId = ShopDeliveryContext::requireSenderTerminalId($settings);
 
+            $creds = self::carrierCredentials($shops, $config, $settings);
             $api = new CarrierApi($config);
-            $termRepo = new TerminalRepository($config, $api);
+            $termRepo = new TerminalRepository($config, $api, $creds);
             $lines = InsalesOrderParser::orderLines($body);
             if ($lines === []) {
                 self::jsonError(['errors' => ['Нет позиций в заказе']], 422, $cors);
@@ -53,15 +53,15 @@ final class ExternalCheckoutHandler
             $cargo = CargoFromInsalesOrder::aggregate($lines, $settings);
 
             if ($uri === '/insales/external/v2/courier') {
-                self::courier($body, $api, $senderId, $cargo, $calcCtx, $cors);
+                self::courier($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors);
                 return;
             }
             if ($uri === '/insales/external/v2/pickup_points') {
-                self::pickupPoints($body, $api, $termRepo, $senderId, $cargo, $calcCtx, $cors);
+                self::pickupPoints($body, $api, $creds, $termRepo, $senderId, $cargo, $calcCtx, $cors);
                 return;
             }
             if ($uri === '/insales/external/v2/pickup_point') {
-                self::pickupPoint($body, $api, $senderId, $cargo, $calcCtx, $cors);
+                self::pickupPoint($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors);
                 return;
             }
 
@@ -75,6 +75,7 @@ final class ExternalCheckoutHandler
     private static function courier(
         array $body,
         CarrierApi $api,
+        CarrierCredentials $creds,
         int $senderId,
         array $cargo,
         CalculatorContext $calcCtx,
@@ -86,8 +87,8 @@ final class ExternalCheckoutHandler
             return;
         }
 
-        $sid = $api->login();
-        $calc = $api->calculateToCity($sid, $senderId, $kladr, $cargo, $calcCtx);
+        $sid = $api->login($creds);
+        $calc = $api->calculateToCity($sid, $senderId, $kladr, $cargo, $calcCtx, $creds);
         if ($calc['price'] === null) {
             $msg = is_array($calc['errors'] ?? null)
                 ? json_encode($calc['errors'], JSON_UNESCAPED_UNICODE)
@@ -115,6 +116,7 @@ final class ExternalCheckoutHandler
     private static function pickupPoints(
         array $body,
         CarrierApi $api,
+        CarrierCredentials $creds,
         TerminalRepository $termRepo,
         int $senderId,
         array $cargo,
@@ -134,7 +136,7 @@ final class ExternalCheckoutHandler
             return;
         }
 
-        $sid = $api->login();
+        $sid = $api->login($creds);
         $out = [];
         foreach ($points as $t) {
             $tid = (int) ($t['id'] ?? 0);
@@ -150,7 +152,8 @@ final class ExternalCheckoutHandler
                     $tid,
                     isset($t['city_kladr']) ? (string) $t['city_kladr'] : $kladr,
                     $cargo,
-                    $calcCtx
+                    $calcCtx,
+                    $creds,
                 );
                 $price = $calc['price'];
                 $days = $calc['days'];
@@ -173,6 +176,7 @@ final class ExternalCheckoutHandler
     private static function pickupPoint(
         array $body,
         CarrierApi $api,
+        CarrierCredentials $creds,
         int $senderId,
         array $cargo,
         CalculatorContext $calcCtx,
@@ -185,8 +189,8 @@ final class ExternalCheckoutHandler
         }
 
         $kladr = InsalesOrderParser::cityKladr($body);
-        $sid = $api->login();
-        $calc = $api->calculateToTerminal($sid, $senderId, $pointId, $kladr, $cargo, $calcCtx);
+        $sid = $api->login($creds);
+        $calc = $api->calculateToTerminal($sid, $senderId, $pointId, $kladr, $cargo, $calcCtx, $creds);
         if ($calc['price'] === null) {
             self::jsonError(['errors' => ['Расчёт для выбранного ПВЗ недоступен']], 422, $cors);
             return;
@@ -261,11 +265,30 @@ final class ExternalCheckoutHandler
         if ($settings === null) {
             throw new \RuntimeException('Магазин не установил приложение (account_id=' . $accountId . ')');
         }
+        if (!$settings->hasDellinAuth) {
+            throw new \RuntimeException('Подключите API-ключ и PAT в настройках приложения');
+        }
         if (!$settings->isEnabled) {
             throw new \RuntimeException('Расчёт доставки отключён в настройках приложения');
         }
 
         return $settings;
+    }
+
+    private static function carrierCredentials(
+        ShopRepository $shops,
+        Config $config,
+        ShopSettings $settings,
+    ): CarrierCredentials {
+        if ($config->bridgeSecret === '') {
+            throw new \RuntimeException('BRIDGE_SECRET не настроен на сервере');
+        }
+        $creds = $shops->findCarrierCredentials($settings->insalesId, $config->bridgeSecret);
+        if ($creds === null || !$creds->isComplete()) {
+            throw new \RuntimeException('Учётные данные Dellin не настроены');
+        }
+
+        return $creds;
     }
 
     /** @return list<string> */

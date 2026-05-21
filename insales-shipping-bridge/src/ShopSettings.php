@@ -9,10 +9,18 @@ namespace ShippingBridge;
  */
 final class ShopSettings
 {
+    public const DERIVAL_TERMINAL = 'terminal';
+    public const DERIVAL_ADDRESS = 'address';
+
     public function __construct(
         public readonly string $insalesId,
         public readonly string $shopHost,
+        public readonly bool $hasDellinAuth,
         public readonly ?int $senderTerminalId,
+        public readonly string $derivalVariant,
+        public readonly ?string $derivalCityKladr,
+        public readonly ?string $derivalStreet,
+        public readonly ?string $derivalHouse,
         public readonly string $requesterEmail,
         public readonly ?string $counteragentUid,
         public readonly int $produceDaysOffset,
@@ -21,6 +29,11 @@ final class ShopSettings
         public readonly string $defaultDimensionsCm,
         public readonly bool $isEnabled,
     ) {
+    }
+
+    public function isDerivalTerminal(): bool
+    {
+        return $this->derivalVariant !== self::DERIVAL_ADDRESS;
     }
 
     /** @param array<string, mixed> $row */
@@ -41,12 +54,25 @@ final class ShopSettings
             $offset = 2;
         }
 
+        $variant = (string) ($row['derival_variant'] ?? self::DERIVAL_TERMINAL);
+        if (!in_array($variant, [self::DERIVAL_TERMINAL, self::DERIVAL_ADDRESS], true)) {
+            $variant = self::DERIVAL_TERMINAL;
+        }
+
+        $hasAuth = trim((string) ($row['dellin_appkey'] ?? '')) !== ''
+            && trim((string) ($row['dellin_pat_enc'] ?? '')) !== '';
+
         return new self(
             insalesId: (string) $row['insales_id'],
             shopHost: (string) $row['shop_host'],
+            hasDellinAuth: $hasAuth,
             senderTerminalId: isset($row['sender_terminal_id']) && $row['sender_terminal_id'] !== null
                 ? (int) $row['sender_terminal_id']
                 : null,
+            derivalVariant: $variant,
+            derivalCityKladr: self::nullableString($row['derival_city_kladr'] ?? null),
+            derivalStreet: self::nullableString($row['derival_street'] ?? null),
+            derivalHouse: self::nullableString($row['derival_house'] ?? null),
             requesterEmail: $email,
             counteragentUid: is_string($uid) && $uid !== '' ? $uid : null,
             produceDaysOffset: $offset,
@@ -55,6 +81,16 @@ final class ShopSettings
             defaultDimensionsCm: self::normalizeDimensions((string) ($row['default_dimensions_cm'] ?? '20x20x20')),
             isEnabled: (int) ($row['is_enabled'] ?? 1) === 1,
         );
+    }
+
+    private static function nullableString(mixed $v): ?string
+    {
+        if (!is_string($v)) {
+            return null;
+        }
+        $t = trim($v);
+
+        return $t !== '' ? $t : null;
     }
 
     private static function normalizeDimensions(string $raw): string

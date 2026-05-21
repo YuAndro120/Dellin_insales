@@ -11,6 +11,10 @@ final class CalculatorContext
         public readonly string $requesterEmail,
         public readonly ?string $counteragentUid,
         public readonly int $produceDaysOffset,
+        public readonly string $derivalVariant,
+        public readonly ?string $derivalCityKladr,
+        public readonly ?string $derivalStreet,
+        public readonly ?string $derivalHouse,
     ) {
     }
 
@@ -20,6 +24,10 @@ final class CalculatorContext
             requesterEmail: $s->requesterEmail,
             counteragentUid: $s->counteragentUid,
             produceDaysOffset: $s->produceDaysOffset,
+            derivalVariant: $s->derivalVariant,
+            derivalCityKladr: $s->derivalCityKladr,
+            derivalStreet: $s->derivalStreet,
+            derivalHouse: $s->derivalHouse,
         );
     }
 }

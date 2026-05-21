@@ -31,9 +31,9 @@ final class Config
         [$dsn, $dbUser, $dbPass] = self::databaseFromEnv();
 
         return new self(
-            appkey: self::req('SHIPPING_API_APPKEY'),
-            login: self::req('SHIPPING_API_LOGIN'),
-            password: self::req('SHIPPING_API_PASSWORD'),
+            appkey: self::opt('SHIPPING_API_APPKEY') ?? '',
+            login: self::opt('SHIPPING_API_LOGIN') ?? '',
+            password: self::opt('SHIPPING_API_PASSWORD') ?? '',
             senderRequesterEmail: self::req('SHIPPING_REQUESTER_EMAIL'),
             senderCounteragentUid: self::opt('SHIPPING_COUNTERAGENT_UID'),
             bridgeSecret: self::opt('BRIDGE_SECRET') ?? '',
@@ -80,6 +80,33 @@ final class Config
     public function hasDatabase(): bool
     {
         return $this->databaseDsn !== null && $this->databaseDsn !== '';
+    }
+
+    /** Учётные данные из .env (fallback для серверных эндпоинтов без магазина). */
+    public function defaultCarrierCredentials(): ?CarrierCredentials
+    {
+        if ($this->appkey === '') {
+            return null;
+        }
+        $pat = $this->optEnv('SHIPPING_API_PAT');
+        if ($pat !== null && $pat !== '') {
+            return new CarrierCredentials($this->appkey, $pat);
+        }
+        if ($this->login !== '' && $this->password !== '') {
+            return null;
+        }
+
+        return null;
+    }
+
+    private function optEnv(string $key): ?string
+    {
+        $v = getenv($key);
+        if ($v === false || $v === '') {
+            return null;
+        }
+
+        return $v;
     }
 
     /** @return array{0:?string,1:?string,2:?string} */

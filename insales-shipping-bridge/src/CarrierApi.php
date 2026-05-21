@@ -9,7 +9,8 @@ namespace ShippingBridge;
  */
 final class CarrierApi
 {
-    private const URL_LOGIN = 'https://api.dellin.ru/v1/customers/login.json';
+    private const URL_LOGIN_V4 = 'https://api.dellin.ru/v4/auth/login.json';
+    private const URL_LOGIN_V1 = 'https://api.dellin.ru/v1/customers/login.json';
     private const URL_CALC = 'https://api.dellin.ru/v2/calculator.json';
     private const URL_KLADR = 'https://api.dellin.ru/v2/public/kladr.json';
     private const URL_TERMINALS_MANIFEST = 'https://api.dellin.ru/v3/public/terminals.json';
@@ -18,41 +19,78 @@ final class CarrierApi
     {
     }
 
-    public function login(): string
+    public function login(?CarrierCredentials $credentials = null): string
     {
-        $res = $this->postJson(self::URL_LOGIN, [
+        $creds = $credentials ?? $this->config->defaultCarrierCredentials();
+        if ($creds !== null && $creds->isComplete()) {
+            return $this->loginWithPat($creds);
+        }
+
+        if ($this->config->login !== '' && $this->config->password !== '') {
+            return $this->loginLegacyV1();
+        }
+
+        throw new \RuntimeException('Учётные данные Dellin не настроены (API-ключ и PAT)');
+    }
+
+    public function loginWithPat(CarrierCredentials $credentials): string
+    {
+        $res = $this->postJson(self::URL_LOGIN_V4, [
+            'appkey' => $credentials->appkey,
+            'pat' => $credentials->pat,
+        ]);
+
+        return $this->extractSessionId($res);
+    }
+
+    /** @deprecated Логин/пароль ЛК — только fallback из .env */
+    private function loginLegacyV1(): string
+    {
+        $res = $this->postJson(self::URL_LOGIN_V1, [
             'appkey' => $this->config->appkey,
             'login' => $this->config->login,
             'password' => $this->config->password,
         ]);
+
+        return $this->extractSessionId($res);
+    }
+
+    /** @param array<string,mixed> $res */
+    private function extractSessionId(array $res): string
+    {
         if (!empty($res['errors'])) {
-            throw new \RuntimeException('Auth errors: ' . json_encode($res['errors'], JSON_UNESCAPED_UNICODE));
+            $err = is_string($res['errors']) ? $res['errors'] : json_encode($res['errors'], JSON_UNESCAPED_UNICODE);
+            throw new \RuntimeException('Ошибка авторизации Dellin: ' . $err);
         }
-        $sid = $res['sessionID'] ?? $res['data']['sessionID'] ?? null;
+        $sid = $res['sessionID'] ?? $res['data']['sessionID'] ?? $res['data']['sessionId'] ?? null;
         if (!is_string($sid) || $sid === '') {
             throw new \RuntimeException('sessionID not in response: ' . json_encode($res, JSON_UNESCAPED_UNICODE));
         }
+
         return $sid;
     }
 
     /** @return list<array<string,mixed>> */
-    public function searchCities(string $q): array
+    public function searchCities(string $q, ?CarrierCredentials $credentials = null): array
     {
+        $creds = $credentials ?? $this->config->defaultCarrierCredentials();
+        $appkey = $creds?->appkey ?? $this->config->appkey;
+        if ($appkey === '') {
+            throw new \RuntimeException('API-ключ Dellin не задан');
+        }
+
         $raw = $this->postJson(self::URL_KLADR, [
-            'appkey' => $this->config->appkey,
+            'appkey' => $appkey,
             'q' => $q,
         ]);
         $cities = $raw['cities'] ?? [];
+
         return is_array($cities) ? array_values($cities) : [];
     }
 
     /**
      * @param array{weight?:float,volume?:float,length?:float,width?:float,height?:float,quantity?:int,stated_value?:float} $cargo
      * @return array{price:float|null,days:int|null,metadata:array,raw?:array,errors?:mixed}
-     */
-    /**
-     * Расчёт «терминал → терминал». КЛАДР города получателя не обязателен:
-     * в delivery достаточно terminalID; paymentCity передаётся только если известен.
      */
     public function calculateToTerminal(
         string $sessionId,
@@ -61,12 +99,19 @@ final class CarrierApi
         ?string $arrivalCityKladr,
         array $cargo,
         CalculatorContext $calcCtx,
+        ?CarrierCredentials $credentials = null,
     ): array {
-        if ($senderTerminalId <= 0) {
-            throw new \InvalidArgumentException('Sender terminal is not configured for this shop');
-        }
-        $body = $this->buildCalculatorBody($sessionId, $senderTerminalId, $arrivalTerminalId, $arrivalCityKladr, $cargo, $calcCtx);
+        $body = $this->buildCalculatorBody(
+            $sessionId,
+            $senderTerminalId,
+            $arrivalTerminalId,
+            $arrivalCityKladr,
+            $cargo,
+            $calcCtx,
+            $credentials,
+        );
         $res = $this->postJson(self::URL_CALC, $body);
+
         return $this->parseCalculatorResponse($res);
     }
 
@@ -76,22 +121,35 @@ final class CarrierApi
         string $arrivalCityKladr,
         array $cargo,
         CalculatorContext $calcCtx,
+        ?CarrierCredentials $credentials = null,
     ): array {
-        if ($senderTerminalId <= 0) {
-            throw new \InvalidArgumentException('Sender terminal is not configured for this shop');
-        }
-        $body = $this->buildCalculatorBodyCityArrival($sessionId, $senderTerminalId, $arrivalCityKladr, $cargo, $calcCtx);
+        $body = $this->buildCalculatorBodyCityArrival(
+            $sessionId,
+            $senderTerminalId,
+            $arrivalCityKladr,
+            $cargo,
+            $calcCtx,
+            $credentials,
+        );
         $res = $this->postJson(self::URL_CALC, $body);
+
         return $this->parseCalculatorResponse($res);
     }
 
     /** @return array{url:string,hash?:string} */
-    public function terminalsManifest(): array
+    public function terminalsManifest(?CarrierCredentials $credentials = null): array
     {
-        $res = $this->postJson(self::URL_TERMINALS_MANIFEST, ['appkey' => $this->config->appkey]);
+        $creds = $credentials ?? $this->config->defaultCarrierCredentials();
+        $appkey = $creds?->appkey ?? $this->config->appkey;
+        if ($appkey === '') {
+            throw new \RuntimeException('API-ключ Dellin не задан');
+        }
+
+        $res = $this->postJson(self::URL_TERMINALS_MANIFEST, ['appkey' => $appkey]);
         if (empty($res['url']) || !is_string($res['url'])) {
             throw new \RuntimeException('Terminals manifest: missing url. ' . json_encode($res, JSON_UNESCAPED_UNICODE));
         }
+
         return ['url' => $res['url'], 'hash' => $res['hash'] ?? null];
     }
 
@@ -99,6 +157,7 @@ final class CarrierApi
     {
         $json = $this->http('GET', $url, null);
         $data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+
         return is_array($data) ? $data : [];
     }
 
@@ -109,21 +168,14 @@ final class CarrierApi
         ?string $arrivalCityKladr,
         array $cargo,
         CalculatorContext $calcCtx,
+        ?CarrierCredentials $credentials,
     ): array {
-        $produce = date('Y-m-d', strtotime('+' . $calcCtx->produceDaysOffset . ' days'));
         $c = $this->normalizeCargo($cargo);
-
-        $requester = [
-            'role' => 'sender',
-            'email' => $calcCtx->requesterEmail,
-        ];
-        if ($calcCtx->counteragentUid !== null && $calcCtx->counteragentUid !== '') {
-            $requester['uid'] = $calcCtx->counteragentUid;
-        }
+        $requester = $this->buildRequester($calcCtx);
 
         return [
             'sessionID' => $sessionId,
-            'appkey' => $this->config->appkey,
+            'appkey' => $this->resolveAppkey($credentials),
             'delivery' => [
                 'deliveryType' => ['type' => 'auto'],
                 'arrival' => [
@@ -131,18 +183,11 @@ final class CarrierApi
                     'terminalID' => $arrivalTerminalId,
                     'requirements' => [],
                 ],
-                'derival' => [
-                    'variant' => 'terminal',
-                    'terminalID' => $senderTerminalId,
-                    'produceDate' => $produce,
-                    'requirements' => [],
-                ],
+                'derival' => $this->buildDerival($calcCtx, $senderTerminalId),
                 'packages' => [],
             ],
             'cargo' => $c,
-            'members' => [
-                'requester' => $requester,
-            ],
+            'members' => ['requester' => $requester],
             'payment' => $this->buildPayment($arrivalCityKladr),
             'productInfo' => [
                 'type' => 4,
@@ -158,21 +203,14 @@ final class CarrierApi
         string $arrivalCityKladr,
         array $cargo,
         CalculatorContext $calcCtx,
+        ?CarrierCredentials $credentials,
     ): array {
-        $produce = date('Y-m-d', strtotime('+' . $calcCtx->produceDaysOffset . ' days'));
         $c = $this->normalizeCargo($cargo);
-
-        $requester = [
-            'role' => 'sender',
-            'email' => $calcCtx->requesterEmail,
-        ];
-        if ($calcCtx->counteragentUid !== null && $calcCtx->counteragentUid !== '') {
-            $requester['uid'] = $calcCtx->counteragentUid;
-        }
+        $requester = $this->buildRequester($calcCtx);
 
         return [
             'sessionID' => $sessionId,
-            'appkey' => $this->config->appkey,
+            'appkey' => $this->resolveAppkey($credentials),
             'delivery' => [
                 'deliveryType' => ['type' => 'auto'],
                 'arrival' => [
@@ -180,18 +218,11 @@ final class CarrierApi
                     'city' => ['code' => $arrivalCityKladr],
                     'requirements' => [],
                 ],
-                'derival' => [
-                    'variant' => 'terminal',
-                    'terminalID' => $senderTerminalId,
-                    'produceDate' => $produce,
-                    'requirements' => [],
-                ],
+                'derival' => $this->buildDerival($calcCtx, $senderTerminalId),
                 'packages' => [],
             ],
             'cargo' => $c,
-            'members' => [
-                'requester' => $requester,
-            ],
+            'members' => ['requester' => $requester],
             'payment' => $this->buildPayment($arrivalCityKladr),
             'productInfo' => [
                 'type' => 4,
@@ -201,9 +232,69 @@ final class CarrierApi
         ];
     }
 
+    /** @return array<string, mixed> */
+    private function buildDerival(CalculatorContext $calcCtx, int $senderTerminalId): array
+    {
+        $produce = date('Y-m-d', strtotime('+' . $calcCtx->produceDaysOffset . ' days'));
+
+        if ($calcCtx->derivalVariant === ShopSettings::DERIVAL_ADDRESS) {
+            $city = $calcCtx->derivalCityKladr ?? '';
+            $street = $calcCtx->derivalStreet ?? '';
+            $house = $calcCtx->derivalHouse ?? '';
+            if (strlen($city) < 10 || $street === '' || $house === '') {
+                throw new \InvalidArgumentException('Адрес забора груза не заполнен');
+            }
+
+            return [
+                'variant' => 'address',
+                'address' => [
+                    'city' => ['code' => $city],
+                    'street' => $street,
+                    'house' => $house,
+                ],
+                'produceDate' => $produce,
+                'requirements' => [],
+            ];
+        }
+
+        if ($senderTerminalId <= 0) {
+            throw new \InvalidArgumentException('Терминал отгрузки не настроен');
+        }
+
+        return [
+            'variant' => 'terminal',
+            'terminalID' => $senderTerminalId,
+            'produceDate' => $produce,
+            'requirements' => [],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function buildRequester(CalculatorContext $calcCtx): array
+    {
+        $requester = [
+            'role' => 'sender',
+            'email' => $calcCtx->requesterEmail,
+        ];
+        if ($calcCtx->counteragentUid !== null && $calcCtx->counteragentUid !== '') {
+            $requester['uid'] = $calcCtx->counteragentUid;
+        }
+
+        return $requester;
+    }
+
+    private function resolveAppkey(?CarrierCredentials $credentials): string
+    {
+        $creds = $credentials ?? $this->config->defaultCarrierCredentials();
+        $appkey = $creds?->appkey ?? $this->config->appkey;
+        if ($appkey === '') {
+            throw new \RuntimeException('API-ключ Dellin не задан');
+        }
+
+        return $appkey;
+    }
+
     /**
-     * paymentCity в API калькулятора опционален; при расчёте только по terminalID можно не передавать.
-     *
      * @return array<string, mixed>
      */
     private function buildPayment(?string $paymentCityKladr): array
@@ -296,6 +387,7 @@ final class CarrierApi
     private function postJson(string $url, ?array $body): array
     {
         $json = $this->http('POST', $url, $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE));
+
         return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
     }
 
@@ -332,6 +424,7 @@ final class CarrierApi
         if ($code >= 400) {
             throw new \RuntimeException("HTTP {$code}: " . mb_substr($out, 0, 2000));
         }
+
         return $out;
     }
 }

@@ -19,7 +19,12 @@ final class ShopDeliveryContext
             return new ShopSettings(
                 insalesId: 'debug',
                 shopHost: (string) ($body['shop'] ?? 'debug'),
+                hasDellinAuth: true,
                 senderTerminalId: (int) $body['sender_terminal_id'],
+                derivalVariant: ShopSettings::DERIVAL_TERMINAL,
+                derivalCityKladr: null,
+                derivalStreet: null,
+                derivalHouse: null,
                 requesterEmail: trim($body['requester_email']),
                 counteragentUid: isset($body['counteragent_uid']) ? (string) $body['counteragent_uid'] : null,
                 produceDaysOffset: (int) ($body['produce_days_offset'] ?? 2),
@@ -44,20 +49,40 @@ final class ShopDeliveryContext
         if ($settings === null) {
             throw new \RuntimeException('Shop not installed: ' . $shop);
         }
+        if (!$settings->hasDellinAuth) {
+            throw new \RuntimeException('Подключите API-ключ и PAT в настройках приложения inSales');
+        }
         if (!$settings->isEnabled) {
             throw new \RuntimeException('Расчёт доставки отключён в настройках приложения');
         }
-        if ($settings->senderTerminalId === null || $settings->senderTerminalId <= 0) {
-            throw new \RuntimeException(
-                'Терминал отгрузки не настроен. Откройте приложение в админке inSales и сохраните настройки.'
-            );
-        }
+        self::assertDerivalConfigured($settings);
 
         return $settings;
     }
 
+    public static function assertDerivalConfigured(ShopSettings $settings): void
+    {
+        if ($settings->isDerivalTerminal()) {
+            if ($settings->senderTerminalId === null || $settings->senderTerminalId <= 0) {
+                throw new \RuntimeException(
+                    'Терминал отгрузки не настроен. Откройте приложение в админке inSales и сохраните настройки.'
+                );
+            }
+
+            return;
+        }
+
+        if ($settings->derivalCityKladr === null || $settings->derivalStreet === null || $settings->derivalHouse === null) {
+            throw new \RuntimeException('Адрес забора груза не настроен в приложении inSales');
+        }
+    }
+
     public static function requireSenderTerminalId(ShopSettings $settings): int
     {
+        if (!$settings->isDerivalTerminal()) {
+            return 0;
+        }
+
         $tid = $settings->senderTerminalId;
         if ($tid === null || $tid <= 0) {
             throw new \RuntimeException('Sender terminal is not configured');

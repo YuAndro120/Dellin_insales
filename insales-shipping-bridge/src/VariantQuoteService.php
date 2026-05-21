@@ -48,6 +48,14 @@ final class VariantQuoteService
         $senderTerminalId = ShopDeliveryContext::requireSenderTerminalId($settings);
         $calcCtx = CalculatorContext::fromShopSettings($settings);
 
+        if ($this->config->bridgeSecret === '') {
+            throw new \RuntimeException('BRIDGE_SECRET is not configured');
+        }
+        $creds = $this->shops->findCarrierCredentialsByHost($shop, $this->config->bridgeSecret);
+        if ($creds === null || !$creds->isComplete()) {
+            throw new \RuntimeException('Dellin credentials are not configured for this shop');
+        }
+
         $resolved = [];
         foreach ($linesIn as $line) {
             if (!is_array($line)) {
@@ -74,14 +82,15 @@ final class VariantQuoteService
 
         $cargo = CargoFromVariants::aggregate($resolved, $settings);
         $paymentKladr = $this->kladrResolver?->resolve($kladr, $terminalId);
-        $sid = $this->carrier->login();
+        $sid = $this->carrier->login($creds);
         $calc = $this->carrier->calculateToTerminal(
             $sid,
             $senderTerminalId,
             $terminalId,
             $paymentKladr,
             $cargo,
-            $calcCtx
+            $calcCtx,
+            $creds,
         );
 
         return [

@@ -9,7 +9,8 @@ use PDO;
 final class ShopRepository
 {
     private const SELECT_FIELDS = <<<'SQL'
-insales_id, shop_host, api_password, sender_terminal_id,
+insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc,
+sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house,
 requester_email, counteragent_uid, produce_days_offset,
 default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled
 SQL;
@@ -56,9 +57,71 @@ SQL;
         }
     }
 
+    public function saveDellinCredentials(string $insalesId, string $appkey, string $pat, string $bridgeSecret): void
+    {
+        $appkey = trim($appkey);
+        $pat = trim($pat);
+        if ($appkey === '' || $pat === '') {
+            throw new \InvalidArgumentException('Укажите API-ключ и PAT');
+        }
+
+        $enc = SecretStore::encrypt($pat, $bridgeSecret);
+        $st = $this->pdo->prepare(
+            'UPDATE insales_shops SET dellin_appkey = :key, dellin_pat_enc = :pat
+             WHERE insales_id = :iid AND uninstalled_at IS NULL'
+        );
+        $st->execute([':key' => $appkey, ':pat' => $enc, ':iid' => $insalesId]);
+        if ($st->rowCount() === 0) {
+            throw new \RuntimeException('Shop not found: ' . $insalesId);
+        }
+    }
+
+    public function findCarrierCredentials(string $insalesId, string $bridgeSecret): ?CarrierCredentials
+    {
+        $row = $this->fetchRow(
+            'SELECT dellin_appkey, dellin_pat_enc FROM insales_shops
+             WHERE insales_id = :iid AND uninstalled_at IS NULL LIMIT 1',
+            [':iid' => $insalesId]
+        );
+        if ($row === null) {
+            return null;
+        }
+        $appkey = trim((string) ($row['dellin_appkey'] ?? ''));
+        $enc = trim((string) ($row['dellin_pat_enc'] ?? ''));
+        if ($appkey === '' || $enc === '') {
+            return null;
+        }
+
+        try {
+            $pat = SecretStore::decrypt($enc, $bridgeSecret);
+        } catch (\Throwable $e) {
+            throw new \RuntimeException('Не удалось расшифровать PAT. Проверьте BRIDGE_SECRET в .env.', 0, $e);
+        }
+
+        return new CarrierCredentials($appkey, $pat);
+    }
+
+    public function findCarrierCredentialsByHost(string $shopHost, string $bridgeSecret): ?CarrierCredentials
+    {
+        $row = $this->fetchRow(
+            'SELECT insales_id, dellin_appkey, dellin_pat_enc FROM insales_shops
+             WHERE shop_host = :h AND uninstalled_at IS NULL LIMIT 1',
+            [':h' => $shopHost]
+        );
+        if ($row === null) {
+            return null;
+        }
+
+        return $this->findCarrierCredentials((string) $row['insales_id'], $bridgeSecret);
+    }
+
     /**
      * @param array{
-     *   sender_terminal_id: int,
+     *   sender_terminal_id?: int,
+     *   derival_variant: string,
+     *   derival_city_kladr?: ?string,
+     *   derival_street?: ?string,
+     *   derival_house?: ?string,
      *   requester_email: string,
      *   counteragent_uid: ?string,
      *   produce_days_offset: int,
@@ -70,9 +133,27 @@ SQL;
      */
     public function saveDeliverySettings(string $insalesId, array $data): void
     {
-        if ($data['sender_terminal_id'] <= 0) {
-            throw new \InvalidArgumentException('sender_terminal_id must be positive');
+        $variant = $data['derival_variant'];
+        if (!in_array($variant, [ShopSettings::DERIVAL_TERMINAL, ShopSettings::DERIVAL_ADDRESS], true)) {
+            throw new \InvalidArgumentException('Некорректный способ отгрузки');
         }
+
+        $terminalId = (int) ($data['sender_terminal_id'] ?? 0);
+        $cityKladr = trim((string) ($data['derival_city_kladr'] ?? ''));
+        $street = trim((string) ($data['derival_street'] ?? ''));
+        $house = trim((string) ($data['derival_house'] ?? ''));
+
+        if ($variant === ShopSettings::DERIVAL_TERMINAL) {
+            if ($terminalId <= 0) {
+                throw new \InvalidArgumentException('Выберите терминал отгрузки');
+            }
+        } else {
+            if (strlen($cityKladr) < 10 || $street === '' || $house === '') {
+                throw new \InvalidArgumentException('Для забора груза укажите город, улицу и дом');
+            }
+            $terminalId = $terminalId > 0 ? $terminalId : 0;
+        }
+
         $email = trim($data['requester_email']);
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new \InvalidArgumentException('Укажите корректный email для API перевозчика');
@@ -85,6 +166,10 @@ SQL;
         $st = $this->pdo->prepare(
             'UPDATE insales_shops SET
               sender_terminal_id = :tid,
+              derival_variant = :variant,
+              derival_city_kladr = :city,
+              derival_street = :street,
+              derival_house = :house,
               requester_email = :email,
               counteragent_uid = :uid,
               produce_days_offset = :offset,
@@ -95,7 +180,11 @@ SQL;
              WHERE insales_id = :iid AND uninstalled_at IS NULL'
         );
         $st->execute([
-            ':tid' => $data['sender_terminal_id'],
+            ':tid' => $terminalId > 0 ? $terminalId : null,
+            ':variant' => $variant,
+            ':city' => $cityKladr !== '' ? $cityKladr : null,
+            ':street' => $street !== '' ? $street : null,
+            ':house' => $house !== '' ? $house : null,
             ':email' => $email,
             ':uid' => ($data['counteragent_uid'] ?? '') !== '' ? $data['counteragent_uid'] : null,
             ':offset' => $offset,

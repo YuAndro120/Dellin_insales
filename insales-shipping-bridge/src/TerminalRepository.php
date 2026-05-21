@@ -15,6 +15,7 @@ final class TerminalRepository
     public function __construct(
         private readonly Config $config,
         private readonly CarrierApi $api,
+        private readonly ?CarrierCredentials $credentials = null,
     ) {
     }
 
@@ -166,7 +167,7 @@ final class TerminalRepository
             mkdir($this->config->cacheDir, 0775, true);
         }
 
-        $manifest = $this->api->terminalsManifest();
+        $manifest = $this->api->terminalsManifest($this->credentials);
         $data = $this->api->fetchTerminalsDataset($manifest['url']);
         file_put_contents($path, json_encode($data, JSON_UNESCAPED_UNICODE));
         return $data;

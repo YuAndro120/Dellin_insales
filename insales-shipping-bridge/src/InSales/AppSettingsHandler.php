@@ -7,6 +7,7 @@ namespace ShippingBridge\InSales;
 use ShippingBridge\CarrierApi;
 use ShippingBridge\CarrierCredentials;
 use ShippingBridge\Config;
+use ShippingBridge\DellinCounteragent;
 use ShippingBridge\ShopRepository;
 use ShippingBridge\ShopSettings;
 
@@ -120,8 +121,32 @@ final class AppSettingsHandler
             }
         }
 
+        [$counteragents, $counteragentsError] = self::loadCounteragents($shops, $config, $settings);
+
         http_response_code(200);
-        self::renderSettingsForm($settings, $config, $saved, $deliveryCreated, $error);
+        self::renderSettingsForm($settings, $config, $saved, $deliveryCreated, $error, $counteragents, $counteragentsError);
+    }
+
+    /**
+     * @return array{0:list<DellinCounteragent>,1:?string}
+     */
+    private static function loadCounteragents(ShopRepository $shops, Config $config, ShopSettings $settings): array
+    {
+        if (!$settings->hasDellinAuth || $config->bridgeSecret === '') {
+            return [[], null];
+        }
+
+        try {
+            $creds = $shops->findCarrierCredentials($settings->insalesId, $config->bridgeSecret);
+            if ($creds === null) {
+                return [[], null];
+            }
+            $api = new CarrierApi($config);
+
+            return [$api->listCounteragents($creds), null];
+        } catch (\Throwable $e) {
+            return [[], $e->getMessage()];
+        }
     }
 
     private static function handleDellinAuth(ShopRepository $shops, Config $config, ShopSettings $settings): ?string
@@ -176,12 +201,18 @@ final class AppSettingsHandler
     /**
      * @param array{id: int, title: string}|null $deliveryCreated
      */
+    /**
+     * @param array{id: int, title: string}|null $deliveryCreated
+     * @param list<DellinCounteragent> $counteragents
+     */
     private static function renderSettingsForm(
         ShopSettings $s,
         Config $config,
         bool $saved,
         ?array $deliveryCreated,
         ?string $error,
+        array $counteragents,
+        ?string $counteragentsError,
     ): void {
         $h = static fn (string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
         $tid = $s->senderTerminalId !== null && $s->senderTerminalId > 0 ? (string) $s->senderTerminalId : '';
@@ -189,7 +220,8 @@ final class AppSettingsHandler
 
         self::renderHead('Настройки доставки');
         echo '<h1>Настройки доставки</h1>';
-        echo '<p class="hint">' . $h($s->shopHost) . ' · Dellin подключён</p>';
+        echo '<p class="hint">' . $h($s->shopHost) . ' · Dellin подключён (PAT)</p>';
+        self::renderCounteragentBlock($h, $s, $counteragents, $counteragentsError);
 
         if ($saved) {
             echo '<p class="ok">Настройки сохранены.</p>';
@@ -202,7 +234,7 @@ final class AppSettingsHandler
             echo '<p class="err">' . $h($error) . '</p>';
         }
 
-        echo '<form method="post" action="/insales/app" id="settingsForm">';
+        echo '<form method="post" action="/insales/app" id="settingsForm" name="settingsForm">';
         echo '<input type="hidden" name="shop" value="' . $h($s->shopHost) . '">';
         echo '<input type="hidden" name="insales_id" value="' . $h($s->insalesId) . '">';
 
@@ -244,8 +276,6 @@ final class AppSettingsHandler
         echo '<h2>Контакт в API Dellin</h2>';
         echo '<label for="requester_email">Email отправителя</label>';
         echo '<input type="email" id="requester_email" name="requester_email" required value="' . $h($s->requesterEmail) . '">';
-        echo '<label for="counteragent_uid">UID контрагента <span class="hint">необязательно</span></label>';
-        echo '<input type="text" id="counteragent_uid" name="counteragent_uid" value="' . $h($s->counteragentUid ?? '') . '">';
 
         echo '<h2>Груз по умолчанию</h2>';
         echo '<p class="hint">Если у варианта товара в inSales не заполнены вес или габариты.</p>';
@@ -318,6 +348,66 @@ final class AppSettingsHandler
         echo '$("dv_address").addEventListener("change",toggleDerival);';
         echo '})();</script>';
         echo '</body></html>';
+    }
+
+    /**
+     * @param list<DellinCounteragent> $counteragents
+     * @param callable(string): string $h
+     */
+    private static function renderCounteragentBlock(
+        callable $h,
+        ShopSettings $s,
+        array $counteragents,
+        ?string $counteragentsError,
+    ): void {
+        echo '<div class="info" style="margin:.75rem 0 1rem">';
+        echo '<strong>Контрагент по PAT</strong><br>';
+
+        if ($counteragentsError !== null) {
+            echo '<span class="err">' . $h($counteragentsError) . '</span>';
+            echo '</div>';
+            echo '<label for="counteragent_uid">UID контрагента <span class="hint">вручную, если список не загрузился</span></label>';
+            echo '<input type="text" id="counteragent_uid" name="counteragent_uid" form="settingsForm" value="' . $h($s->counteragentUid ?? '') . '">';
+
+            return;
+        }
+
+        if ($counteragents === []) {
+            echo '<span class="hint">Список контрагентов пуст. Укажите UID вручную при необходимости.</span>';
+            echo '</div>';
+            echo '<label for="counteragent_uid">UID контрагента</label>';
+            echo '<input type="text" id="counteragent_uid" name="counteragent_uid" form="settingsForm" value="' . $h($s->counteragentUid ?? '') . '">';
+
+            return;
+        }
+
+        $selected = $s->counteragentUid ?? '';
+        $uids = array_map(static fn (DellinCounteragent $c): string => $c->uid, $counteragents);
+        if ($selected === '' && count($counteragents) === 1) {
+            $selected = $counteragents[0]->uid;
+        }
+
+        if (count($counteragents) === 1) {
+            $c = $counteragents[0];
+            echo $h($c->name);
+            echo '<input type="hidden" id="counteragent_uid" name="counteragent_uid" form="settingsForm" value="' . $h($c->uid) . '">';
+            echo '</div>';
+
+            return;
+        }
+
+        echo '<label for="counteragent_uid">Выберите контрагента</label>';
+        echo '<select id="counteragent_uid" name="counteragent_uid" form="settingsForm" required>';
+        echo '<option value="">— выберите —</option>';
+        foreach ($counteragents as $c) {
+            $sel = $c->uid === $selected ? ' selected' : '';
+            echo '<option value="' . $h($c->uid) . '"' . $sel . '>' . $h($c->name) . '</option>';
+        }
+        if ($selected !== '' && !in_array($selected, $uids, true)) {
+            echo '<option value="' . $h($selected) . '" selected>' . $h('Сохранённый UID ' . $selected) . '</option>';
+        }
+        echo '</select>';
+        echo '</div>';
     }
 
     private static function renderHead(string $title): void

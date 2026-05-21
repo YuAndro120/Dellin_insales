@@ -408,7 +408,7 @@ final class CarrierApi
             'primaryPayer' => 'sender',
         ];
         if ($paymentCityKladr !== null && $paymentCityKladr !== '') {
-            $payment['paymentCity'] = $paymentCityKladr;
+            $payment['paymentCity'] = str_pad($paymentCityKladr, 25, '0');
         }
 
         return $payment;

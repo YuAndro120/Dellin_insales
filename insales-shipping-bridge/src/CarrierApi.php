@@ -14,6 +14,9 @@ final class CarrierApi
     private const URL_BOOK_COUNTERAGENTS = 'https://api.dellin.ru/v2/book/counteragents.json';
     private const URL_CALC = 'https://api.dellin.ru/v2/calculator.json';
     private const URL_KLADR = 'https://api.dellin.ru/v2/public/kladr.json';
+    private const URL_KLADR_STREET = 'https://api.dellin.ru/v1/public/kladr_street.json';
+    private const URL_ADDRESS_SUGGEST = 'https://api.dellin.ru/v1/public/address_suggest.json';
+    private const URL_ADDRESS_CLEAN   = 'https://api.dellin.ru/v1/public/address_clean.json';
     private const URL_TERMINALS_MANIFEST = 'https://api.dellin.ru/v3/public/terminals.json';
 
     public function __construct(private readonly Config $config)
@@ -219,6 +222,79 @@ final class CarrierApi
         return $this->parseCalculatorResponse($res);
     }
 
+    // --- Резолвинг КЛАДР улицы для расчёта доставки до адреса ---
+
+    public function getCityId(string $cityKladr, ?CarrierCredentials $credentials = null): ?int
+    {
+        $appkey = $this->resolveAppkey($credentials);
+        $raw = $this->postJson(self::URL_KLADR, [
+            'appkey' => $appkey,
+            'code'   => $cityKladr,
+        ]);
+        $cities = $raw['cities'] ?? [];
+        return isset($cities[0]['cityID']) ? (int) $cities[0]['cityID'] : null;
+    }
+
+    public function getStreetKladr(int $cityId, string $streetName, ?CarrierCredentials $credentials = null): ?string
+    {
+        $appkey = $this->resolveAppkey($credentials);
+        $raw = $this->postJson(self::URL_KLADR_STREET, [
+            'appkey' => $appkey,
+            'cityID' => $cityId,
+            'street' => $streetName,
+            'limit'  => 1,
+        ]);
+        $streets = $raw['streets'] ?? [];
+        return isset($streets[0]['code']) ? (string) $streets[0]['code'] : null;
+    }
+
+    /**
+     * Подсказки адреса по введённой строке (требует отдельного доступа от Dellin).
+     *
+     * @return list<array{value: string, data: array<string, mixed>}>
+     */
+    public function suggestAddress(
+        string $sessionId,
+        string $query,
+        string $cityKladr,
+        int $count = 10,
+        ?CarrierCredentials $credentials = null,
+    ): array {
+        $raw = $this->postJson(self::URL_ADDRESS_SUGGEST, [
+            'appkey'    => $this->resolveAppkey($credentials),
+            'sessionID' => $sessionId,
+            'query'     => $query,
+            'city_code' => $cityKladr,
+            'count'     => $count,
+            'mode'      => 'pretty',
+        ]);
+
+        return $raw['suggestions'] ?? [];
+    }
+
+    /**
+     * Стандартизация адреса — получить КЛАДР улицы и дом из произвольной строки.
+     * Требует отдельного доступа от Dellin.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function cleanAddress(
+        string $sessionId,
+        string $address,
+        ?CarrierCredentials $credentials = null,
+    ): ?array {
+        $raw = $this->postJson(self::URL_ADDRESS_CLEAN, [
+            'appkey'    => $this->resolveAppkey($credentials),
+            'sessionID' => $sessionId,
+            'data'      => [$address],
+            'type'      => 'address',
+            'mode'      => 'pretty',
+        ]);
+
+        $items = $raw['cleanEssenceResponse']['data'] ?? [];
+        return $items[0] ?? null;
+    }
+
     public function calculateToCity(
         string $sessionId,
         int $senderTerminalId,
@@ -229,6 +305,15 @@ final class CarrierApi
         CalculatorContext $calcCtx,
         ?CarrierCredentials $credentials = null,
     ): array {
+        // Резолвим КЛАДР улицы если передана улица
+        $streetKladr = null;
+        if ($arrivalStreet !== null && $arrivalStreet !== '') {
+            $cityId = $this->getCityId($arrivalCityKladr, $credentials);
+            if ($cityId !== null) {
+                $streetKladr = $this->getStreetKladr($cityId, $arrivalStreet, $credentials);
+            }
+        }
+
         $body = $this->buildCalculatorBodyCityArrival(
             $sessionId,
             $senderTerminalId,
@@ -238,6 +323,7 @@ final class CarrierApi
             $cargo,
             $calcCtx,
             $credentials,
+            $streetKladr,
         );
         $res = $this->postJson(self::URL_CALC, $body);
 
@@ -314,24 +400,36 @@ final class CarrierApi
         array $cargo,
         CalculatorContext $calcCtx,
         ?CarrierCredentials $credentials,
+        ?string $streetKladr = null,
     ): array {
         $c = $this->normalizeCargo($cargo);
         $requester = $this->buildRequester($calcCtx);
+
+        // Если есть КЛАДР улицы и дом — доставка до адреса, иначе до терминала в городе
+        if ($streetKladr !== null && $arrivalHouse !== null && $arrivalHouse !== '') {
+            $arrival = [
+                'variant' => 'address',
+                'city' => ['code' => $arrivalCityKladr],
+                'address' => [
+                    'street' => ['code' => $streetKladr],
+                    'house' => $arrivalHouse,
+                ],
+                'requirements' => [],
+            ];
+        } else {
+            $arrival = [
+                'variant' => 'terminal',
+                'city' => ['code' => $arrivalCityKladr],
+                'requirements' => [],
+            ];
+        }
 
         return [
             'sessionID' => $sessionId,
             'appkey' => $this->resolveAppkey($credentials),
             'delivery' => [
                 'deliveryType' => ['type' => 'auto'],
-                'arrival' => [
-                    'variant' => 'address',
-                    'address' => [
-                        'city' => ['code' => $arrivalCityKladr],
-                        'street' => $arrivalStreet ?? '',
-                        'house' => $arrivalHouse ?? '',
-                    ],
-                    'requirements' => [],
-                ],
+                'arrival' => $arrival,
                 'derival' => $this->buildDerival($calcCtx, $senderTerminalId),
                 'packages' => [],
             ],

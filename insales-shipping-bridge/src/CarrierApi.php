@@ -393,16 +393,24 @@ final class CarrierApi
         $c = $this->normalizeCargo($cargo);
         $requester = $this->buildRequester($calcCtx);
 
+        $paddedCityKladr = str_pad($arrivalCityKladr, 25, '0');
         $arrival = [
             'variant' => 'address',
-            'city' => $arrivalCityKladr,
+            'city' => $paddedCityKladr,
         ];
 
-        if ($streetKladr !== null || $arrivalHouse !== null) {
-            $arrival['address'] = [
-                'street' => $streetKladr ?? '',
-                'house' => $arrivalHouse ?? '',
-            ];
+        if ($arrivalHouse !== null && $arrivalHouse !== '') {
+            if ($streetKladr !== null && $streetKladr !== '') {
+                $arrival['address'] = [
+                    'street' => $streetKladr,
+                    'house' => $arrivalHouse,
+                ];
+            } elseif ($arrivalStreet !== null && $arrivalStreet !== '') {
+                // КЛАДР улицы не найден — передаём текстом через search
+                $arrival['address'] = [
+                    'search' => $arrivalStreet . ', ' . $arrivalHouse,
+                ];
+            }
         }
 
         return [
@@ -430,8 +438,8 @@ final class CarrierApi
                 'requester' => $requester,
             ],
 
-            'payment' => $this->buildPayment($arrivalCityKladr),
-
+            'payment' => $this->buildPayment($paddedCityKladr),
+            
             'productInfo' => [
                 'type' => 4,
                 'productType' => 5,

@@ -289,6 +289,9 @@ final class CarrierApi
         CalculatorContext $calcCtx,
         ?CarrierCredentials $credentials = null,
     ): array {
+
+        file_put_contents('/tmp/debug_city.txt', 'ENTER calculateToCity');
+        
         // Резолвим КЛАДР улицы если передана улица
         $streetKladr = null;
         if ($arrivalStreet !== null && $arrivalStreet !== '') {

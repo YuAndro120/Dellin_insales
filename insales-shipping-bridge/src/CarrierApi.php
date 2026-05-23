@@ -404,6 +404,9 @@ final class CarrierApi
             $arrival = [
                 'variant' => 'address',
                 'city' => str_pad($arrivalCityKladr, 25, '0'),
+                'address' => [
+                    'search' => trim(($arrivalStreet ?? '') . ' ' . ($arrivalHouse ?? '')),
+                ],
                 'requirements' => [],
             ];
         }

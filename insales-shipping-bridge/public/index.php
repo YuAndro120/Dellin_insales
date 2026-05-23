@@ -126,6 +126,10 @@ if (str_starts_with($uri, '/insales/')) {
             WebhookOrderHandler::handle($config, $shops);
             exit;
         }
+        if (str_starts_with($uri, '/insales/orders/edit') && ($method === 'GET' || $method === 'POST')) {
+            OrdersHandler::handleEdit($config, $shops, $method);
+            exit;
+        }
         if (str_starts_with($uri, '/insales/orders') && ($method === 'GET' || $method === 'POST')) {
             OrdersHandler::handle($config, $shops, $method);
             exit;

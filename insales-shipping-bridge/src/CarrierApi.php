@@ -388,38 +388,21 @@ final class CarrierApi
     ): array {
         $c = $this->normalizeCargo($cargo);
         $requester = $this->buildRequester($calcCtx);
-
-        // Если есть КЛАДР улицы и дом — доставка до адреса, иначе до терминала в городе
-        if ($streetKladr !== null && $arrivalHouse !== null && $arrivalHouse !== '') {
-            $arrival = [
-                'variant' => 'address',
-                'city' => str_pad($arrivalCityKladr, 25, '0'),
-                'address' => [
-                    'street' => ['code' => $streetKladr],
-                    'house' => $arrivalHouse,
-                ],
-                'requirements' => [],
-            ];
-        } else {
-            $arrival = [
-                'variant' => 'address',
-                'city' => str_pad($arrivalCityKladr, 25, '0'),
-                'address' => [
-                    'search' => trim(($arrivalStreet ?? '') . ' ' . ($arrivalHouse ?? '')),
-                ],
-                'requirements' => [],
-            ];
-        }
-
+        
         return [
             'sessionID' => $sessionId,
             'appkey' => $this->resolveAppkey($credentials),
             'delivery' => [
                 'deliveryType' => ['type' => 'auto'],
-                'arrival' => $arrival,
+                'arrival' => [
+                    'variant' => 'address',
+                    'city' => str_pad($arrivalCityKladr, 25, '0'),
+                ],
                 'derival' => $this->buildDerival($calcCtx, $senderTerminalId),
                 'packages' => [],
             ],
+            'arrivalPoint' => $streetKladr ?? '',
+            'arrivalHouse' => $arrivalHouse ?? '',
             'cargo' => $c,
             'members' => ['requester' => $requester],
             'payment' => $this->buildPayment($arrivalCityKladr),

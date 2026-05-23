@@ -213,7 +213,7 @@ final class InSalesClient
         string $topic,
         string $address,
     ): void {
-        $this->postJson($shopHost, '', $apiPasswordMd5, '/admin/webhooks.json', [
+        $this->postJson($shopHost, $applicationLogin, $apiPasswordMd5, '/admin/webhooks.json', [
             'webhook' => [
                 'address'     => $address,
                 'topic'       => $topic,

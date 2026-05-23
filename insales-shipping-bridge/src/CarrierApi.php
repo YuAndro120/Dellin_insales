@@ -390,27 +390,54 @@ final class CarrierApi
         $c = $this->normalizeCargo($cargo);
         $requester = $this->buildRequester($calcCtx);
 
+        $arrival = [
+            'variant' => 'address',
+            'city' => $arrivalCityKladr,
+        ];
+
+        if ($streetKladr !== null || $arrivalHouse !== null) {
+            $arrival['address'] = [
+                'street' => $streetKladr ?? '',
+                'house' => $arrivalHouse ?? '',
+            ];
+        }
+
         return [
             'sessionID' => $sessionId,
             'appkey' => $this->resolveAppkey($credentials),
+
             'delivery' => [
-                'deliveryType' => ['type' => 'auto'],
-                'arrival' => [
-                    'variant' => 'address',
-                    'city' => str_pad($arrivalCityKladr, 25, '0'),
+                'deliveryType' => [
+                    'type' => 'auto',
                 ],
-                'derival' => $this->buildDerival($calcCtx, $senderTerminalId),
+
+                'arrival' => $arrival,
+
+                'derival' => $this->buildDerival(
+                    $calcCtx,
+                    $senderTerminalId
+                ),
+
                 'packages' => [],
             ],
-            'arrivalPoint' => $streetKladr ?? '',
-            'arrivalHouse' => $arrivalHouse ?? '',
+
             'cargo' => $c,
-            'members' => ['requester' => $requester],
+
+            'members' => [
+                'requester' => $requester,
+            ],
+
             'payment' => $this->buildPayment($arrivalCityKladr),
+
             'productInfo' => [
                 'type' => 4,
                 'productType' => 5,
-                'info' => [['param' => 'shipping-bridge', 'value' => 'mvp-1-city']],
+                'info' => [
+                    [
+                        'param' => 'shipping-bridge',
+                        'value' => 'mvp-1-city',
+                    ],
+                ],
             ],
         ];
     }

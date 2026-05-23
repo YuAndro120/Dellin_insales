@@ -393,7 +393,7 @@ final class CarrierApi
         if ($streetKladr !== null && $arrivalHouse !== null && $arrivalHouse !== '') {
             $arrival = [
                 'variant' => 'address',
-                'city' => ['code' => $arrivalCityKladr],
+                'city' => str_pad($arrivalCityKladr, 25, '0'),
                 'address' => [
                     'street' => ['code' => $streetKladr],
                     'house' => $arrivalHouse,
@@ -402,8 +402,8 @@ final class CarrierApi
             ];
         } else {
             $arrival = [
-                'variant' => 'terminal',
-                'city' => ['code' => $arrivalCityKladr],
+                'variant' => 'address',
+                'city' => str_pad($arrivalCityKladr, 25, '0'),
                 'requirements' => [],
             ];
         }

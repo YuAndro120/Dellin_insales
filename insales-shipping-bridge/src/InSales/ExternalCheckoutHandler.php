@@ -90,12 +90,12 @@ final class ExternalCheckoutHandler
         $street = InsalesOrderParser::street($body);
         $house  = InsalesOrderParser::house($body);
 
-        if ($street === null || $house === null) {
-            self::jsonError(['errors' => ['Укажите улицу и дом для курьерской доставки']], 422, $cors);
+        if ($street === null || $street === '' || $house === null || $house === '') {
+            self::jsonError(['errors' => ['Для курьерской доставки укажите улицу и номер дома']], 422, $cors);
             return;
         }
 
-        $sid = $api->login($creds);
+        $sid  = $api->loginWithPat($creds);
         $calc = $api->calculateToCity($sid, $senderId, $kladr, $street, $house, $cargo, $calcCtx, $creds);
         if ($calc['price'] === null) {
             $msg = is_array($calc['errors'] ?? null)
@@ -109,8 +109,8 @@ final class ExternalCheckoutHandler
             'price' => (float) $calc['price'],
             'tariff_id' => 'dellin_courier',
             'shipping_company_handle' => self::COMPANY,
-            'title' => 'Курьерская доставка до двери',
-            'description' => 'Перевозчик доставит груз по указанному адресу',
+            'title' => 'Курьерская доставка Деловых Линий',
+            'description' => 'Доставка до адреса получателя',
             'delivery_interval' => self::interval($calc['days']),
             'fields_values' => [
                 ['handle' => 'dellin_delivery_type', 'value' => 'courier'],

@@ -37,17 +37,12 @@ final class ShopSettings
     }
 
     /** @param array<string, mixed> $row */
-    public static function fromRow(array $row, Config $config): self
+    public static function fromRow(array $row): self
     {
         $email = trim((string) ($row['requester_email'] ?? ''));
-        if ($email === '') {
-            $email = $config->senderRequesterEmail;
-        }
 
         $uid = $row['counteragent_uid'] ?? null;
-        if ($uid === null || $uid === '') {
-            $uid = $config->senderCounteragentUid;
-        }
+        $uid = ($uid === null || $uid === '') ? null : (string) $uid;
 
         $offset = (int) ($row['produce_days_offset'] ?? 2);
         if ($offset < 0 || $offset > 30) {

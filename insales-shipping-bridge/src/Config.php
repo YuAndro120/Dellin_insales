@@ -7,11 +7,7 @@ namespace ShippingBridge;
 final class Config
 {
     public function __construct(
-        public readonly string $appkey,
-        public readonly string $login,
-        public readonly string $password,
-        public readonly string $senderRequesterEmail,
-        public readonly ?string $senderCounteragentUid,
+        public readonly string $dellinAppkey,
         public readonly string $bridgeSecret,
         public readonly string $corsOrigin,
         public readonly string $cacheDir,
@@ -32,11 +28,7 @@ final class Config
         [$dsn, $dbUser, $dbPass] = self::databaseFromEnv();
 
         return new self(
-            appkey: self::opt('SHIPPING_API_APPKEY') ?? '',
-            login: self::opt('SHIPPING_API_LOGIN') ?? '',
-            password: self::opt('SHIPPING_API_PASSWORD') ?? '',
-            senderRequesterEmail: self::req('SHIPPING_REQUESTER_EMAIL'),
-            senderCounteragentUid: self::opt('SHIPPING_COUNTERAGENT_UID'),
+            dellinAppkey: self::opt('DELLIN_APPKEY') ?? '',
             bridgeSecret: self::opt('BRIDGE_SECRET') ?? '',
             corsOrigin: self::opt('CORS_ORIGIN') ?? '*',
             cacheDir: self::opt('CACHE_DIR') ?? dirname(__DIR__) . '/var/cache',
@@ -63,11 +55,7 @@ final class Config
         }
 
         return new self(
-            appkey: self::opt('SHIPPING_API_APPKEY') ?? '',
-            login: self::opt('SHIPPING_API_LOGIN') ?? '',
-            password: self::opt('SHIPPING_API_PASSWORD') ?? '',
-            senderRequesterEmail: self::opt('SHIPPING_REQUESTER_EMAIL') ?? 'noreply@localhost',
-            senderCounteragentUid: self::opt('SHIPPING_COUNTERAGENT_UID'),
+            dellinAppkey: self::opt('DELLIN_APPKEY') ?? '',
             bridgeSecret: self::opt('BRIDGE_SECRET') ?? '',
             corsOrigin: self::opt('CORS_ORIGIN') ?? '*',
             cacheDir: self::opt('CACHE_DIR') ?? dirname(__DIR__) . '/var/cache',
@@ -88,15 +76,12 @@ final class Config
     /** Учётные данные из .env (fallback для серверных эндпоинтов без магазина). */
     public function defaultCarrierCredentials(): ?CarrierCredentials
     {
-        if ($this->appkey === '') {
+        if ($this->dellinAppkey === '') {
             return null;
         }
         $pat = $this->optEnv('SHIPPING_API_PAT');
         if ($pat !== null && $pat !== '') {
-            return new CarrierCredentials($this->appkey, $pat);
-        }
-        if ($this->login !== '' && $this->password !== '') {
-            return null;
+            return new CarrierCredentials($this->dellinAppkey, $pat);
         }
 
         return null;

@@ -30,11 +30,7 @@ final class CarrierApi
             return $this->loginWithPat($creds);
         }
 
-        if ($this->config->login !== '' && $this->config->password !== '') {
-            return $this->loginLegacyV1();
-        }
-
-        throw new \RuntimeException('Учётные данные Dellin не настроены (API-ключ и PAT)');
+        throw new \RuntimeException('PAT не настроен. Укажите персональный токен в настройках магазина.');
     }
 
     public function loginWithPat(CarrierCredentials $credentials): string
@@ -70,18 +66,6 @@ final class CarrierApi
         ]);
 
         return $this->parseCounteragents($bookRes);
-    }
-
-    /** @deprecated Логин/пароль ЛК — только fallback из .env */
-    private function loginLegacyV1(): string
-    {
-        $res = $this->postJson(self::URL_LOGIN_V1, [
-            'appkey' => $this->config->appkey,
-            'login' => $this->config->login,
-            'password' => $this->config->password,
-        ]);
-
-        return $this->extractSessionId($res);
     }
 
     /**
@@ -181,7 +165,7 @@ final class CarrierApi
     public function searchCities(string $q, ?CarrierCredentials $credentials = null): array
     {
         $creds = $credentials ?? $this->config->defaultCarrierCredentials();
-        $appkey = $creds?->appkey ?? $this->config->appkey;
+        $appkey = $creds?->appkey ?? $this->config->dellinAppkey;
         if ($appkey === '') {
             throw new \RuntimeException('API-ключ Dellin не задан');
         }
@@ -334,7 +318,7 @@ final class CarrierApi
     public function terminalsManifest(?CarrierCredentials $credentials = null): array
     {
         $creds = $credentials ?? $this->config->defaultCarrierCredentials();
-        $appkey = $creds?->appkey ?? $this->config->appkey;
+        $appkey = $creds?->appkey ?? $this->config->dellinAppkey;
         if ($appkey === '') {
             throw new \RuntimeException('API-ключ Dellin не задан');
         }
@@ -498,7 +482,7 @@ final class CarrierApi
     private function resolveAppkey(?CarrierCredentials $credentials): string
     {
         $creds = $credentials ?? $this->config->defaultCarrierCredentials();
-        $appkey = $creds?->appkey ?? $this->config->appkey;
+        $appkey = $creds?->appkey ?? $this->config->dellinAppkey;
         if ($appkey === '') {
             throw new \RuntimeException('API-ключ Dellin не задан');
         }

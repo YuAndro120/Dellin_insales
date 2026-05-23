@@ -27,3 +27,39 @@ CREATE TABLE IF NOT EXISTS `insales_shops` (
   UNIQUE KEY `uq_insales_id` (`insales_id`),
   KEY `idx_shop_host` (`shop_host`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `dellin_orders` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `insales_shop_id` VARCHAR(32) NOT NULL COMMENT 'insales_id магазина',
+  `insales_order_id` VARCHAR(64) NOT NULL COMMENT 'ID заказа в inSales',
+  `insales_order_number` VARCHAR(64) NULL DEFAULT NULL COMMENT 'Номер заказа для отображения',
+  -- Получатель
+  `receiver_name` VARCHAR(255) NULL DEFAULT NULL,
+  `receiver_phone` VARCHAR(64) NULL DEFAULT NULL,
+  `receiver_email` VARCHAR(255) NULL DEFAULT NULL,
+  -- Адрес доставки
+  `arrival_city_kladr` VARCHAR(32) NULL DEFAULT NULL,
+  `arrival_city_name` VARCHAR(255) NULL DEFAULT NULL,
+  `arrival_street` VARCHAR(255) NULL DEFAULT NULL,
+  `arrival_house` VARCHAR(64) NULL DEFAULT NULL,
+  `arrival_flat` VARCHAR(32) NULL DEFAULT NULL,
+  -- Груз
+  `weight` DECIMAL(10,3) NOT NULL DEFAULT 1.000,
+  `volume` DECIMAL(10,4) NOT NULL DEFAULT 0.0080,
+  `stated_value` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  -- Результат оформления в ДЛ
+  `dellin_request_id` BIGINT NULL DEFAULT NULL COMMENT 'ID заявки в ДЛ',
+  `dellin_barcode` VARCHAR(64) NULL DEFAULT NULL COMMENT 'Штрихкод отправления',
+  `dellin_status` VARCHAR(64) NULL DEFAULT NULL,
+  `dellin_status_title` VARCHAR(255) NULL DEFAULT NULL,
+  `dellin_status_updated_at` TIMESTAMP NULL DEFAULT NULL,
+  -- Сырые данные от inSales
+  `insales_payload` JSON NULL DEFAULT NULL COMMENT 'Оригинальный webhook payload',
+  -- Мета
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_insales_order` (`insales_shop_id`, `insales_order_id`),
+  KEY `idx_shop` (`insales_shop_id`),
+  KEY `idx_dellin_request` (`dellin_request_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

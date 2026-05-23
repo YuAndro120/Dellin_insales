@@ -11,6 +11,7 @@ use ShippingBridge\InSales\CarrierJsonHandler;
 use ShippingBridge\InSales\ExternalCheckoutHandler;
 use ShippingBridge\InSales\InstallHandlers;
 use ShippingBridge\InSales\ManualInstallHandler;
+use ShippingBridge\InSales\WebhookOrderHandler;
 use ShippingBridge\CalculatorContext;
 use ShippingBridge\ShopDeliveryContext;
 use ShippingBridge\InSales\InSalesClient;
@@ -118,6 +119,10 @@ if (str_starts_with($uri, '/insales/')) {
         }
         if ($uri === '/insales/uninstall' && ($method === 'GET' || $method === 'POST')) {
             InstallHandlers::uninstall($shops);
+            exit;
+        }
+        if ($uri === '/insales/webhook/orders' && $method === 'POST') {
+            WebhookOrderHandler::handle($config, $shops);
             exit;
         }
     } catch (Throwable $e) {
@@ -249,7 +254,7 @@ try {
         }
         $api = new CarrierApi($config);
         $sid = $api->login();
-        $calc = $api->calculateToCity($sid, $senderTerminalId, $arrivalKladr, $cargo, $calcCtx);
+        $calc = $api->calculateToCity($sid, $senderTerminalId, $arrivalKladr, null, null, $cargo, $calcCtx);
         Response::json([
             'ok' => $calc['price'] !== null,
             'price' => $calc['price'],

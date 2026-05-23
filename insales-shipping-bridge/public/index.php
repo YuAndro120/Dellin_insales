@@ -19,6 +19,7 @@ use ShippingBridge\ShopRepository;
 use ShippingBridge\TerminalRepository;
 use ShippingBridge\ArrivalKladrResolver;
 use ShippingBridge\VariantQuoteService;
+use ShippingBridge\InSales\OrdersHandler;
 
 require dirname(__DIR__) . '/bootstrap.php';
 
@@ -123,6 +124,10 @@ if (str_starts_with($uri, '/insales/')) {
         }
         if ($uri === '/insales/webhook/orders' && $method === 'POST') {
             WebhookOrderHandler::handle($config, $shops);
+            exit;
+        }
+        if (str_starts_with($uri, '/insales/orders') && ($method === 'GET' || $method === 'POST')) {
+            OrdersHandler::handle($config, $shops, $method);
             exit;
         }
     } catch (Throwable $e) {

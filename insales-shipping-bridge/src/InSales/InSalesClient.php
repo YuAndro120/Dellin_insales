@@ -202,4 +202,23 @@ final class InSalesClient
 
         return is_array($data) ? $data : [];
     }
+    /**
+     * Регистрация webhook в магазине inSales.
+     * @see https://wiki.insales.ru/wiki/InSales_API_-_Webhooks
+     */
+    public function registerWebhook(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        string $topic,
+        string $address,
+    ): void {
+        $this->postJson($shopHost, '', $apiPasswordMd5, '/admin/webhooks.json', [
+            'webhook' => [
+                'address'     => $address,
+                'topic'       => $topic,
+                'format_type' => 'json',
+            ],
+        ]);
+    }
 }

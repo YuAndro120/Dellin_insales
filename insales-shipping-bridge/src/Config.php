@@ -20,6 +20,7 @@ final class Config
         public readonly ?string $databasePassword,
         public readonly ?string $insalesAppId,
         public readonly ?string $insalesAppSecret,
+        public readonly string $publicBridgeUrl,
     ) {
     }
 
@@ -44,6 +45,7 @@ final class Config
             databasePassword: $dbPass,
             insalesAppId: self::opt('INSALES_APP_ID'),
             insalesAppSecret: self::opt('INSALES_APP_SECRET'),
+            publicBridgeUrl: self::opt('PUBLIC_BRIDGE_URL') ?? '',
         );
     }
 
@@ -74,6 +76,7 @@ final class Config
             databasePassword: $dbPass,
             insalesAppId: self::opt('INSALES_APP_ID'),
             insalesAppSecret: self::opt('INSALES_APP_SECRET'),
+            publicBridgeUrl: self::opt('PUBLIC_BRIDGE_URL') ?? '',
         );
     }
 

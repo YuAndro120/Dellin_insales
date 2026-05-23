@@ -309,6 +309,7 @@ final class CarrierApi
             $credentials,
             $streetKladr,
         );
+        file_put_contents('/tmp/calc_body.json', json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         $res = $this->postJson(self::URL_CALC, $body);
 
         return $this->parseCalculatorResponse($res);
@@ -388,7 +389,7 @@ final class CarrierApi
     ): array {
         $c = $this->normalizeCargo($cargo);
         $requester = $this->buildRequester($calcCtx);
-        
+
         return [
             'sessionID' => $sessionId,
             'appkey' => $this->resolveAppkey($credentials),

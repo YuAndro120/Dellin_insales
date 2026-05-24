@@ -221,4 +221,21 @@ final class InSalesClient
             ],
         ]);
     }
+    /**
+     * Регистрация виджета в карточке заказа inSales.
+     */
+    public function registerWidget(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        string $code,
+        int $height = 120,
+    ): void {
+        $this->postJson($shopHost, $applicationLogin, $apiPasswordMd5, '/admin/application_widgets.json', [
+            'application_widget' => [
+                'code'   => $code,
+                'height' => $height,
+            ],
+        ]);
+    }
 }

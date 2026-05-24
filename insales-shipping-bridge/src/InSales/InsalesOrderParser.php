@@ -46,6 +46,30 @@ final class InsalesOrderParser
         return null;
     }
 
+    /** @param array<string, mixed> $body */
+    public static function cityName(array $body): ?string
+    {
+        $order = self::order($body);
+        $addr = $order['shipping_address'] ?? [];
+
+        // Сначала из location
+        $loc = $addr['location'] ?? null;
+        if (is_array($loc)) {
+            $city = trim((string) ($loc['city'] ?? ''));
+            if ($city !== '') {
+                return $city;
+            }
+        }
+
+        // Fallback — full_locality_name
+        $full = trim((string) ($addr['full_locality_name'] ?? ''));
+        if ($full !== '') {
+            return $full;
+        }
+
+        return null;
+    }
+
     /**
      * @param array<string, mixed> $body
      * @return list<array{quantity:int,weight:float,dimensions:string}>

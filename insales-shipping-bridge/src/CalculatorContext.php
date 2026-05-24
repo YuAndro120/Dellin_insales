@@ -15,8 +15,8 @@ final class CalculatorContext
         public readonly ?string $derivalCityKladr,
         public readonly ?string $derivalStreet,
         public readonly ?string $derivalHouse,
-    ) {
-    }
+        public readonly ?string $arrivalCityName = null,
+    ) {}
 
     public static function fromShopSettings(ShopSettings $s): self
     {
@@ -28,6 +28,20 @@ final class CalculatorContext
             derivalCityKladr: $s->derivalCityKladr,
             derivalStreet: $s->derivalStreet,
             derivalHouse: $s->derivalHouse,
+        );
+    }
+
+    public function withArrivalCityName(?string $cityName): self
+    {
+        return new self(
+            requesterEmail: $this->requesterEmail,
+            counteragentUid: $this->counteragentUid,
+            produceDaysOffset: $this->produceDaysOffset,
+            derivalVariant: $this->derivalVariant,
+            derivalCityKladr: $this->derivalCityKladr,
+            derivalStreet: $this->derivalStreet,
+            derivalHouse: $this->derivalHouse,
+            arrivalCityName: $cityName,
         );
     }
 }

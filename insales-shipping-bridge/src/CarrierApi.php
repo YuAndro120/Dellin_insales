@@ -406,9 +406,11 @@ final class CarrierApi
                     'house' => $arrivalHouse,
                 ];
             } elseif ($arrivalStreet !== null && $arrivalStreet !== '') {
-                // КЛАДР улицы не найден — передаём текстом через search
+                // КЛАДР улицы не найден — передаём текстом через search с городом
+                $cityName = $calcCtx->arrivalCityName ?? '';
+                $searchStr = ($cityName !== '' ? $cityName . ', ' : '') . $arrivalStreet . ', ' . $arrivalHouse;
                 $arrival['address'] = [
-                    'search' => $arrivalStreet . ', ' . $arrivalHouse,
+                    'search' => $searchStr,
                 ];
             }
         }

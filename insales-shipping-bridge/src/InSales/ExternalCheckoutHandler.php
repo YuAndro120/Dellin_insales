@@ -39,7 +39,9 @@ final class ExternalCheckoutHandler
         try {
             $settings = self::resolveShop($body, $shops, $config);
             ShopDeliveryContext::assertDerivalConfigured($settings);
-            $calcCtx = CalculatorContext::fromShopSettings($settings);
+            $calcCtx = CalculatorContext::fromShopSettings($settings)->withArrivalCityName(
+                InsalesOrderParser::cityName($body)
+            );
             $senderId = ShopDeliveryContext::requireSenderTerminalId($settings);
 
             $creds = self::carrierCredentials($shops, $config, $settings);

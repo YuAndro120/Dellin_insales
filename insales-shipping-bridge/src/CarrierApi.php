@@ -18,7 +18,7 @@ final class CarrierApi
     private const URL_ADDRESS_SUGGEST = 'https://api.dellin.ru/v1/public/address_suggest.json';
     private const URL_ADDRESS_CLEAN   = 'https://api.dellin.ru/v1/public/address_clean.json';
     private const URL_TERMINALS_MANIFEST = 'https://api.dellin.ru/v3/public/terminals.json';
-    private const URL_ORDER = 'https://api.dellin.ru/v3/orders.json';
+    private const URL_ORDER = 'https://api.dellin.ru/v2/request.json';
 
     public function __construct(private readonly Config $config)
     {

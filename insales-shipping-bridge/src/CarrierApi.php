@@ -88,8 +88,8 @@ final class CarrierApi
         $arrivalHouse     = (string) ($order['arrival_house'] ?? '');
         $arrivalFlat      = (string) ($order['arrival_flat'] ?? '');
         $weight           = max(0.1, (float) ($order['weight'] ?? 1.0));
-        $statedValue      = (float) ($order['stated_value'] ?? 0.0);
-        $receiverName     = (string) ($order['receiver_name'] ?? '');
+        $statedValue      = max(1.0, (float) ($order['stated_value'] ?? 1000.0));
+        $receiverName     = (string) ($order['receiver_name'] ?? 'Получатель');
         $receiverPhone    = preg_replace('/\D/', '', (string) ($order['receiver_phone'] ?? ''));
         $receiverEmail    = (string) ($order['receiver_email'] ?? '');
 
@@ -102,27 +102,32 @@ final class CarrierApi
             }
         }
 
-        // Дата отгрузки — сегодня + produce_days_offset
+        // Дата отгрузки
         $produceDate = (new \DateTimeImmutable())
-            ->modify('+' . ($settings->produceDaysOffset) . ' days')
+            ->modify('+' . $settings->produceDaysOffset . ' days')
             ->format('Y-m-d');
 
-        $arrival = [
-            'variant' => 'address',
-            'city'    => $arrivalCityKladr,
-        ];
+        // Адрес прибытия
         if ($streetKladr !== null && $arrivalHouse !== '') {
-            $arrival['address'] = array_filter([
-                'street'   => ['code' => $streetKladr],
-                'house'    => $arrivalHouse,
-                'flat'     => $arrivalFlat !== '' ? $arrivalFlat : null,
-            ]);
-        } elseif ($arrivalStreet !== '' && $arrivalHouse !== '') {
-            $arrival['address'] = array_filter([
-                'search' => trim($arrivalStreet . ' ' . $arrivalHouse),
+            $arrivalAddress = array_filter([
+                'street' => $streetKladr,
                 'house'  => $arrivalHouse,
                 'flat'   => $arrivalFlat !== '' ? $arrivalFlat : null,
             ]);
+        } else {
+            $search = trim(($order['arrival_city_name'] ?? '') . ', ' . $arrivalStreet . ', ' . $arrivalHouse);
+            $arrivalAddress = array_filter([
+                'search' => $search !== '' ? $search : null,
+                'flat'   => $arrivalFlat !== '' ? $arrivalFlat : null,
+            ]);
+        }
+
+        // Телефон получателя
+        $phoneNumbers = [];
+        if ($receiverPhone !== '') {
+            $phoneNumbers[] = ['number' => $receiverPhone];
+        } else {
+            $phoneNumbers[] = ['number' => '70000000000']; // заглушка если нет телефона
         }
 
         $body = [
@@ -136,16 +141,10 @@ final class CarrierApi
                     'variant'     => 'terminal',
                     'terminalID'  => (string) $settings->senderTerminalId,
                 ],
-                'arrival' => $arrival,
-            ],
-            'cargo' => [
-                'quantity'    => 1,
-                'weight'      => $weight,
-                'totalWeight' => $weight,
-                'totalVolume' => round($weight * 0.001, 4),
-                'insurance'   => [
-                    'statedValue' => $statedValue > 0 ? $statedValue : 1000.0,
-                    'term'        => true,
+                'arrival' => [
+                    'variant' => 'address',
+                    'city'    => $arrivalCityKladr,
+                    'address' => $arrivalAddress,
                 ],
             ],
             'members' => [
@@ -154,21 +153,48 @@ final class CarrierApi
                     'uid'   => $settings->counteragentUid ?? '',
                     'email' => $settings->requesterEmail ?? '',
                 ],
-                'receiver' => array_filter([
-                    'counteragent' => array_filter([
-                        'name'  => $receiverName !== '' ? $receiverName : null,
-                        'phone' => $receiverPhone !== '' ? $receiverPhone : null,
-                    ]),
-                    'email' => $receiverEmail !== '' ? $receiverEmail : null,
-                ]),
+                'sender' => [
+                    'counteragentID' => null,
+                    'counteragent'   => [
+                        'form' => '0xAB91FEEA04F6D4AD48DF42161B6C2E7A', // Частное лицо РФ
+                        'name' => 'Отправитель',
+                        'isAnonym' => false,
+                    ],
+                    'contactPersons' => [['name' => 'Отправитель']],
+                    'phoneNumbers'   => [['number' => '70000000000']],
+                ],
+                'receiver' => [
+                    'counteragent'   => [
+                        'form'     => '0xAB91FEEA04F6D4AD48DF42161B6C2E7A', // Частное лицо РФ
+                        'name'     => $receiverName,
+                        'isAnonym' => false,
+                    ],
+                    'contactPersons' => [['name' => $receiverName]],
+                    'phoneNumbers'   => $phoneNumbers,
+                    'email'          => $receiverEmail !== '' ? $receiverEmail : null,
+                ],
+            ],
+            'cargo' => [
+                'quantity'    => 1,
+                'weight'      => $weight,
+                'totalWeight' => $weight,
+                'length'      => 0.3,
+                'width'       => 0.2,
+                'height'      => 0.2,
+                'totalVolume' => round(0.3 * 0.2 * 0.2, 4),
+                'insurance'   => [
+                    'statedValue' => $statedValue,
+                    'term'        => true,
+                ],
+                'freightUID' => '0x9c2acaea110d75ba48fdc7a83c976269', // "Другое"
             ],
             'payment' => [
-                'type'          => 'noncash',
-                'primaryPayer'  => 'sender',
-                'paymentCity'   => $arrivalCityKladr,
+                'type'         => 'noncash',
+                'primaryPayer' => 'sender',
+                'paymentCity'  => $arrivalCityKladr,
             ],
         ];
-        file_put_contents('/tmp/order_body.json', json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+
         $res = $this->postJson(self::URL_ORDER, $body);
 
         if (!empty($res['errors'])) {

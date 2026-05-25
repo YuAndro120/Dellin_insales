@@ -20,6 +20,7 @@ use ShippingBridge\TerminalRepository;
 use ShippingBridge\ArrivalKladrResolver;
 use ShippingBridge\VariantQuoteService;
 use ShippingBridge\InSales\OrdersHandler;
+use ShippingBridge\InSales\OrderSubmitHandler;
 
 require dirname(__DIR__) . '/bootstrap.php';
 

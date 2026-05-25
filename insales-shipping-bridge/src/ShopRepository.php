@@ -212,7 +212,7 @@ SQL;
             [':h' => $shopHost]
         );
 
-        return $row !== null ? ShopSettings::fromRow($row, $config) : null;
+        return $row !== null ? ShopSettings::fromRow($row) : null;
     }
 
     public function findSettingsByInsalesId(string $insalesId, Config $config): ?ShopSettings
@@ -223,7 +223,7 @@ SQL;
             [':iid' => $insalesId]
         );
 
-        return $row !== null ? ShopSettings::fromRow($row, $config) : null;
+        return $row !== null ? ShopSettings::fromRow($row) : null;
     }
 
     /** Для OAuth/API inSales (Basic Auth). */
@@ -256,7 +256,37 @@ SQL;
             'api_password' => (string) $row['api_password'],
         ];
     }
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findOrderByInsalesId(string $insalesShopId, string $insalesOrderId): ?array
+    {
+        return $this->fetchRow(
+            'SELECT * FROM dellin_orders
+         WHERE insales_shop_id = :shop_id AND insales_order_id = :order_id
+         LIMIT 1',
+            [':shop_id' => $insalesShopId, ':order_id' => $insalesOrderId]
+        );
+    }
 
+    public function updateOrderDellinResult(
+        int $id,
+        int $requestId,
+        string $barcode,
+    ): void {
+        $stmt = $this->pdo->prepare('
+        UPDATE dellin_orders
+        SET dellin_request_id = :request_id,
+            dellin_barcode    = :barcode,
+            updated_at        = CURRENT_TIMESTAMP
+        WHERE id = :id
+    ');
+        $stmt->execute([
+            'request_id' => $requestId,
+            'barcode'    => $barcode,
+            'id'         => $id,
+        ]);
+    }
     /** @param array<string, scalar|null> $params */
     private function fetchRow(string $sql, array $params): ?array
     {

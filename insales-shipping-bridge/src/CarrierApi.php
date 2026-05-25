@@ -18,6 +18,7 @@ final class CarrierApi
     private const URL_ADDRESS_SUGGEST = 'https://api.dellin.ru/v1/public/address_suggest.json';
     private const URL_ADDRESS_CLEAN   = 'https://api.dellin.ru/v1/public/address_clean.json';
     private const URL_TERMINALS_MANIFEST = 'https://api.dellin.ru/v3/public/terminals.json';
+    private const URL_ORDER = 'https://api.dellin.ru/v3/orders.json';
 
     public function __construct(private readonly Config $config)
     {
@@ -66,6 +67,122 @@ final class CarrierApi
         ]);
 
         return $this->parseCounteragents($bookRes);
+    }
+
+    /**
+     * Оформление заявки на доставку в Деловые Линии.
+     *
+     * @param array<string, mixed> $order — строка из dellin_orders
+     * @return array{request_id: int, barcode: string}
+     */
+    public function createOrder(
+        string $sessionId,
+        \ShippingBridge\ShopSettings $settings,
+        array $order,
+        ?CarrierCredentials $credentials = null,
+    ): array {
+        $appkey = $this->resolveAppkey($credentials);
+
+        $arrivalCityKladr = str_pad((string) ($order['arrival_city_kladr'] ?? ''), 25, '0');
+        $arrivalStreet    = (string) ($order['arrival_street'] ?? '');
+        $arrivalHouse     = (string) ($order['arrival_house'] ?? '');
+        $arrivalFlat      = (string) ($order['arrival_flat'] ?? '');
+        $weight           = max(0.1, (float) ($order['weight'] ?? 1.0));
+        $statedValue      = (float) ($order['stated_value'] ?? 0.0);
+        $receiverName     = (string) ($order['receiver_name'] ?? '');
+        $receiverPhone    = preg_replace('/\D/', '', (string) ($order['receiver_phone'] ?? ''));
+        $receiverEmail    = (string) ($order['receiver_email'] ?? '');
+
+        // Резолвим КЛАДР улицы
+        $streetKladr = null;
+        if ($arrivalStreet !== '') {
+            $cityId = $this->getCityId($arrivalCityKladr, $credentials);
+            if ($cityId !== null) {
+                $streetKladr = $this->getStreetKladr($cityId, $arrivalStreet, $credentials);
+            }
+        }
+
+        // Дата отгрузки — сегодня + produce_days_offset
+        $produceDate = (new \DateTimeImmutable())
+            ->modify('+' . ($settings->produceDaysOffset) . ' days')
+            ->format('Y-m-d');
+
+        $arrival = [
+            'variant' => 'address',
+            'city'    => $arrivalCityKladr,
+        ];
+        if ($streetKladr !== null && $arrivalHouse !== '') {
+            $arrival['address'] = array_filter([
+                'street'   => ['code' => $streetKladr],
+                'house'    => $arrivalHouse,
+                'flat'     => $arrivalFlat !== '' ? $arrivalFlat : null,
+            ]);
+        } elseif ($arrivalStreet !== '' && $arrivalHouse !== '') {
+            $arrival['address'] = array_filter([
+                'search' => trim($arrivalStreet . ' ' . $arrivalHouse),
+                'house'  => $arrivalHouse,
+                'flat'   => $arrivalFlat !== '' ? $arrivalFlat : null,
+            ]);
+        }
+
+        $body = [
+            'appkey'    => $appkey,
+            'sessionID' => $sessionId,
+            'inOrder'   => true,
+            'delivery'  => [
+                'deliveryType' => ['type' => 'auto'],
+                'derival'      => [
+                    'produceDate' => $produceDate,
+                    'variant'     => 'terminal',
+                    'terminalID'  => (string) $settings->senderTerminalId,
+                ],
+                'arrival' => $arrival,
+            ],
+            'cargo' => [
+                'quantity'    => 1,
+                'weight'      => $weight,
+                'totalWeight' => $weight,
+                'totalVolume' => round($weight * 0.001, 4),
+                'insurance'   => [
+                    'statedValue' => $statedValue > 0 ? $statedValue : 1000.0,
+                    'term'        => true,
+                ],
+            ],
+            'members' => [
+                'requester' => [
+                    'role'  => 'sender',
+                    'uid'   => $settings->counteragentUid ?? '',
+                    'email' => $settings->requesterEmail ?? '',
+                ],
+                'receiver' => array_filter([
+                    'counteragent' => array_filter([
+                        'name'  => $receiverName !== '' ? $receiverName : null,
+                        'phone' => $receiverPhone !== '' ? $receiverPhone : null,
+                    ]),
+                    'email' => $receiverEmail !== '' ? $receiverEmail : null,
+                ]),
+            ],
+            'payment' => [
+                'type'          => 'noncash',
+                'primaryPayer'  => 'sender',
+                'paymentCity'   => $arrivalCityKladr,
+            ],
+        ];
+
+        $res = $this->postJson(self::URL_ORDER, $body);
+
+        if (!empty($res['errors'])) {
+            throw new \RuntimeException('Dellin order error: ' . json_encode($res['errors'], JSON_UNESCAPED_UNICODE));
+        }
+
+        $requestId = (int) ($res['data']['requestID'] ?? 0);
+        $barcode   = (string) ($res['data']['barcode'] ?? '');
+
+        if ($requestId === 0) {
+            throw new \RuntimeException('Dellin не вернул requestID: ' . json_encode($res, JSON_UNESCAPED_UNICODE));
+        }
+
+        return ['request_id' => $requestId, 'barcode' => $barcode];
     }
 
     /**

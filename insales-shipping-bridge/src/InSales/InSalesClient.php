@@ -238,4 +238,22 @@ final class InSalesClient
             ],
         ]);
     }
+
+    /**
+     * Получить заказ из inSales API.
+     * @return array<string, mixed>
+     */
+    public function getOrder(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        int $orderId,
+    ): array {
+        return $this->getJsonPath(
+            $shopHost,
+            $applicationLogin,
+            $apiPasswordMd5,
+            "/admin/orders/{$orderId}.json",
+        );
+    }
 }

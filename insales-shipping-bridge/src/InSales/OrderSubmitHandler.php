@@ -16,7 +16,7 @@ final class OrderSubmitHandler
     {
         $cors = Response::corsHeaders($config->corsOrigin);
 
-        $raw = file_get_contents('php://input') ?: '';
+        $raw  = file_get_contents('php://input') ?: '';
         $body = $raw !== '' ? json_decode($raw, true) : [];
         if (!is_array($body)) {
             $body = [];
@@ -30,55 +30,167 @@ final class OrderSubmitHandler
             return;
         }
 
+        // Настройки магазина
         $settings = $shops->findSettingsByInsalesId($insalesId, $config);
         if ($settings === null) {
             Response::json(['ok' => false, 'error' => 'Магазин не найден'], 404, $cors);
             return;
         }
 
+        // Проверяем не оформлен ли уже
         $pdo = Db::pdo($config);
-        $order = $shops->findOrderByInsalesId($insalesId, $insalesOrderId);
-        if ($order === null) {
-            Response::json(['ok' => false, 'error' => 'Заказ не найден. Дождитесь обработки webhook.'], 404, $cors);
-            return;
-        }
-
-        if ($order['dellin_request_id'] !== null) {
+        $existing = $shops->findOrderByInsalesId($insalesId, $insalesOrderId);
+        if ($existing !== null && $existing['dellin_request_id'] !== null) {
             Response::json([
                 'ok'      => true,
-                'barcode' => $order['dellin_barcode'],
+                'barcode' => $existing['dellin_barcode'],
                 'message' => 'Заявка уже оформлена',
             ], 200, $cors);
             return;
         }
 
-        // Получаем credentials
+        // Получаем данные заказа из inSales API
+        $auth = $shops->findApiAuthByInsalesId($insalesId);
+        if ($auth === null) {
+            Response::json(['ok' => false, 'error' => 'Нет данных авторизации магазина'], 422, $cors);
+            return;
+        }
+
+        $client = new InSalesClient();
+        try {
+            $insalesOrder = $client->getOrder(
+                $auth['shop_host'],
+                $config->insalesAppId ?? '',
+                $auth['api_password'],
+                (int) $insalesOrderId,
+            );
+        } catch (\Throwable $e) {
+            Response::json(['ok' => false, 'error' => 'Ошибка получения заказа из inSales: ' . $e->getMessage()], 422, $cors);
+            return;
+        }
+
+        // Парсим данные получателя и адрес
+        $order = self::parseInsalesOrder($insalesId, $insalesOrderId, $insalesOrder);
+
+        // Credentials Dellin
         $creds = $shops->findCarrierCredentials($insalesId, $config->bridgeSecret);
         if ($creds === null) {
             Response::json(['ok' => false, 'error' => 'Не настроены учётные данные Dellin'], 422, $cors);
             return;
         }
 
+        // Оформляем в ДЛ
         $api = new CarrierApi($config);
-
         try {
-            $sid = $api->loginWithPat($creds);
+            $sid    = $api->loginWithPat($creds);
             $result = $api->createOrder($sid, $settings, $order, $creds);
         } catch (\Throwable $e) {
             Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
             return;
         }
 
-        $shops->updateOrderDellinResult(
-            (int) $order['id'],
-            (int) $result['request_id'],
-            (string) $result['barcode'],
-        );
+        // Сохраняем результат
+        self::upsertOrder($pdo, $order, (int) $result['request_id'], (string) $result['barcode']);
 
         Response::json([
             'ok'         => true,
             'request_id' => $result['request_id'],
             'barcode'    => $result['barcode'],
         ], 200, $cors);
+    }
+
+    /**
+     * @param array<string, mixed> $raw
+     * @return array<string, mixed>
+     */
+    private static function parseInsalesOrder(
+        string $insalesId,
+        string $insalesOrderId,
+        array $raw,
+    ): array {
+        $client  = $raw['client'] ?? [];
+        $address = $raw['shipping-address'] ?? $raw['shipping_address'] ?? [];
+        $location = $address['location'] ?? [];
+
+        $receiverName = trim(
+            (string) ($client['name'] ?? '')
+                ?: (($client['first-name'] ?? '') . ' ' . ($client['last-name'] ?? ''))
+        );
+
+        $weight = 0.0;
+        $statedValue = 0.0;
+        foreach ($raw['order-lines'] ?? $raw['order_lines'] ?? [] as $line) {
+            $qty = (int) ($line['quantity'] ?? 1);
+            $weight += (float) ($line['weight'] ?? 0) * $qty;
+            $statedValue += (float) ($line['total-price'] ?? $line['total_price'] ?? 0) / 100;
+        }
+        if ($weight <= 0) {
+            $weight = 1.0;
+        }
+
+        return [
+            'insales_shop_id'    => $insalesId,
+            'insales_order_id'   => $insalesOrderId,
+            'insales_order_number' => (string) ($raw['number'] ?? $insalesOrderId),
+            'receiver_name'      => $receiverName,
+            'receiver_phone'     => (string) ($client['phone'] ?? ''),
+            'receiver_email'     => (string) ($client['email'] ?? ''),
+            'arrival_city_kladr' => (string) ($location['kladr_code'] ?? ''),
+            'arrival_city_name'  => (string) ($location['city'] ?? $address['city'] ?? ''),
+            'arrival_street'     => (string) ($location['street'] ?? ''),
+            'arrival_house'      => (string) ($location['house'] ?? ''),
+            'arrival_flat'       => (string) ($location['flat'] ?? $location['apartment'] ?? ''),
+            'weight'             => round($weight, 3),
+            'stated_value'       => round($statedValue, 2),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $order
+     */
+    private static function upsertOrder(
+        \PDO $pdo,
+        array $order,
+        int $requestId,
+        string $barcode,
+    ): void {
+        $stmt = $pdo->prepare('
+            INSERT INTO dellin_orders (
+                insales_shop_id, insales_order_id, insales_order_number,
+                receiver_name, receiver_phone, receiver_email,
+                arrival_city_kladr, arrival_city_name,
+                arrival_street, arrival_house, arrival_flat,
+                weight, stated_value,
+                dellin_request_id, dellin_barcode
+            ) VALUES (
+                :shop_id, :order_id, :order_number,
+                :receiver_name, :receiver_phone, :receiver_email,
+                :city_kladr, :city_name,
+                :street, :house, :flat,
+                :weight, :stated_value,
+                :request_id, :barcode
+            )
+            ON DUPLICATE KEY UPDATE
+                dellin_request_id = VALUES(dellin_request_id),
+                dellin_barcode    = VALUES(dellin_barcode),
+                updated_at        = CURRENT_TIMESTAMP
+        ');
+        $stmt->execute([
+            'shop_id'      => $order['insales_shop_id'],
+            'order_id'     => $order['insales_order_id'],
+            'order_number' => $order['insales_order_number'],
+            'receiver_name' => $order['receiver_name'],
+            'receiver_phone' => $order['receiver_phone'],
+            'receiver_email' => $order['receiver_email'],
+            'city_kladr'   => $order['arrival_city_kladr'],
+            'city_name'    => $order['arrival_city_name'],
+            'street'       => $order['arrival_street'],
+            'house'        => $order['arrival_house'],
+            'flat'         => $order['arrival_flat'],
+            'weight'       => $order['weight'],
+            'stated_value' => $order['stated_value'],
+            'request_id'   => $requestId,
+            'barcode'      => $barcode,
+        ]);
     }
 }

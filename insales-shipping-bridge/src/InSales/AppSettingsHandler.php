@@ -280,34 +280,8 @@ final class AppSettingsHandler
         echo '<input type="email" id="requester_email" name="requester_email" required value="' . $h($s->requesterEmail) . '">';
 
         $savedCaid = $s->senderCounterAgentId !== null ? (string) $s->senderCounterAgentId : '';
-        echo '<label for="sender_counteragent_id">ID контрагента-отправителя <span class="hint">(целое число из адресной книги ДЛ — нужен для оформления заявки)</span></label>';
-        if ($counteragents !== []) {
-            echo '<select id="sender_counteragent_id" name="sender_counteragent_id">';
-            echo '<option value="">— выберите —</option>';
-            foreach ($counteragents as $c) {
-                if ($c->counteragentId === null) {
-                    continue;
-                }
-                $caidStr = (string) $c->counteragentId;
-                $sel = $caidStr === $savedCaid ? ' selected' : '';
-                echo '<option value="' . $h($caidStr) . '"' . $sel . '>' . $h($c->name) . ' (ID ' . $h($caidStr) . ')</option>';
-            }
-            if ($savedCaid !== '') {
-                $found = false;
-                foreach ($counteragents as $c) {
-                    if ((string) $c->counteragentId === $savedCaid) {
-                        $found = true;
-                        break;
-                    }
-                }
-                if (!$found) {
-                    echo '<option value="' . $h($savedCaid) . '" selected>ID ' . $h($savedCaid) . ' (сохранённый)</option>';
-                }
-            }
-            echo '</select>';
-        } else {
-            echo '<input type="number" id="sender_counteragent_id" name="sender_counteragent_id" min="1" value="' . $h($savedCaid) . '" placeholder="Например: 456783515">';
-        }
+        echo '<label for="sender_counteragent_id">ID контрагента-отправителя <span class="hint">(целое число из личного кабинета ДЛ → Адресная книга)</span></label>';
+        echo '<input type="number" id="sender_counteragent_id" name="sender_counteragent_id" min="1" value="' . $h($savedCaid) . '" placeholder="Например: 456783515">';
 
         $freightUid  = $h($s->freightUid ?? '');
         echo '<label>Характер груза <span class="hint">(из справочника Деловых Линий)</span></label>';

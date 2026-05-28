@@ -115,6 +115,14 @@ final class AppSettingsHandler
                     'default_weight_kg' => (float) str_replace(',', '.', (string) ($_POST['default_weight_kg'] ?? '1')),
                     'default_dimensions_cm' => trim((string) ($_POST['default_dimensions_cm'] ?? '20x20x20')),
                     'is_enabled' => isset($_POST['is_enabled']),
+                    'sender_name'          => trim((string) ($_POST['sender_name'] ?? '')),
+                    'sender_type'          => trim((string) ($_POST['sender_type'] ?? 'person')),
+                    'sender_inn'           => trim((string) ($_POST['sender_inn'] ?? '')),
+                    'sender_doc_type'      => trim((string) ($_POST['sender_doc_type'] ?? 'passport')),
+                    'sender_doc_serial'    => trim((string) ($_POST['sender_doc_serial'] ?? '')),
+                    'sender_doc_number'    => trim((string) ($_POST['sender_doc_number'] ?? '')),
+                    'sender_contact_name'  => trim((string) ($_POST['sender_contact_name'] ?? '')),
+                    'sender_contact_phone' => trim((string) ($_POST['sender_contact_phone'] ?? '')),
                 ]);
                 $settings = $shops->findSettingsByInsalesId($settings->insalesId, $config) ?? $settings;
                 $saved = true;
@@ -292,6 +300,44 @@ final class AppSettingsHandler
         echo $freightUid !== '' ? 'Сохранённый UID: <code>' . $freightUid . '</code>' : 'Не выбрано';
         echo '</p>';
 
+        echo '<h2>Данные отправителя</h2>';
+        echo '<p class="hint">Используются при оформлении заявки в Деловые Линии.</p>';
+        echo '<button type="button" id="btnLoadFromInsales" class="btn-secondary" style="margin-top:0">Загрузить из inSales</button>';
+
+        echo '<label for="sender_type">Тип отправителя</label>';
+        echo '<select id="sender_type" name="sender_type" onchange="toggleSenderType()">';
+        echo '<option value="person"' . ($s->senderType === 'person' ? ' selected' : '') . '>Физическое лицо</option>';
+        echo '<option value="ip"'     . ($s->senderType === 'ip'     ? ' selected' : '') . '>ИП</option>';
+        echo '<option value="company"' . ($s->senderType === 'company' ? ' selected' : '') . '>Юридическое лицо</option>';
+        echo '</select>';
+
+        echo '<label for="sender_name">ФИО / Название организации</label>';
+        echo '<input type="text" id="sender_name" name="sender_name" value="' . $h($s->senderName ?? '') . '" placeholder="Иванов Иван Иванович / ООО Ромашка">';
+
+        $showInn = in_array($s->senderType, ['ip', 'company'], true);
+        echo '<div id="blockInn"' . ($showInn ? '' : ' style="display:none"') . '>';
+        echo '<label for="sender_inn">ИНН</label>';
+        echo '<input type="text" id="sender_inn" name="sender_inn" value="' . $h($s->senderInn ?? '') . '" placeholder="1234567890">';
+        echo '</div>';
+
+        $showDoc = $s->senderType !== 'company';
+        echo '<div id="blockDoc"' . ($showDoc ? '' : ' style="display:none"') . '>';
+        echo '<label for="sender_doc_type">Тип документа</label>';
+        echo '<select id="sender_doc_type" name="sender_doc_type">';
+        echo '<option value="passport"'      . ($s->senderDocType === 'passport'       ? ' selected' : '') . '>Паспорт РФ</option>';
+        echo '<option value="drivingLicence"' . ($s->senderDocType === 'drivingLicence' ? ' selected' : '') . '>Водительское удостоверение</option>';
+        echo '</select>';
+        echo '<label for="sender_doc_serial">Серия</label>';
+        echo '<input type="text" id="sender_doc_serial" name="sender_doc_serial" value="' . $h($s->senderDocSerial ?? '') . '" placeholder="5222">';
+        echo '<label for="sender_doc_number">Номер</label>';
+        echo '<input type="text" id="sender_doc_number" name="sender_doc_number" value="' . $h($s->senderDocNumber ?? '') . '" placeholder="191652">';
+        echo '</div>';
+
+        echo '<label for="sender_contact_name">Контактное лицо</label>';
+        echo '<input type="text" id="sender_contact_name" name="sender_contact_name" value="' . $h($s->senderContactName ?? '') . '" placeholder="Иванов Иван">';
+        echo '<label for="sender_contact_phone">Телефон контактного лица</label>';
+        echo '<input type="text" id="sender_contact_phone" name="sender_contact_phone" value="' . $h($s->senderContactPhone ?? '') . '" placeholder="79131409995">';
+
         echo '<h2>Груз по умолчанию</h2>';
         echo '<p class="hint">Если у варианта товара в inSales не заполнены вес или габариты.</p>';
         echo '<label for="default_weight_kg">Вес, кг</label>';
@@ -377,6 +423,8 @@ final class AppSettingsHandler
         echo 'fl.style.display=fl.children.length?"block":"none";});},350);});';
         echo 'document.addEventListener("click",function(e){if(!fi.contains(e.target)&&!fl.contains(e.target))fl.style.display="none";});';
         echo '})();';
+        echo 'function toggleSenderType(){var t=document.getElementById("sender_type").value;document.getElementById("blockInn").style.display=(t==="ip"||t==="company")?"":"none";document.getElementById("blockDoc").style.display=(t==="company")?"none":"";}';
+        echo 'document.getElementById("btnLoadFromInsales").addEventListener("click",function(){var btn=this;btn.disabled=true;btn.textContent="Загрузка…";fetch("/insales/account?shop="+shopQ+"&insales_id="+iidQ).then(function(r){return r.json();}).then(function(d){if(!d.ok)throw new Error(d.error||"Ошибка");if(d.organization)document.getElementById("sender_name").value=d.organization;if(d.phone)document.getElementById("sender_contact_phone").value=d.phone.replace(/\\D/g,"");if(d.email)document.getElementById("requester_email").value=d.email;var name=(d.organization||"").toLowerCase();var sel=document.getElementById("sender_type");if(name.indexOf("ип ")===0||name.indexOf("ип\\"")===-1){sel.value="ip";}else if(name.indexOf("ооо")!==-1||name.indexOf("ао")!==-1||name.indexOf("зао")!==-1){sel.value="company";}toggleSenderType();btn.textContent="✓ Загружено";}).catch(function(e){alert("Ошибка: "+e.message);btn.disabled=false;btn.textContent="Загрузить из inSales";});});';
         echo '})();</script>';
         echo '</body></html>';
     }

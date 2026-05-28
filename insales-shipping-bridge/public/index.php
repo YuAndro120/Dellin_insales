@@ -111,6 +111,29 @@ if (str_starts_with($uri, '/insales/')) {
             CarrierJsonHandler::freightSearch($config, $shops);
             exit;
         }
+        if ($uri === '/insales/account' && $method === 'GET') {
+            $insalesId = trim((string) ($_GET['insales_id'] ?? ''));
+            $auth = $shops->findApiAuthByInsalesId($insalesId !== '' ? $insalesId : '');
+            if ($auth === null) {
+                Response::json(['ok' => false, 'error' => 'Магазин не найден'], 404, $cors);
+                exit;
+            }
+            $client = new \ShippingBridge\InSales\InSalesClient();
+            $account = $client->getJsonPath(
+                $auth['shop_host'],
+                $config->insalesAppId ?? '',
+                $auth['api_password'],
+                '/admin/account.json'
+            );
+            Response::json([
+                'ok'           => true,
+                'organization' => $account['organization'] ?? null,
+                'phone'        => $account['contact_phone'] ?? null,
+                'email'        => $account['email'] ?? null,
+                'city'         => $account['city'] ?? null,
+            ], 200, $cors);
+            exit;
+        }
         if ($uri === '/insales/manual-install' && ($method === 'GET' || $method === 'POST')) {
             ManualInstallHandler::handle($config, $shops, $method);
             exit;

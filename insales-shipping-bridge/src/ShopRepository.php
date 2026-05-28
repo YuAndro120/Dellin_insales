@@ -8,11 +8,9 @@ use PDO;
 
 final class ShopRepository
 {
-    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled';
+    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled';
 
-    public function __construct(private readonly PDO $pdo)
-    {
-    }
+    public function __construct(private readonly PDO $pdo) {}
 
     public function upsertOnInstall(string $insalesId, string $shopHost, string $apiPasswordMd5): void
     {
@@ -106,24 +104,6 @@ SQL;
         return $this->findCarrierCredentials((string) $row['insales_id'], $bridgeSecret);
     }
 
-    /**
-     * @param array{
-     *   sender_terminal_id?: int,
-     *   derival_variant: string,
-     *   derival_city_kladr?: ?string,
-     *   derival_street?: ?string,
-     *   derival_house?: ?string,
-     *   requester_email: string,
-     *   counteragent_uid: ?string,
-     *   sender_counteragent_id: ?int,
-     *   freight_uid: ?string,
-     *   produce_days_offset: int,
-     *   default_stated_value: float,
-     *   default_weight_kg: float,
-     *   default_dimensions_cm: string,
-     *   is_enabled: bool,
-     * } $data
-     */
     public function saveDeliverySettings(string $insalesId, array $data): void
     {
         $variant = $data['derival_variant'];
@@ -160,40 +140,61 @@ SQL;
         $senderCaid = ($senderCaid !== null && (int) $senderCaid > 0) ? (int) $senderCaid : null;
         $freightUid = trim((string) ($data['freight_uid'] ?? ''));
 
+        $senderType = $data['sender_type'] ?? 'person';
+        if (!in_array($senderType, ['person', 'ip', 'company'], true)) {
+            $senderType = 'person';
+        }
+
         $st = $this->pdo->prepare(
             'UPDATE insales_shops SET
-              sender_terminal_id = :tid,
-              derival_variant = :variant,
-              derival_city_kladr = :city,
-              derival_street = :street,
-              derival_house = :house,
-              requester_email = :email,
-              counteragent_uid = :uid,
+              sender_terminal_id    = :tid,
+              derival_variant       = :variant,
+              derival_city_kladr    = :city,
+              derival_street        = :street,
+              derival_house         = :house,
+              requester_email       = :email,
+              counteragent_uid      = :uid,
               sender_counteragent_id = :sender_caid,
-              freight_uid = :freight_uid,
-              produce_days_offset = :offset,
-              default_stated_value = :stated,
-              default_weight_kg = :weight,
+              sender_name           = :sender_name,
+              sender_type           = :sender_type,
+              sender_inn            = :sender_inn,
+              sender_doc_type       = :sender_doc_type,
+              sender_doc_serial     = :sender_doc_serial,
+              sender_doc_number     = :sender_doc_number,
+              sender_contact_name   = :sender_contact_name,
+              sender_contact_phone  = :sender_contact_phone,
+              freight_uid           = :freight_uid,
+              produce_days_offset   = :offset,
+              default_stated_value  = :stated,
+              default_weight_kg     = :weight,
               default_dimensions_cm = :dims,
-              is_enabled = :enabled
+              is_enabled            = :enabled
              WHERE insales_id = :iid AND uninstalled_at IS NULL'
         );
         $st->execute([
-            ':tid' => $terminalId > 0 ? $terminalId : null,
-            ':variant' => $variant,
-            ':city' => $cityKladr !== '' ? $cityKladr : null,
-            ':street' => $street !== '' ? $street : null,
-            ':house' => $house !== '' ? $house : null,
-            ':email' => $email,
-            ':uid' => ($data['counteragent_uid'] ?? '') !== '' ? $data['counteragent_uid'] : null,
-            ':sender_caid' => $senderCaid,
-            ':freight_uid' => $freightUid !== '' ? $freightUid : null,
-            ':offset' => $offset,
-            ':stated' => max(0, (float) $data['default_stated_value']),
-            ':weight' => max(0.01, (float) $data['default_weight_kg']),
-            ':dims' => $data['default_dimensions_cm'],
-            ':enabled' => $data['is_enabled'] ? 1 : 0,
-            ':iid' => $insalesId,
+            ':tid'                 => $terminalId > 0 ? $terminalId : null,
+            ':variant'             => $variant,
+            ':city'                => $cityKladr !== '' ? $cityKladr : null,
+            ':street'              => $street !== '' ? $street : null,
+            ':house'               => $house !== '' ? $house : null,
+            ':email'               => $email,
+            ':uid'                 => ($data['counteragent_uid'] ?? '') !== '' ? $data['counteragent_uid'] : null,
+            ':sender_caid'         => $senderCaid,
+            ':sender_name'         => trim((string) ($data['sender_name'] ?? '')) ?: null,
+            ':sender_type'         => $senderType,
+            ':sender_inn'          => trim((string) ($data['sender_inn'] ?? '')) ?: null,
+            ':sender_doc_type'     => trim((string) ($data['sender_doc_type'] ?? '')) ?: null,
+            ':sender_doc_serial'   => trim((string) ($data['sender_doc_serial'] ?? '')) ?: null,
+            ':sender_doc_number'   => trim((string) ($data['sender_doc_number'] ?? '')) ?: null,
+            ':sender_contact_name' => trim((string) ($data['sender_contact_name'] ?? '')) ?: null,
+            ':sender_contact_phone' => trim((string) ($data['sender_contact_phone'] ?? '')) ?: null,
+            ':freight_uid'         => $freightUid !== '' ? $freightUid : null,
+            ':offset'              => $offset,
+            ':stated'              => max(0, (float) $data['default_stated_value']),
+            ':weight'              => max(0.01, (float) $data['default_weight_kg']),
+            ':dims'                => $data['default_dimensions_cm'],
+            ':enabled'             => $data['is_enabled'] ? 1 : 0,
+            ':iid'                 => $insalesId,
         ]);
         $this->assertActiveShop($insalesId);
     }
@@ -231,7 +232,6 @@ SQL;
         return $row !== null ? ShopSettings::fromRow($row) : null;
     }
 
-    /** Для OAuth/API inSales (Basic Auth). */
     public function findActiveByHost(string $shopHost): ?array
     {
         $row = $this->fetchRow(
@@ -256,20 +256,19 @@ SQL;
         }
 
         return [
-            'insales_id' => (string) $row['insales_id'],
-            'shop_host' => (string) $row['shop_host'],
+            'insales_id'   => (string) $row['insales_id'],
+            'shop_host'    => (string) $row['shop_host'],
             'api_password' => (string) $row['api_password'],
         ];
     }
-    /**
-     * @return array<string, mixed>|null
-     */
+
+    /** @return array<string, mixed>|null */
     public function findOrderByInsalesId(string $insalesShopId, string $insalesOrderId): ?array
     {
         return $this->fetchRow(
             'SELECT * FROM dellin_orders
-         WHERE insales_shop_id = :shop_id AND insales_order_id = :order_id
-         LIMIT 1',
+             WHERE insales_shop_id = :shop_id AND insales_order_id = :order_id
+             LIMIT 1',
             [':shop_id' => $insalesShopId, ':order_id' => $insalesOrderId]
         );
     }
@@ -280,18 +279,19 @@ SQL;
         string $barcode,
     ): void {
         $stmt = $this->pdo->prepare('
-        UPDATE dellin_orders
-        SET dellin_request_id = :request_id,
-            dellin_barcode    = :barcode,
-            updated_at        = CURRENT_TIMESTAMP
-        WHERE id = :id
-    ');
+            UPDATE dellin_orders
+            SET dellin_request_id = :request_id,
+                dellin_barcode    = :barcode,
+                updated_at        = CURRENT_TIMESTAMP
+            WHERE id = :id
+        ');
         $stmt->execute([
             'request_id' => $requestId,
             'barcode'    => $barcode,
             'id'         => $id,
         ]);
     }
+
     /** @param array<string, scalar|null> $params */
     private function fetchRow(string $sql, array $params): ?array
     {

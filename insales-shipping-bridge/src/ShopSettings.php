@@ -24,14 +24,21 @@ final class ShopSettings
         public readonly string $requesterEmail,
         public readonly ?string $counteragentUid,
         public readonly ?int $senderCounterAgentId,
+        public readonly ?string $senderName,
+        public readonly string $senderType,
+        public readonly ?string $senderInn,
+        public readonly ?string $senderDocType,
+        public readonly ?string $senderDocSerial,
+        public readonly ?string $senderDocNumber,
+        public readonly ?string $senderContactName,
+        public readonly ?string $senderContactPhone,
         public readonly ?string $freightUid,
         public readonly int $produceDaysOffset,
         public readonly float $defaultStatedValue,
         public readonly float $defaultWeightKg,
         public readonly string $defaultDimensionsCm,
         public readonly bool $isEnabled,
-    ) {
-    }
+    ) {}
 
     public function isDerivalTerminal(): bool
     {
@@ -56,6 +63,11 @@ final class ShopSettings
             $variant = self::DERIVAL_TERMINAL;
         }
 
+        $senderType = (string) ($row['sender_type'] ?? 'person');
+        if (!in_array($senderType, ['person', 'ip', 'company'], true)) {
+            $senderType = 'person';
+        }
+
         $hasAuth = trim((string) ($row['dellin_appkey'] ?? '')) !== ''
             && trim((string) ($row['dellin_pat_enc'] ?? '')) !== '';
 
@@ -75,6 +87,14 @@ final class ShopSettings
             senderCounterAgentId: isset($row['sender_counteragent_id']) && $row['sender_counteragent_id'] !== null
                 ? (int) $row['sender_counteragent_id']
                 : null,
+            senderName: self::nullableString($row['sender_name'] ?? null),
+            senderType: $senderType,
+            senderInn: self::nullableString($row['sender_inn'] ?? null),
+            senderDocType: self::nullableString($row['sender_doc_type'] ?? null),
+            senderDocSerial: self::nullableString($row['sender_doc_serial'] ?? null),
+            senderDocNumber: self::nullableString($row['sender_doc_number'] ?? null),
+            senderContactName: self::nullableString($row['sender_contact_name'] ?? null),
+            senderContactPhone: self::nullableString($row['sender_contact_phone'] ?? null),
             freightUid: self::nullableString($row['freight_uid'] ?? null),
             produceDaysOffset: $offset,
             defaultStatedValue: (float) ($row['default_stated_value'] ?? 0),

@@ -176,9 +176,15 @@ final class CarrierApi
                 'arrival' => $arrivalBlock,
             ],
             'members' => [
-                'requester' => $requester,
+                'requester' => [
+                    'role'  => 'sender',
+                    'uid'   => $settings->counteragentUid ?? '',
+                    'email' => $settings->requesterEmail ?? '',
+                ],
                 'sender' => [
                     'counteragentUID' => $settings->counteragentUid ?? '',
+                    'contactPersons'  => [['name' => 'Отправитель']],
+                    'phoneNumbers'    => [['number' => '70000000000']],
                 ],
                 'receiver' => [
                     // isAnonym=true: упрощённая отправка, document не требуется.

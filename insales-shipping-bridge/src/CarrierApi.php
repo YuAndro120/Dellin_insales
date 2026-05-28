@@ -150,7 +150,6 @@ final class CarrierApi
         // Заказчик: uid обязателен для авторизованных пользователей с полным доступом к контрагентам
         $requester = array_filter([
             'role'  => 'sender',
-            'uid'   => $settings->counteragentUid ?? '',
             'email' => $settings->requesterEmail ?? '',
         ]);
 

@@ -99,6 +99,11 @@ final class AppSettingsHandler
             $settings = $shops->findSettingsByInsalesId($settings->insalesId, $config) ?? $settings;
         } elseif ($method === 'POST') {
             try {
+                $senderType = trim((string) ($_POST['sender_type'] ?? 'person'));
+                $senderInn = trim((string) ($_POST['sender_inn'] ?? ''));
+                if (in_array($senderType, ['ip', 'company'], true) && $senderInn === '') {
+                    throw new \RuntimeException('Заполните ИНН — он обязателен для ИП и юридических лиц.');
+                }
                 $variant = (string) ($_POST['derival_variant'] ?? ShopSettings::DERIVAL_TERMINAL);
                 $shops->saveDeliverySettings($settings->insalesId, [
                     'derival_variant' => $variant,
@@ -318,6 +323,7 @@ final class AppSettingsHandler
         echo '<div id="blockInn"' . ($showInn ? '' : ' style="display:none"') . '>';
         echo '<label for="sender_inn">ИНН</label>';
         echo '<input type="text" id="sender_inn" name="sender_inn" value="' . $h($s->senderInn ?? '') . '" placeholder="1234567890">';
+        echo '<p class="hint" style="color:#e65100">⚠ Обязательно для ИП и юридических лиц. Заполните вручную.</p>';
         echo '</div>';
 
         $showDoc = $s->senderType !== 'company';

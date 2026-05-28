@@ -8,12 +8,7 @@ use PDO;
 
 final class ShopRepository
 {
-    private const SELECT_FIELDS = <<<'SQL'
-insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc,
-sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house,
-requester_email, counteragent_uid, sender_counteragent_id, freight_uid, produce_days_offset,
-default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled
-SQL;
+    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled';
 
     public function __construct(private readonly PDO $pdo)
     {

@@ -11,7 +11,7 @@ final class ShopRepository
     private const SELECT_FIELDS = <<<'SQL'
 insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc,
 sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house,
-requester_email, counteragent_uid, produce_days_offset,
+requester_email, counteragent_uid, sender_counteragent_id, freight_uid, produce_days_offset,
 default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled
 SQL;
 
@@ -120,6 +120,8 @@ SQL;
      *   derival_house?: ?string,
      *   requester_email: string,
      *   counteragent_uid: ?string,
+     *   sender_counteragent_id: ?int,
+     *   freight_uid: ?string,
      *   produce_days_offset: int,
      *   default_stated_value: float,
      *   default_weight_kg: float,
@@ -159,6 +161,10 @@ SQL;
             throw new \InvalidArgumentException('Дней до отгрузки: от 0 до 30');
         }
 
+        $senderCaid = ($data['sender_counteragent_id'] ?? null);
+        $senderCaid = ($senderCaid !== null && (int) $senderCaid > 0) ? (int) $senderCaid : null;
+        $freightUid = trim((string) ($data['freight_uid'] ?? ''));
+
         $st = $this->pdo->prepare(
             'UPDATE insales_shops SET
               sender_terminal_id = :tid,
@@ -168,6 +174,8 @@ SQL;
               derival_house = :house,
               requester_email = :email,
               counteragent_uid = :uid,
+              sender_counteragent_id = :sender_caid,
+              freight_uid = :freight_uid,
               produce_days_offset = :offset,
               default_stated_value = :stated,
               default_weight_kg = :weight,
@@ -183,6 +191,8 @@ SQL;
             ':house' => $house !== '' ? $house : null,
             ':email' => $email,
             ':uid' => ($data['counteragent_uid'] ?? '') !== '' ? $data['counteragent_uid'] : null,
+            ':sender_caid' => $senderCaid,
+            ':freight_uid' => $freightUid !== '' ? $freightUid : null,
             ':offset' => $offset,
             ':stated' => max(0, (float) $data['default_stated_value']),
             ':weight' => max(0.01, (float) $data['default_weight_kg']),

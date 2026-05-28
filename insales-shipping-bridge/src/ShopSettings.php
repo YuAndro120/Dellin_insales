@@ -23,6 +23,8 @@ final class ShopSettings
         public readonly ?string $derivalHouse,
         public readonly string $requesterEmail,
         public readonly ?string $counteragentUid,
+        public readonly ?int $senderCounterAgentId,
+        public readonly ?string $freightUid,
         public readonly int $produceDaysOffset,
         public readonly float $defaultStatedValue,
         public readonly float $defaultWeightKg,
@@ -70,6 +72,10 @@ final class ShopSettings
             derivalHouse: self::nullableString($row['derival_house'] ?? null),
             requesterEmail: $email,
             counteragentUid: is_string($uid) && $uid !== '' ? $uid : null,
+            senderCounterAgentId: isset($row['sender_counteragent_id']) && $row['sender_counteragent_id'] !== null
+                ? (int) $row['sender_counteragent_id']
+                : null,
+            freightUid: self::nullableString($row['freight_uid'] ?? null),
             produceDaysOffset: $offset,
             defaultStatedValue: (float) ($row['default_stated_value'] ?? 0),
             defaultWeightKg: max(0.01, (float) ($row['default_weight_kg'] ?? 1)),

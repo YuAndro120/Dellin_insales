@@ -89,6 +89,29 @@ final class CarrierJsonHandler
         Response::json(['ok' => true, 'terminals' => $points, 'count' => count($points)], 200, self::cors($config));
     }
 
+    public static function freightSearch(Config $config, ShopRepository $shops): void
+    {
+        $creds = self::resolveCredentials($shops, $config);
+        if ($creds === null) {
+            return;
+        }
+
+        $q = trim((string) ($_GET['q'] ?? ''));
+        if (mb_strlen($q) < 2) {
+            Response::json(['ok' => false, 'error' => 'q must be at least 2 chars'], 422, self::cors($config));
+            return;
+        }
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+
+        try {
+            $api   = new CarrierApi($config);
+            $items = $api->searchFreightTypes($q, $page, $creds);
+            Response::json(['ok' => true, 'items' => $items], 200, self::cors($config));
+        } catch (\Throwable $e) {
+            Response::json(['ok' => false, 'error' => $e->getMessage()], 422, self::cors($config));
+        }
+    }
+
     private static function resolveCredentials(ShopRepository $shops, Config $config): ?\ShippingBridge\CarrierCredentials
     {
         if ($config->bridgeSecret === '') {

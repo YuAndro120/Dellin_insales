@@ -27,6 +27,8 @@ final class ShopDeliveryContext
                 derivalHouse: null,
                 requesterEmail: trim($body['requester_email']),
                 counteragentUid: isset($body['counteragent_uid']) ? (string) $body['counteragent_uid'] : null,
+                senderCounterAgentId: isset($body['sender_counteragent_id']) ? (int) $body['sender_counteragent_id'] : null,
+                freightUid: isset($body['freight_uid']) ? (string) $body['freight_uid'] : null,
                 produceDaysOffset: (int) ($body['produce_days_offset'] ?? 2),
                 defaultStatedValue: (float) ($body['default_stated_value'] ?? 0),
                 defaultWeightKg: max(0.01, (float) ($body['default_weight_kg'] ?? 1)),

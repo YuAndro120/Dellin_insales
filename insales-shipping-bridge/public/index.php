@@ -107,6 +107,10 @@ if (str_starts_with($uri, '/insales/')) {
             CarrierJsonHandler::terminals($config, $shops);
             exit;
         }
+        if ($uri === '/insales/freight/search' && $method === 'GET') {
+            CarrierJsonHandler::freightSearch($config, $shops);
+            exit;
+        }
         if ($uri === '/insales/manual-install' && ($method === 'GET' || $method === 'POST')) {
             ManualInstallHandler::handle($config, $shops, $method);
             exit;

@@ -19,6 +19,7 @@ final class CarrierApi
     private const URL_ADDRESS_CLEAN   = 'https://api.dellin.ru/v1/public/address_clean.json';
     private const URL_TERMINALS_MANIFEST = 'https://api.dellin.ru/v3/public/terminals.json';
     private const URL_ORDER = 'https://api.dellin.ru/v2/request.json';
+    private const URL_FREIGHT_SEARCH = 'https://api.dellin.ru/v1/public/freight_types/search.json';
 
     public function __construct(private readonly Config $config)
     {
@@ -137,12 +138,13 @@ final class CarrierApi
             ];
         }
 
-        // Телефон получателя
-        $phoneNumbers = [];
-        if ($receiverPhone !== '') {
-            $phoneNumbers[] = ['number' => $receiverPhone];
-        } else {
-            $phoneNumbers[] = ['number' => '70000000000']; // заглушка если нет телефона
+        // Телефон получателя — для анонимного получателя нужен формат 7ХХХХХХХХХХ (11 цифр)
+        $receiverPhoneNorm = $receiverPhone;
+        if (strlen($receiverPhoneNorm) === 10) {
+            $receiverPhoneNorm = '7' . $receiverPhoneNorm;
+        }
+        if (strlen($receiverPhoneNorm) !== 11 || $receiverPhoneNorm[0] !== '7') {
+            $receiverPhoneNorm = '70000000000';
         }
 
         // Заказчик: uid обязателен для авторизованных пользователей с полным доступом к контрагентам
@@ -151,6 +153,24 @@ final class CarrierApi
             'uid'   => $settings->counteragentUid ?? '',
             'email' => $settings->requesterEmail ?? '',
         ]);
+
+        // Отправитель: используем counteragentID (integer из адресной книги ДЛ).
+        // Это позволяет избежать передачи document и dataForReceipt для физлица.
+        if ($settings->senderCounterAgentId === null) {
+            throw new \RuntimeException(
+                'Не настроен ID контрагента-отправителя (sender_counteragent_id). ' .
+                'Откройте настройки приложения и заполните поле «ID контрагента-отправителя».'
+            );
+        }
+
+        // freightUID: характер груза из настроек магазина
+        $freightUid = $settings->freightUid ?? '';
+        if ($freightUid === '') {
+            throw new \RuntimeException(
+                'Не задан UID характера груза (freight_uid). ' .
+                'Откройте настройки приложения и заполните поле «UID характера груза».'
+            );
+        }
 
         $body = [
             'appkey'    => $appkey,
@@ -168,23 +188,21 @@ final class CarrierApi
             'members' => [
                 'requester' => $requester,
                 'sender' => [
-                    'counteragent'   => [
-                        'form' => '0xAB91FEEA04F6D4AD48DF42161B6C2E7A', // Частное лицо РФ
-                        'name' => 'Отправитель',
-                        'isAnonym' => false,
-                    ],
+                    // counteragentID ссылается на зарегистрированный контрагент в ДЛ —
+                    // document и dataForReceipt не требуются
+                    'counteragentID' => $settings->senderCounterAgentId,
                     'contactPersons' => [['name' => 'Отправитель']],
                     'phoneNumbers'   => [['number' => '70000000000']],
                 ],
                 'receiver' => [
-                    'counteragent'   => [
-                        'form'     => '0xAB91FEEA04F6D4AD48DF42161B6C2E7A', // Частное лицо РФ
-                        'name'     => $receiverName,
-                        'isAnonym' => false,
+                    // isAnonym=true: упрощённая отправка, document не требуется.
+                    // phone обязателен; contactPersons/phoneNumbers игнорируются.
+                    'counteragent' => [
+                        'form'     => '0xAB91FEEA04F6D4AD48DF42161B6C2E7A',
+                        'name'     => $receiverName ?: 'Получатель',
+                        'isAnonym' => true,
+                        'phone'    => $receiverPhoneNorm,
                     ],
-                    'contactPersons' => [['name' => $receiverName]],
-                    'phoneNumbers'   => $phoneNumbers,
-                    'email'          => $receiverEmail !== '' ? $receiverEmail : null,
                 ],
             ],
             'cargo' => [
@@ -199,7 +217,7 @@ final class CarrierApi
                     'statedValue' => $statedValue,
                     'term'        => true,
                 ],
-                'freightUID' => '0x9c2acaea110d75ba48fdc7a83c976269', // "Другое"
+                'freightUID' => $freightUid,
             ],
             'payment' => [
                 'type'         => 'noncash',
@@ -272,7 +290,15 @@ final class CarrierApi
             if ($inn !== '') {
                 $name .= ' (ИНН ' . $inn . ')';
             }
-            $byUid[$uid] = new DellinCounteragent($uid, $name);
+            // Integer counteragentID для использования в sender.counteragentID запроса заявки
+            $counteragentId = null;
+            foreach (['counteragentID', 'counterAgentId', 'id'] as $k) {
+                if (isset($item[$k]) && is_numeric($item[$k]) && (int) $item[$k] > 0) {
+                    $counteragentId = (int) $item[$k];
+                    break;
+                }
+            }
+            $byUid[$uid] = new DellinCounteragent($uid, $name, $counteragentId);
         }
 
         $list = array_values($byUid);
@@ -472,6 +498,37 @@ final class CarrierApi
         $res = $this->postJson(self::URL_CALC, $body);
 
         return $this->parseCalculatorResponse($res);
+    }
+
+    /**
+     * Поиск характера груза по строке (сборные грузы).
+     *
+     * @return list<array{uid: string, name: string, comment: string}>
+     */
+    public function searchFreightTypes(string $query, int $page = 1, ?CarrierCredentials $credentials = null): array
+    {
+        $appkey = $this->resolveAppkey($credentials);
+        $res = $this->postJson(self::URL_FREIGHT_SEARCH, [
+            'appkey' => $appkey,
+            'name'   => $query,
+            'page'   => $page,
+        ]);
+
+        $result = [];
+        foreach ($res['freight_types'] ?? [] as $item) {
+            $uid  = (string) ($item['sqlUID'] ?? '');
+            $name = (string) ($item['value'] ?? '');
+            if ($uid === '' || $name === '') {
+                continue;
+            }
+            $result[] = [
+                'uid'     => $uid,
+                'name'    => $name,
+                'comment' => (string) ($item['comment'] ?? ''),
+            ];
+        }
+
+        return $result;
     }
 
     /** @return array{url:string,hash?:string} */

@@ -108,6 +108,8 @@ final class AppSettingsHandler
                     'derival_house' => trim((string) ($_POST['derival_house'] ?? '')),
                     'requester_email' => trim((string) ($_POST['requester_email'] ?? '')),
                     'counteragent_uid' => trim((string) ($_POST['counteragent_uid'] ?? '')) ?: null,
+                    'sender_counteragent_id' => (int) ($_POST['sender_counteragent_id'] ?? 0) ?: null,
+                    'freight_uid' => trim((string) ($_POST['freight_uid'] ?? '')) ?: null,
                     'produce_days_offset' => (int) ($_POST['produce_days_offset'] ?? 2),
                     'default_stated_value' => (float) str_replace(',', '.', (string) ($_POST['default_stated_value'] ?? '0')),
                     'default_weight_kg' => (float) str_replace(',', '.', (string) ($_POST['default_weight_kg'] ?? '1')),
@@ -277,6 +279,45 @@ final class AppSettingsHandler
         echo '<label for="requester_email">Email отправителя</label>';
         echo '<input type="email" id="requester_email" name="requester_email" required value="' . $h($s->requesterEmail) . '">';
 
+        $savedCaid = $s->senderCounterAgentId !== null ? (string) $s->senderCounterAgentId : '';
+        echo '<label for="sender_counteragent_id">ID контрагента-отправителя <span class="hint">(целое число из адресной книги ДЛ — нужен для оформления заявки)</span></label>';
+        if ($counteragents !== []) {
+            echo '<select id="sender_counteragent_id" name="sender_counteragent_id">';
+            echo '<option value="">— выберите —</option>';
+            foreach ($counteragents as $c) {
+                if ($c->counteragentId === null) {
+                    continue;
+                }
+                $caidStr = (string) $c->counteragentId;
+                $sel = $caidStr === $savedCaid ? ' selected' : '';
+                echo '<option value="' . $h($caidStr) . '"' . $sel . '>' . $h($c->name) . ' (ID ' . $h($caidStr) . ')</option>';
+            }
+            if ($savedCaid !== '') {
+                $found = false;
+                foreach ($counteragents as $c) {
+                    if ((string) $c->counteragentId === $savedCaid) {
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    echo '<option value="' . $h($savedCaid) . '" selected>ID ' . $h($savedCaid) . ' (сохранённый)</option>';
+                }
+            }
+            echo '</select>';
+        } else {
+            echo '<input type="number" id="sender_counteragent_id" name="sender_counteragent_id" min="1" value="' . $h($savedCaid) . '" placeholder="Например: 456783515">';
+        }
+
+        $freightUid  = $h($s->freightUid ?? '');
+        echo '<label>Характер груза <span class="hint">(из справочника Деловых Линий)</span></label>';
+        echo '<input type="text" id="freightSearch" autocomplete="off" placeholder="Начните вводить название груза…">';
+        echo '<ul id="freightSuggestions"></ul>';
+        echo '<input type="hidden" id="freight_uid" name="freight_uid" value="' . $freightUid . '">';
+        echo '<p id="freightSelected" class="hint">';
+        echo $freightUid !== '' ? 'Сохранённый UID: <code>' . $freightUid . '</code>' : 'Не выбрано';
+        echo '</p>';
+
         echo '<h2>Груз по умолчанию</h2>';
         echo '<p class="hint">Если у варианта товара в inSales не заполнены вес или габариты.</p>';
         echo '<label for="default_weight_kg">Вес, кг</label>';
@@ -324,6 +365,7 @@ final class AppSettingsHandler
         echo 'var iidQ=' . json_encode($iidQ) . ';';
         echo 'var apiBase="/insales/cities/search?shop="+shopQ+"&insales_id="+iidQ+"&q=";';
         echo 'var termBase="/insales/terminals?shop="+shopQ+"&insales_id="+iidQ;';
+        echo 'var freightBase="/insales/freight/search?shop="+shopQ+"&insales_id="+iidQ+"&q=";';
         echo 'function $(id){return document.getElementById(id);}';
         echo 'function fetchJson(u){return fetch(u,{headers:{Accept:"application/json"}}).then(function(r){return r.json();});}';
         echo 'function bindCity(inputId,listId,onPick){var input=$(inputId),list=$(listId),timer;';
@@ -346,6 +388,21 @@ final class AppSettingsHandler
         echo '$("blockAddress").style.display=t?"none":"";$("sender_terminal_id").disabled=!t;}';
         echo '$("dv_terminal").addEventListener("change",toggleDerival);';
         echo '$("dv_address").addEventListener("change",toggleDerival);';
+        echo '(function(){';
+        echo 'var fi=$("freightSearch"),fl=$("freightSuggestions"),fh=$("freight_uid"),fs=$("freightSelected"),timer;';
+        echo 'if(!fi)return;';
+        echo 'fi.addEventListener("input",function(){clearTimeout(timer);var q=fi.value.trim();fl.style.display="none";if(q.length<2)return;';
+        echo 'timer=setTimeout(function(){fetchJson(freightBase+encodeURIComponent(q)).then(function(j){';
+        echo 'if(!j.ok)return;fl.innerHTML="";(j.items||[]).slice(0,15).forEach(function(it){';
+        echo 'var li=document.createElement("li");li.textContent=it.name+(it.comment?" — "+it.comment.slice(0,60):"");';
+        echo 'li.title=it.uid;';
+        echo 'li.addEventListener("click",function(){';
+        echo 'fh.value=it.uid;fi.value=it.name;';
+        echo 'fs.innerHTML="Выбрано: <strong>"+it.name+"</strong> <code>"+it.uid+"</code>";';
+        echo 'fl.style.display="none";});fl.appendChild(li);});';
+        echo 'fl.style.display=fl.children.length?"block":"none";});},350);});';
+        echo 'document.addEventListener("click",function(e){if(!fi.contains(e.target)&&!fl.contains(e.target))fl.style.display="none";});';
+        echo '})();';
         echo '})();</script>';
         echo '</body></html>';
     }
@@ -426,9 +483,10 @@ final class AppSettingsHandler
         echo 'button,.btn-secondary{margin-top:1.25rem;padding:.65rem 1.4rem;cursor:pointer;background:#3d5afe;color:#fff;border:0;border-radius:6px;font-size:14px}';
         echo '.btn-secondary{background:#555;margin-top:.5rem}';
         echo '.ok{color:#0a0}.err{color:#c00}';
-        echo '#citySuggestions,#pickupCitySuggestions{list-style:none;margin:0;padding:0;border:1px solid #ccc;border-radius:4px;max-height:160px;overflow:auto;display:none}';
-        echo '#citySuggestions li,#pickupCitySuggestions li{padding:.45rem .75rem;cursor:pointer;border-bottom:1px solid #eee}';
-        echo '#citySuggestions li:hover,#pickupCitySuggestions li:hover{background:#f0f4ff}';
+        echo '#citySuggestions,#pickupCitySuggestions,#freightSuggestions{list-style:none;margin:0;padding:0;border:1px solid #ccc;border-radius:4px;max-height:180px;overflow:auto;display:none}';
+        echo '#citySuggestions li,#pickupCitySuggestions li,#freightSuggestions li{padding:.45rem .75rem;cursor:pointer;border-bottom:1px solid #eee;font-size:.875rem}';
+        echo '#citySuggestions li:hover,#pickupCitySuggestions li:hover,#freightSuggestions li:hover{background:#f0f4ff}';
+        echo 'code{font-size:.75rem;background:#f5f5f5;padding:.1rem .3rem;border-radius:3px}';
         echo '</style></head><body>';
     }
 

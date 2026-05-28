@@ -154,15 +154,6 @@ final class CarrierApi
             'email' => $settings->requesterEmail ?? '',
         ]);
 
-        // Отправитель: используем counteragentID (integer из адресной книги ДЛ).
-        // Это позволяет избежать передачи document и dataForReceipt для физлица.
-        if ($settings->senderCounterAgentId === null) {
-            throw new \RuntimeException(
-                'Не настроен ID контрагента-отправителя (sender_counteragent_id). ' .
-                'Откройте настройки приложения и заполните поле «ID контрагента-отправителя».'
-            );
-        }
-
         // freightUID: характер груза из настроек магазина
         $freightUid = $settings->freightUid ?? '';
         if ($freightUid === '') {
@@ -188,11 +179,7 @@ final class CarrierApi
             'members' => [
                 'requester' => $requester,
                 'sender' => [
-                    // counteragentID ссылается на зарегистрированный контрагент в ДЛ —
-                    // document и dataForReceipt не требуются
-                    'counteragentID' => $settings->senderCounterAgentId,
-                    'contactPersons' => [['name' => 'Отправитель']],
-                    'phoneNumbers'   => [['number' => '70000000000']],
+                    'counteragentUID' => $settings->counteragentUid ?? '',
                 ],
                 'receiver' => [
                     // isAnonym=true: упрощённая отправка, document не требуется.
@@ -498,37 +485,6 @@ final class CarrierApi
         $res = $this->postJson(self::URL_CALC, $body);
 
         return $this->parseCalculatorResponse($res);
-    }
-
-    /**
-     * Поиск характера груза по строке (сборные грузы).
-     *
-     * @return list<array{uid: string, name: string, comment: string}>
-     */
-    public function searchFreightTypes(string $query, int $page = 1, ?CarrierCredentials $credentials = null): array
-    {
-        $appkey = $this->resolveAppkey($credentials);
-        $res = $this->postJson(self::URL_FREIGHT_SEARCH, [
-            'appkey' => $appkey,
-            'name'   => $query,
-            'page'   => $page,
-        ]);
-
-        $result = [];
-        foreach ($res['freight_types'] ?? [] as $item) {
-            $uid  = (string) ($item['sqlUID'] ?? '');
-            $name = (string) ($item['value'] ?? '');
-            if ($uid === '' || $name === '') {
-                continue;
-            }
-            $result[] = [
-                'uid'     => $uid,
-                'name'    => $name,
-                'comment' => (string) ($item['comment'] ?? ''),
-            ];
-        }
-
-        return $result;
     }
 
     /** @return array{url:string,hash?:string} */

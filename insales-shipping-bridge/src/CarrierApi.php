@@ -107,19 +107,34 @@ final class CarrierApi
             ->modify('+' . $settings->produceDaysOffset . ' days')
             ->format('Y-m-d');
 
-        // Адрес прибытия
+        // Адрес прибытия: variant=address + address object, или terminal + city если адреса нет.
+        // При variant=address передача city запрещена документацией API.
         if ($streetKladr !== null && $arrivalHouse !== '') {
-            $arrivalAddress = array_filter([
-                'street' => $streetKladr,
-                'house'  => $arrivalHouse,
-                'flat'   => $arrivalFlat !== '' ? $arrivalFlat : null,
-            ]);
+            $arrivalBlock = [
+                'variant' => 'address',
+                'address' => array_filter([
+                    'street' => $streetKladr,
+                    'house'  => $arrivalHouse,
+                    'flat'   => $arrivalFlat !== '' ? $arrivalFlat : null,
+                ]),
+            ];
+        } elseif ($arrivalStreet !== '' && $arrivalHouse !== '') {
+            $cityName = (string) ($order['arrival_city_name'] ?? '');
+            $parts  = array_filter([$cityName, $arrivalStreet, $arrivalHouse]);
+            $search = implode(', ', $parts);
+            $arrivalBlock = [
+                'variant' => 'address',
+                'address' => array_filter([
+                    'search' => $search,
+                    'flat'   => $arrivalFlat !== '' ? $arrivalFlat : null,
+                ]),
+            ];
         } else {
-            $search = trim(($order['arrival_city_name'] ?? '') . ', ' . $arrivalStreet . ', ' . $arrivalHouse);
-            $arrivalAddress = array_filter([
-                'search' => $search !== '' ? $search : null,
-                'flat'   => $arrivalFlat !== '' ? $arrivalFlat : null,
-            ]);
+            // Нет адреса — доставка на ближайший терминал в городе получателя
+            $arrivalBlock = [
+                'variant' => 'terminal',
+                'city'    => $arrivalCityKladr,
+            ];
         }
 
         // Телефон получателя
@@ -129,6 +144,13 @@ final class CarrierApi
         } else {
             $phoneNumbers[] = ['number' => '70000000000']; // заглушка если нет телефона
         }
+
+        // Заказчик: uid обязателен для авторизованных пользователей с полным доступом к контрагентам
+        $requester = array_filter([
+            'role'  => 'sender',
+            'uid'   => $settings->counteragentUid ?? '',
+            'email' => $settings->requesterEmail ?? '',
+        ]);
 
         $body = [
             'appkey'    => $appkey,
@@ -141,20 +163,11 @@ final class CarrierApi
                     'variant'     => 'terminal',
                     'terminalID'  => (string) $settings->senderTerminalId,
                 ],
-                'arrival' => [
-                    'variant' => 'address',
-                    'city'    => $arrivalCityKladr,
-                    'address' => $arrivalAddress,
-                ],
+                'arrival' => $arrivalBlock,
             ],
             'members' => [
-                'requester' => [
-                    'role'  => 'sender',
-                    'uid'   => $settings->counteragentUid ?? '',
-                    'email' => $settings->requesterEmail ?? '',
-                ],
+                'requester' => $requester,
                 'sender' => [
-                    'counteragentID' => null,
                     'counteragent'   => [
                         'form' => '0xAB91FEEA04F6D4AD48DF42161B6C2E7A', // Частное лицо РФ
                         'name' => 'Отправитель',

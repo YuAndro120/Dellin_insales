@@ -33,14 +33,17 @@ final class InstallHandlers
 
         $client = new InSalesClient();
 
+        // Регистрируем webhook на создание и обновление заказов
         $webhookUrl = rtrim($config->publicBridgeUrl, '/') . '/insales/webhook/orders';
         foreach (['orders/create', 'orders/update'] as $topic) {
             try {
                 $client->registerWebhook($shop, $config->insalesAppId ?? '', $apiPassword, $topic, $webhookUrl);
             } catch (\Throwable) {
+                // Не блокируем установку если webhook уже существует или ошибка
             }
         }
 
+        // Регистрируем виджет в карточке заказа
         try {
             $client->registerWidget(
                 $shop,
@@ -49,6 +52,7 @@ final class InstallHandlers
                 self::buildWidgetCode($config->publicBridgeUrl, $insalesId),
             );
         } catch (\Throwable) {
+            // Не блокируем установку если виджет уже существует
         }
 
         http_response_code(200);
@@ -73,31 +77,139 @@ final class InstallHandlers
         echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Удалено</title></head><body><p>Приложение отключено для магазина.</p></body></html>';
     }
 
-    private static function buildWidgetCode(string $bridgeUrl, string $insalesId): string
-    {
-        $url = rtrim($bridgeUrl, '/');
-        return <<<HTML
+  private static function buildWidgetCode(string $bridgeUrl, string $insalesId): string
+  {
+    $url = rtrim($bridgeUrl, '/');
+    return <<<HTML
 <html><head><meta charset="utf-8">
-<style>body{margin:0;padding:8px;font-family:-apple-system,sans-serif}button{width:100%;padding:9px;background:#f5501e;color:#fff;border:0;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}button:hover{background:#e04418}button:disabled{background:#aaa}.err{color:#c00;font-size:12px;margin-top:4px}.ok{color:#16a34a;font-size:12px;margin-top:4px}</style>
+<style>
+body{font-family:system-ui,sans-serif;margin:0;padding:8px;font-size:13px}
+button{padding:6px 14px;background:#3d5afe;color:#fff;border:0;border-radius:4px;cursor:pointer;font-size:13px;margin-top:6px}
+button:disabled{background:#aaa}
+button.green{background:#2e7d32}
+input,select{padding:4px 6px;font-size:13px;border:1px solid #ccc;border-radius:4px;width:100%;box-sizing:border-box;margin-top:3px}
+label{display:block;margin-top:8px;font-weight:500}
+.ok{color:#0a0;margin-top:6px}
+.err{color:#c00;margin-top:6px}
+.hint{color:#666;font-size:.85em}
+#labelForm{margin-top:12px;border-top:1px solid #eee;padding-top:10px;display:none}
+</style>
 </head><body>
-<button id="btn" onclick="go()">📦 Оформить в Деловые Линии</button>
-<div id="st"></div>
+<div id="app">
+  <button id="btn" onclick="submitOrder()">Оформить в Деловые Линии</button>
+  <div id="status"></div>
+  <div id="labelForm">
+    <p class="hint">Этикетка для груза:</p>
+    <label>Артикул грузового места <span class="hint">(необязательно, до 30 символов)</span></label>
+    <input type="text" id="cargoPlace" maxlength="30" placeholder="Оставьте пустым — ДЛ подставит номер заявки">
+    <label>Формат этикетки</label>
+    <select id="labelFormat">
+      <option value="80x50">80×50 мм</option>
+      <option value="a4">A4</option>
+    </select>
+    <button class="green" onclick="submitLabels()">Сформировать этикетку</button>
+    <div id="labelStatus"></div>
+  </div>
+</div>
 <script>
-var B='{$url}',I='{$insalesId}';
-function go(){
-  var id=window.order_info?window.order_info.id:null;
-  if(!id){document.getElementById('st').innerHTML='<p class="err">ID заказа не найден</p>';return;}
-  window.open(B+'/insales/modal?insales_id='+I+'&order_id='+id,'_blank','width=620,height=820,resizable=yes');
-}
-window.addEventListener('message',function(e){
-  if(e.data&&e.data.dlAction==='success'){
-    document.getElementById('btn').textContent='✓ Заявка #'+e.data.requestId+' оформлена';
-    document.getElementById('btn').style.background='#16a34a';
-    document.getElementById('btn').disabled=false;
+var insalesId = '{$insalesId}';
+var bridgeUrl = '{$url}';
+var currentOrderId = null;
+
+function submitOrder() {
+  var orderId = window.order_info ? window.order_info.id : null;
+  if (!orderId) {
+    document.getElementById('status').innerHTML = '<p class="err">Не удалось получить ID заказа</p>';
+    return;
   }
-});
+  currentOrderId = String(orderId);
+  var btn = document.getElementById('btn');
+  btn.disabled = true;
+  btn.textContent = 'Отправка...';
+  fetch(bridgeUrl + '/insales/orders/submit', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({insales_id: insalesId, insales_order_id: currentOrderId})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      document.getElementById('status').innerHTML =
+        '<p class="ok">✓ Заявка #' + data.request_id + ' создана</p>';
+      btn.textContent = 'Оформлено';
+      document.getElementById('labelForm').style.display = 'block';
+    } else {
+      document.getElementById('status').innerHTML = '<p class="err">Ошибка: ' + data.error + '</p>';
+      btn.disabled = false;
+      btn.textContent = 'Оформить в Деловые Линии';
+    }
+  })
+  .catch(function() {
+    document.getElementById('status').innerHTML = '<p class="err">Ошибка сети</p>';
+    btn.disabled = false;
+    btn.textContent = 'Оформить в Деловые Линии';
+  });
+}
+
+function submitLabels() {
+  var cp = document.getElementById('cargoPlace').value.trim();
+  var fmt = document.getElementById('labelFormat').value;
+  var st = document.getElementById('labelStatus');
+  st.innerHTML = '<p class="hint">Формируем этикетку…</p>';
+  fetch(bridgeUrl + '/insales/orders/labels', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      insales_id: insalesId,
+      insales_order_id: currentOrderId,
+      action: 'submit',
+      cargo_place: cp !== '' ? cp : null,
+      format: fmt
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (!data.ok) throw new Error(data.error || 'Ошибка');
+    st.innerHTML = '<p class="hint">Ожидаем готовности этикетки…</p>';
+    return pollLabels(0);
+  })
+  .catch(function(e) {
+    st.innerHTML = '<p class="err">Ошибка: ' + e.message + '</p>';
+  });
+}
+
+function pollLabels(attempt) {
+  if (attempt > 10) {
+    document.getElementById('labelStatus').innerHTML = '<p class="err">Этикетка не готова. Попробуйте позже.</p>';
+    return;
+  }
+  setTimeout(function() {
+    fetch(bridgeUrl + '/insales/orders/labels', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        insales_id: insalesId,
+        insales_order_id: currentOrderId,
+        action: 'get'
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (data.ok && data.ready && data.files && data.files.length > 0) {
+        var html = '<p class="ok">✓ Этикетка готова:</p>';
+        data.files.forEach(function(f) {
+          html += '<p><a href="' + f + '" target="_blank">Скачать этикетку</a></p>';
+        });
+        document.getElementById('labelStatus').innerHTML = html;
+      } else {
+        pollLabels(attempt + 1);
+      }
+    })
+    .catch(function() { pollLabels(attempt + 1); });
+  }, 3000);
+}
 </script>
 </body></html>
 HTML;
-    }
+  }
 }

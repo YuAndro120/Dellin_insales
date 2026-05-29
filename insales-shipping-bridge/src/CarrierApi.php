@@ -110,6 +110,7 @@ final class CarrierApi
 
         // Адрес прибытия: variant=address + address object, или terminal + city если адреса нет.
         // При variant=address передача city запрещена документацией API.
+        // Если есть адрес — доставка до адреса, иначе до ближайшего терминала в городе
         if ($streetKladr !== null && $arrivalHouse !== '') {
             $arrivalBlock = [
                 'variant' => 'address',
@@ -121,8 +122,7 @@ final class CarrierApi
             ];
         } elseif ($arrivalStreet !== '' && $arrivalHouse !== '') {
             $cityName = (string) ($order['arrival_city_name'] ?? '');
-            $parts  = array_filter([$cityName, $arrivalStreet, $arrivalHouse]);
-            $search = implode(', ', $parts);
+            $search = implode(', ', array_filter([$cityName, $arrivalStreet, $arrivalHouse]));
             $arrivalBlock = [
                 'variant' => 'address',
                 'address' => array_filter([
@@ -131,7 +131,7 @@ final class CarrierApi
                 ]),
             ];
         } else {
-            // Нет адреса — доставка на ближайший терминал в городе получателя
+            // Нет адреса — доставка до ближайшего терминала по КЛАДР города
             $arrivalBlock = [
                 'variant' => 'terminal',
                 'city'    => $arrivalCityKladr,
@@ -161,7 +161,26 @@ final class CarrierApi
                 'Откройте настройки приложения и заполните поле «UID характера груза».'
             );
         }
+        $senderForm = match ($settings->senderType) {
+            'company' => '0xbc1e63c5f81187e244490a5afd657cbd',
+            'ip'      => '0xbc1e63c5f81187e244490a5afd657cbd',
+            default   => '0xAB91FEEA04F6D4AD48DF42161B6C2E7A',
+        };
 
+        $senderCounterAgent = [
+            'form' => $senderForm,
+            'name' => $settings->senderName ?? 'Отправитель',
+        ];
+        if ($settings->senderInn !== null) {
+            $senderCounterAgent['inn'] = $settings->senderInn;
+        }
+        if ($settings->senderType === 'person') {
+            $senderCounterAgent['document'] = [
+                'type'   => $settings->senderDocType ?? 'passport',
+                'serial' => $settings->senderDocSerial ?? '0000',
+                'number' => $settings->senderDocNumber ?? '000000',
+            ];
+        }
         $body = [
             'appkey'    => $appkey,
             'sessionID' => $sessionId,
@@ -214,10 +233,9 @@ final class CarrierApi
             'payment' => [
                 'type'         => 'noncash',
                 'primaryPayer' => 'sender',
-                'paymentCity'  => $arrivalCityKladr,
             ],
         ];
-        file_put_contents('/tmp/order_body.json', json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+
         $res = $this->postJson(self::URL_ORDER, $body);
 
         if (!empty($res['errors'])) {

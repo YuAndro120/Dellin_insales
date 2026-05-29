@@ -312,6 +312,11 @@ final class AppSettingsHandler
 
         echo '<label for="sender_type">Тип отправителя</label>';
         echo '<select id="sender_type" name="sender_type" onchange="toggleSenderType()">';
+        echo '<option value="person"' . ($s->senderType === 'person' ? ' selected' : '') . '>Физическое лицо</option>';
+        echo '<option value="ip"'     . ($s->senderType === 'ip'     ? ' selected' : '') . '>ИП</option>';
+        echo '<option value="company"' . ($s->senderType === 'company' ? ' selected' : '') . '>Юридическое лицо</option>';
+        echo '</select>';
+
         echo '<label for="opfSearch">ОПФ отправителя <span class="hint">(из справочника ДЛ)</span></label>';
         echo '<input type="text" id="opfSearch" autocomplete="off" placeholder="Начните вводить — ООО, ИП, АО…">';
         echo '<ul id="opfSuggestions"></ul>';
@@ -446,7 +451,9 @@ final class AppSettingsHandler
         echo 'oi.addEventListener("input",function(){clearTimeout(timer);var q=oi.value.trim();ol.style.display="none";if(q.length<1)return;';
         echo 'timer=setTimeout(function(){fetchJson(opfBase+encodeURIComponent(q)).then(function(j){';
         echo 'if(!j.ok)return;ol.innerHTML="";(j.items||[]).slice(0,15).forEach(function(it){';
-        echo 'var li=document.createElement("li");li.textContent=it.name+" — "+it.title;';
+        echo 'var li=document.createElement("li");';
+        echo 'var isRf=it.country_uid==="0x8f51001438c4d49511dbd774581edb7a";';
+        echo 'li.textContent=(isRf?"🇷🇺 ":"🌍 ")+it.name+" — "+it.title;';
         echo 'li.addEventListener("click",function(){oh.value=it.uid;oi.value=it.name+" — "+it.title;';
         echo 'os.innerHTML="Выбрано: <strong>"+it.name+"</strong> <code>"+it.uid+"</code>";ol.style.display="none";});ol.appendChild(li);});';
         echo 'ol.style.display=ol.children.length?"block":"none";});},350);});';

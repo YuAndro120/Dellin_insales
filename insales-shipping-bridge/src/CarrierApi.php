@@ -379,15 +379,39 @@ final class CarrierApi
             'sessionID' => $sessionId,
             'name'      => $query,
         ]);
-        $items = [];
+
+        // Приоритет: сначала РФ, потом остальные
+        $rf = [];
+        $other = [];
+        $seen = [];
+
         foreach ($raw['data'] ?? [] as $item) {
-            $items[] = [
-                'uid'   => (string) ($item['uid'] ?? ''),
-                'name'  => (string) ($item['name'] ?? ''),
-                'title' => (string) ($item['title'] ?? ''),
+            $uid  = (string) ($item['uid'] ?? '');
+            $name = (string) ($item['name'] ?? '');
+            if ($uid === '' || $name === '') {
+                continue;
+            }
+            $key = $name . '|' . ($item['countryUID'] ?? '');
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+
+            $isRf = ($item['countryUID'] ?? '') === '0x8f51001438c4d49511dbd774581edb7a';
+            $entry = [
+                'uid'        => $uid,
+                'name'       => $name,
+                'title'      => (string) ($item['title'] ?? ''),
+                'country_uid' => (string) ($item['countryUID'] ?? ''),
             ];
+            if ($isRf) {
+                $rf[] = $entry;
+            } else {
+                $other[] = $entry;
+            }
         }
-        return $items;
+
+        return array_merge($rf, $other);
     }
     /**
      * @param array{weight?:float,volume?:float,length?:float,width?:float,height?:float,quantity?:int,stated_value?:float} $cargo

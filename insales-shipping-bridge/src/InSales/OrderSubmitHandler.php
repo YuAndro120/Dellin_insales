@@ -207,7 +207,7 @@ final class OrderSubmitHandler
         foreach ($raw['order-lines'] ?? $raw['order_lines'] ?? [] as $line) {
             $qty = (int) ($line['quantity'] ?? 1);
             $weight += (float) ($line['weight'] ?? 0) * $qty;
-            $statedValue += (float) ($line['total-price'] ?? $line['total_price'] ?? 0) / 100;
+            $statedValue += (float) ($line['total-price'] ?? $line['total_price'] ?? 0);
         }
         if ($weight <= 0) {
             $weight = 1.0;

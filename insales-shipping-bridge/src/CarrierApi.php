@@ -201,9 +201,9 @@ final class CarrierApi
                     'email' => $settings->requesterEmail ?? '',
                 ],
                 'sender' => [
-                    'counteragentUID' => $settings->counteragentUid ?? '',
-                    'contactPersons'  => [['name' => 'Отправитель']],
-                    'phoneNumbers'    => [['number' => '70000000000']],
+                    'counteragent'   => $senderCounterAgent,
+                    'contactPersons' => [['name' => $settings->senderContactName ?? $settings->senderName ?? 'Отправитель']],
+                    'phoneNumbers'   => [['number' => preg_replace('/\D/', '', $settings->senderContactPhone ?? '') ?: '70000000000']],
                 ],
                 'receiver' => [
                     // isAnonym=true: упрощённая отправка, document не требуется.

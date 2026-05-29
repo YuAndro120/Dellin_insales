@@ -172,6 +172,17 @@ final class CarrierApi
             ];
         }
 
+        // Добавляем интервал если адресная доставка
+        $deliveryInterval = (string) ($order['delivery_interval'] ?? '');
+        if ($deliveryInterval !== '' && ($arrivalBlock['variant'] ?? '') === 'address') {
+            $parts = explode('-', $deliveryInterval);
+            if (count($parts) === 2) {
+                $arrivalBlock['time'] = [
+                    'worktimeStart' => trim($parts[0]),
+                    'worktimeEnd'   => trim($parts[1]),
+                ];
+            }
+        }
         // Телефон получателя — для анонимного получателя нужен формат 7ХХХХХХХХХХ (11 цифр)
         $receiverPhoneNorm = $receiverPhone;
         if (strlen($receiverPhoneNorm) === 10) {

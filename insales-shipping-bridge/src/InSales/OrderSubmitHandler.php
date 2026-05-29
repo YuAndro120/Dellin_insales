@@ -128,7 +128,14 @@ final class OrderSubmitHandler
         if ($weight <= 0) {
             $weight = 1.0;
         }
-
+        // Интервал доставки из кастомного поля
+        $deliveryInterval = null;
+        foreach ($raw['fields_values'] ?? [] as $fv) {
+            if (($fv['handle'] ?? '') === 'delivery_interval') {
+                $deliveryInterval = (string) ($fv['value'] ?? '');
+                break;
+            }
+        }
         return [
             'insales_shop_id'    => $insalesId,
             'insales_order_id'   => $insalesOrderId,

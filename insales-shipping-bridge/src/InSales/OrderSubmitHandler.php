@@ -150,6 +150,7 @@ final class OrderSubmitHandler
             'arrival_flat'       => (string) ($location['flat'] ?? $location['apartment'] ?? ''),
             'weight'             => round($weight, 3),
             'stated_value'       => round($statedValue, 2),
+            'delivery_interval'  => $deliveryInterval,
         ];
     }
 

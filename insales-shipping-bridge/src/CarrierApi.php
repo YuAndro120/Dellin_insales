@@ -612,6 +612,59 @@ final class CarrierApi
         return is_array($data) ? $data : [];
     }
 
+    /**
+     * Передача артикулов грузовых мест (инициация генерации этикеток).
+     */
+    public function submitShipmentLabels(
+        string $sessionId,
+        string $orderId,
+        ?string $cargoPlace = null,
+        string $format = '80x50',
+        ?CarrierCredentials $credentials = null,
+    ): bool {
+        $res = $this->postJson(
+            'https://api.dellin.ru/v2/request/cargo/shipment_labels/batch.json',
+            [
+                'appkey'    => $this->resolveAppkey($credentials),
+                'sessionID' => $sessionId,
+                'format'    => $format,
+                'orders'    => [[
+                    'orderID'     => $orderId,
+                    'cargoPlaces' => [[
+                        'cargoPlace' => $cargoPlace,
+                        'amount'     => 1,
+                    ]],
+                ]],
+            ]
+        );
+        return ($res['data']['state'] ?? '') === 'enqueued';
+    }
+
+    /**
+     * Получение ссылок на этикетки.
+     * @return list<string>
+     */
+    public function getShipmentLabels(
+        string $sessionId,
+        string $orderId,
+        ?CarrierCredentials $credentials = null,
+    ): array {
+        $res = $this->postJson(
+            'https://api.dellin.ru/v2/request/cargo/shipment_labels/get/batch.json',
+            [
+                'appkey'    => $this->resolveAppkey($credentials),
+                'sessionID' => $sessionId,
+                'orderIDs'  => [$orderId],
+            ]
+        );
+        foreach ($res['data'] ?? [] as $item) {
+            if ((string) ($item['orderId'] ?? '') === $orderId) {
+                return $item['files'] ?? [];
+            }
+        }
+        return [];
+    }
+
     private function buildCalculatorBody(
         string $sessionId,
         int $senderTerminalId,

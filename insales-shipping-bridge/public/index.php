@@ -181,6 +181,56 @@ if (str_starts_with($uri, '/insales/')) {
             OrderSubmitHandler::handle($config, $shops);
             exit;
         }
+        if ($uri === '/insales/orders/labels' && $method === 'POST') {
+            $raw  = file_get_contents('php://input') ?: '';
+            $body = json_decode($raw, true) ?: [];
+            $insalesId      = trim((string) ($body['insales_id'] ?? ''));
+            $insalesOrderId = trim((string) ($body['insales_order_id'] ?? ''));
+            $action         = trim((string) ($body['action'] ?? ''));
+            $cargoPlace     = isset($body['cargo_place']) && $body['cargo_place'] !== ''
+                ? substr(trim((string) $body['cargo_place']), 0, 30)
+                : null;
+            $format         = in_array($body['format'] ?? '', ['80x50', 'a4'], true)
+                ? $body['format']
+                : '80x50';
+
+            $settings = $shops->findSettingsByInsalesId($insalesId, $config);
+            if ($settings === null) {
+                Response::json(['ok' => false, 'error' => 'Магазин не найден'], 404, $cors);
+                exit;
+            }
+            $creds = $shops->findCarrierCredentials($insalesId, $config->bridgeSecret);
+            if ($creds === null) {
+                Response::json(['ok' => false, 'error' => 'Нет учётных данных Dellin'], 422, $cors);
+                exit;
+            }
+
+            // Берём request_id из БД
+            $order = $shops->findOrderByInsalesId($insalesId, $insalesOrderId);
+            if ($order === null || !$order['dellin_request_id']) {
+                Response::json(['ok' => false, 'error' => 'Заявка ДЛ не найдена'], 404, $cors);
+                exit;
+            }
+            $dlOrderId = (string) $order['dellin_request_id'];
+
+            $api = new CarrierApi($config);
+            $sid = $api->loginWithPat($creds);
+
+            if ($action === 'submit') {
+                $ok = $api->submitShipmentLabels($sid, $dlOrderId, $cargoPlace, $format, $creds);
+                Response::json(['ok' => $ok], 200, $cors);
+                exit;
+            }
+
+            if ($action === 'get') {
+                $files = $api->getShipmentLabels($sid, $dlOrderId, $creds);
+                Response::json(['ok' => true, 'files' => $files, 'ready' => count($files) > 0], 200, $cors);
+                exit;
+            }
+
+            Response::json(['ok' => false, 'error' => 'Неизвестное действие'], 422, $cors);
+            exit;
+        }
         if (str_starts_with($uri, '/insales/orders') && ($method === 'GET' || $method === 'POST')) {
             OrdersHandler::handle($config, $shops, $method);
             exit;

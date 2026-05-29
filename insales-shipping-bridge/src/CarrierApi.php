@@ -275,7 +275,6 @@ final class CarrierApi
                 'primaryPayer' => 'sender',
             ],
         ];
-        file_put_contents('/tmp/order_body.json', json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         $res = $this->postJson(self::URL_ORDER, $body);
 
         if (!empty($res['errors'])) {
@@ -567,7 +566,6 @@ final class CarrierApi
         ?CarrierCredentials $credentials = null,
     ): array {
 
-        file_put_contents('/tmp/debug_city.txt', 'ENTER calculateToCity');
 
         // Резолвим КЛАДР улицы если передана улица
         $streetKladr = null;
@@ -589,9 +587,7 @@ final class CarrierApi
             $credentials,
             $streetKladr,
         );
-        file_put_contents('/tmp/calc_body.json', json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         $res = $this->postJson(self::URL_CALC, $body);
-        file_put_contents('/tmp/calc_response.json', json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         return $this->parseCalculatorResponse($res);
     }
 

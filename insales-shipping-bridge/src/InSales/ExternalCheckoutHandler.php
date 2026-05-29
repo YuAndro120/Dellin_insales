@@ -116,6 +116,7 @@ final class ExternalCheckoutHandler
             'delivery_interval' => self::interval($calc['days']),
             'fields_values' => [
                 ['handle' => 'dellin_delivery_type', 'value' => 'courier'],
+                ['handle' => 'delivery_interval', 'value' => '09:00-13:00'],
             ],
             'errors' => [],
             'warnings' => [],

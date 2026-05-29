@@ -172,10 +172,9 @@ final class ModalHandler
   function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function fetchJ(url,body){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json();});}
 
-  function close(){
-    var el=document.getElementById('dl-overlay');
-    if(el)el.remove();
-  }
+function close(){
+  window.parent.postMessage({dlAction:'close'},'*');
+}
   document.getElementById('dl-close').addEventListener('click',close);
   document.getElementById('dl-btn-cancel').addEventListener('click',close);
   document.getElementById('dl-overlay').addEventListener('click',function(e){if(e.target===this)close();});
@@ -253,7 +252,10 @@ final class ModalHandler
       if(el)el.addEventListener('input',calcVol);
     });
   }
-
+function sendResize(){
+  var h=document.getElementById('dl-modal').scrollHeight+20;
+  window.parent.postMessage({dlAction:'resize',height:h},'*');
+}
   fetchJ(B+'/insales/orders/preview',{insales_id:I,insales_order_id:O})
     .then(function(d){
       if(!d.ok){document.getElementById('dl-body').innerHTML='<div class="dl-err">Ошибка: '+esc(d.error)+'</div>';return;}
@@ -277,9 +279,13 @@ final class ModalHandler
     };
     fetchJ(B+'/insales/orders/submit',body)
       .then(function(d){
-        if(d.ok){
-          document.getElementById('dl-body').innerHTML='<div class="dl-ok"><div class="dl-ok-ico">✅</div><div class="dl-ok-t">Заявка #'+esc(String(d.request_id))+' оформлена</div><div class="dl-ok-s">Штрихкод: '+esc(d.barcode||'—')+'</div></div>';
-          document.getElementById('dl-ftr').style.display='none';
+if(d.ok){
+  document.getElementById('dl-body').innerHTML='<div class="dl-ok"><div class="dl-ok-ico">✅</div><div class="dl-ok-t">Заявка #'+esc(String(d.request_id))+' оформлена</div><div class="dl-ok-s">Штрихкод: '+esc(d.barcode||'—')+'</div></div>';
+  document.getElementById('dl-ftr').style.display='none';
+  sendResize();
+  setTimeout(function(){
+    window.parent.postMessage({dlAction:'success',requestId:d.request_id},'{$b}');
+  },2000);
         } else {
           btn.disabled=false;btn.textContent='Оформить →';
           var err=document.getElementById('dl-body').querySelector('.dl-err');

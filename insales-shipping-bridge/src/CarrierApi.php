@@ -869,7 +869,6 @@ final class CarrierApi
     private function normalizeCargo(array $cargo): array
     {
         $w = (float) ($cargo['weight'] ?? 1.0);
-        $vol = (float) ($cargo['volume'] ?? 0.01);
         $l = (float) ($cargo['length'] ?? 0.2);
         $wd = (float) ($cargo['width'] ?? 0.2);
         $h = (float) ($cargo['height'] ?? 0.2);
@@ -877,7 +876,6 @@ final class CarrierApi
         $stated = (float) ($cargo['stated_value'] ?? 0.0);
 
         $w = max(0.01, $w);
-        $vol = max(0.01, $vol);
         $l = max(0.01, $l);
         $wd = max(0.01, $wd);
         $h = max(0.01, $h);
@@ -889,7 +887,7 @@ final class CarrierApi
             'width' => round($wd, 2),
             'height' => round($h, 2),
             'weight' => round($w, 2),
-            'totalVolume' => round($vol, 2),
+            'totalVolume' => round($l * $wd * $h * $q, 4),
             'totalWeight' => round($w * $q, 2),
             'insurance' => [
                 'statedValue' => round($stated, 2),

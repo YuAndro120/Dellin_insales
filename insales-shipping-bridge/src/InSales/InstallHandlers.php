@@ -33,17 +33,14 @@ final class InstallHandlers
 
         $client = new InSalesClient();
 
-        // Регистрируем webhook на создание и обновление заказов
         $webhookUrl = rtrim($config->publicBridgeUrl, '/') . '/insales/webhook/orders';
         foreach (['orders/create', 'orders/update'] as $topic) {
             try {
                 $client->registerWebhook($shop, $config->insalesAppId ?? '', $apiPassword, $topic, $webhookUrl);
             } catch (\Throwable) {
-                // Не блокируем установку если webhook уже существует или ошибка
             }
         }
 
-        // Регистрируем виджет в карточке заказа
         try {
             $client->registerWidget(
                 $shop,
@@ -52,7 +49,6 @@ final class InstallHandlers
                 self::buildWidgetCode($config->publicBridgeUrl, $insalesId),
             );
         } catch (\Throwable) {
-            // Не блокируем установку если виджет уже существует
         }
 
         http_response_code(200);
@@ -82,57 +78,22 @@ final class InstallHandlers
         $url = rtrim($bridgeUrl, '/');
         return <<<HTML
 <html><head><meta charset="utf-8">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,sans-serif;background:#fff;font-size:13px}
-#wrap{padding:8px}
-button{width:100%;padding:9px;background:#f5501e;color:#fff;border:0;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s}
-button:hover{background:#e04418}
-button:disabled{background:#aaa}
-.ok{color:#16a34a;font-size:12px;margin-top:4px}
-.err{color:#c00;font-size:12px;margin-top:4px}
-#modal-wrap{display:none;margin-top:8px}
-</style>
+<style>body{margin:0;padding:8px;font-family:-apple-system,sans-serif}button{width:100%;padding:9px;background:#f5501e;color:#fff;border:0;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}button:hover{background:#e04418}button:disabled{background:#aaa}.err{color:#c00;font-size:12px;margin-top:4px}.ok{color:#16a34a;font-size:12px;margin-top:4px}</style>
 </head><body>
-<div id="wrap">
-  <button id="btn" onclick="go()">📦 Оформить в Деловые Линии</button>
-  <div id="st"></div>
-  <div id="modal-wrap">
-    <iframe id="modal-frame" src="" style="width:100%;border:0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,.12)" scrolling="no"></iframe>
-  </div>
-</div>
+<button id="btn" onclick="go()">📦 Оформить в Деловые Линии</button>
+<div id="st"></div>
 <script>
 var B='{$url}',I='{$insalesId}';
 function go(){
   var id=window.order_info?window.order_info.id:null;
   if(!id){document.getElementById('st').innerHTML='<p class="err">ID заказа не найден</p>';return;}
-  var btn=document.getElementById('btn');
-  btn.disabled=true;btn.textContent='Загрузка…';
-  var wrap=document.getElementById('modal-wrap');
-  var frame=document.getElementById('modal-frame');
-  frame.src=B+'/insales/modal?insales_id='+I+'&order_id='+id;
-  frame.onload=function(){
-    wrap.style.display='block';
-    btn.style.display='none';
-    document.getElementById('st').innerHTML='';
-  };
+  window.open(B+'/insales/modal?insales_id='+I+'&order_id='+id,'_blank','width=620,height=820,resizable=yes');
 }
 window.addEventListener('message',function(e){
-  if(e.data&&e.data.dlAction==='close'){
-    document.getElementById('modal-wrap').style.display='none';
-    document.getElementById('btn').style.display='block';
-    document.getElementById('btn').disabled=false;
-    document.getElementById('btn').textContent='📦 Оформить в Деловые Линии';
-  }
-  if(e.data&&e.data.dlAction==='resize'){
-    document.getElementById('modal-frame').style.height=e.data.height+'px';
-  }
   if(e.data&&e.data.dlAction==='success'){
     document.getElementById('btn').textContent='✓ Заявка #'+e.data.requestId+' оформлена';
     document.getElementById('btn').style.background='#16a34a';
     document.getElementById('btn').disabled=false;
-    document.getElementById('modal-wrap').style.display='none';
-    document.getElementById('btn').style.display='block';
   }
 });
 </script>

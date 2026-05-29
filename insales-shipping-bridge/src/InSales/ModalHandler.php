@@ -284,9 +284,9 @@ if(d.ok){
   document.getElementById('dl-ftr').style.display='none';
   sendResize();
   setTimeout(function(){
-    window.parent.postMessage({dlAction:'success',requestId:d.request_id},'{$b}');
+    window.parent.postMessage({dlAction:'success',requestId:d.request_id},'*');
   },2000);
-        } else {
+} else {
           btn.disabled=false;btn.textContent='Оформить →';
           var err=document.getElementById('dl-body').querySelector('.dl-err');
           if(!err){var e=document.createElement('div');e.className='dl-err';document.getElementById('dl-body').prepend(e);err=e;}

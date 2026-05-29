@@ -235,6 +235,10 @@ final class OrderSubmitHandler
             'weight'             => round($weight, 3),
             'stated_value'       => round($statedValue, 2),
             'delivery_interval'  => $deliveryInterval,
+            'receiver_type'             => (string) ($client['type'] ?? 'Client::Person'),
+            'receiver_inn'              => (string) ($client['inn'] ?? ''),
+            'receiver_kpp'              => (string) ($client['kpp'] ?? ''),
+            'receiver_juridical_address' => (string) ($client['juridical_address'] ?? ''),
         ];
     }
 

@@ -221,6 +221,31 @@ final class CarrierApi
                 'number' => $settings->senderDocNumber ?? '000000',
             ];
         }
+        // Определяем блок получателя
+        $isJuridical = str_contains($order['receiver_type'] ?? '', 'Juridical');
+        $receiverInn = (string) ($order['receiver_inn'] ?? '');
+
+        if ($isJuridical && $receiverInn !== '') {
+            $receiverBlock = [
+                'counteragent'   => [
+                    'form'     => '0x976e9778e676cd8d473a4ada0fbad3f5',
+                    'name'     => $receiverName ?: 'Получатель',
+                    'inn'      => $receiverInn,
+                    'isAnonym' => false,
+                ],
+                'contactPersons' => [['name' => $receiverName ?: 'Получатель']],
+                'phoneNumbers'   => [['number' => $receiverPhoneNorm]],
+            ];
+        } else {
+            $receiverBlock = [
+                'counteragent' => [
+                    'form'     => '0xAB91FEEA04F6D4AD48DF42161B6C2E7A',
+                    'name'     => $receiverName ?: 'Получатель',
+                    'isAnonym' => true,
+                    'phone'    => $receiverPhoneNorm,
+                ],
+            ];
+        }
         $body = [
             'appkey'    => $appkey,
             'sessionID' => $sessionId,
@@ -245,16 +270,7 @@ final class CarrierApi
                     'contactPersons' => [['name' => $settings->senderContactName ?? $settings->senderName ?? 'Отправитель']],
                     'phoneNumbers'   => [['number' => preg_replace('/\D/', '', $settings->senderContactPhone ?? '') ?: '70000000000']],
                 ],
-                'receiver' => [
-                    // isAnonym=true: упрощённая отправка, document не требуется.
-                    // phone обязателен; contactPersons/phoneNumbers игнорируются.
-                    'counteragent' => [
-                        'form'     => '0xAB91FEEA04F6D4AD48DF42161B6C2E7A',
-                        'name'     => $receiverName ?: 'Получатель',
-                        'isAnonym' => true,
-                        'phone'    => $receiverPhoneNorm,
-                    ],
-                ],
+                'receiver' => $receiverBlock,
             ],
             'cargo' => [
                 'quantity'    => 1,

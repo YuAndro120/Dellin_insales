@@ -55,9 +55,7 @@ final class CarrierApi
         '0xbb7e8329166f827544e569f2a911a993' => 'Нидерланды',
     ];
 
-    public function __construct(private readonly Config $config)
-    {
-    }
+    public function __construct(private readonly Config $config) {}
 
     public function login(?CarrierCredentials $credentials = null): string
     {
@@ -203,7 +201,7 @@ final class CarrierApi
         if ($freightUid === '') {
             throw new \RuntimeException(
                 'Не задан UID характера груза (freight_uid). ' .
-                'Откройте настройки приложения и заполните поле «UID характера груза».'
+                    'Откройте настройки приложения и заполните поле «UID характера груза».'
             );
         }
         // ОПФ берём из настроек магазина, fallback — физлицо РФ
@@ -354,7 +352,7 @@ final class CarrierApi
         }
 
         $list = array_values($byUid);
-        usort($list, static fn (DellinCounteragent $a, DellinCounteragent $b): int => strcasecmp($a->name, $b->name));
+        usort($list, static fn(DellinCounteragent $a, DellinCounteragent $b): int => strcasecmp($a->name, $b->name));
 
         return $list;
     }
@@ -411,7 +409,6 @@ final class CarrierApi
         $cities = $raw['cities'] ?? [];
 
         return is_array($cities) ? array_values($cities) : [];
-        
     }
     /**
      * Поиск ОПФ по названию из справочника Dellin.
@@ -571,7 +568,7 @@ final class CarrierApi
     ): array {
 
         file_put_contents('/tmp/debug_city.txt', 'ENTER calculateToCity');
-        
+
         // Резолвим КЛАДР улицы если передана улица
         $streetKladr = null;
         if ($arrivalStreet !== null && $arrivalStreet !== '') {
@@ -594,7 +591,7 @@ final class CarrierApi
         );
         file_put_contents('/tmp/calc_body.json', json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         $res = $this->postJson(self::URL_CALC, $body);
-
+        file_put_contents('/tmp/calc_response.json', json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         return $this->parseCalculatorResponse($res);
     }
 

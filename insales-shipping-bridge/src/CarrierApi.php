@@ -20,6 +20,40 @@ final class CarrierApi
     private const URL_TERMINALS_MANIFEST = 'https://api.dellin.ru/v3/public/terminals.json';
     private const URL_ORDER = 'https://api.dellin.ru/v2/request.json';
     private const URL_FREIGHT_SEARCH = 'https://api.dellin.ru/v1/public/freight_types/search.json';
+    private const COUNTRY_NAMES = [
+        '0x8f51001438c4d49511dbd774581edb7a' => 'Россия',
+        '0x8f51001438c4d49511dbd774581edb7b' => 'Украина',
+        '0x8f51001438c4d49511dbd774581edb7c' => 'Азербайджан',
+        '0x8f51001438c4d49511dbd774581edb7d' => 'Армения',
+        '0x8f51001438c4d49511dbd774581edb7e' => 'Беларусь',
+        '0x8f51001438c4d49511dbd774581edb7f' => 'Грузия',
+        '0x8f51001438c4d49511dbd774581edb80' => 'Казахстан',
+        '0x8f51001438c4d49511dbd774581edb81' => 'Киргизия',
+        '0x8f51001438c4d49511dbd774581edb82' => 'Латвия',
+        '0x8f51001438c4d49511dbd774581edb83' => 'Литва',
+        '0x8f51001438c4d49511dbd774581edb84' => 'Молдова, Республика',
+        '0x8f51001438c4d49511dbd774581edb85' => 'Таджикистан',
+        '0x8f51001438c4d49511dbd774581edb87' => 'Узбекистан',
+        '0x8f51001438c4d49511dbd774581edb88' => 'Эстония',
+        '0xa9b000215e563c5011e0d52a69cbabde' => 'Абхазия',
+        '0xb21d7239a076b58b464ae336de6895b2' => 'Южная Осетия',
+        '0x84ed051e7bdab59c4fcf738912c522e5' => 'Чешская Республика',
+        '0x8cffb625a38584164e2cffe2a5f446c8' => 'Словения',
+        '0x8d4cb224b9b273df4b885153c9e52b2b' => 'Франция',
+        '0x9427c27796b5614948e72201d6e82c89' => 'Индия',
+        '0x9795e5dc479f486e4ad2389a9d4d7a02' => 'Швейцария',
+        '0x9adc54882d656ec84a91658e203ee756' => 'Иран',
+        '0x9d8dcf51127632ef43754a9ef364dcc8' => 'Соединённое Королевство',
+        '0x9e76bc9772217316433fdcae2ed5c2bf' => 'Вьетнам',
+        '0xa55c42e94c12eb1a4a2e12dbff508a0d' => 'Монголия',
+        '0xa6312706cee109f5426588b9a0959dc9' => 'Турция',
+        '0xb38cc4ddc0f197e2424c8c1f44334240' => 'Китай',
+        '0xb81907e141da1aa34c9a911b354d5ce0' => 'Сербия',
+        '0xb826831f232e43ab46044fc5dcf10bfa' => 'ОАЭ',
+        '0xb95547dfd61758e04da6fd61d8f4d623' => 'Финляндия',
+        '0xbb22f971afbc99ef4e2d7a4ad011d198' => 'Польша',
+        '0xbb7e8329166f827544e569f2a911a993' => 'Нидерланды',
+    ];
 
     public function __construct(private readonly Config $config)
     {
@@ -403,6 +437,7 @@ final class CarrierApi
                 'name'       => $name,
                 'title'      => (string) ($item['title'] ?? ''),
                 'country_uid' => (string) ($item['countryUID'] ?? ''),
+                'country_name' => self::COUNTRY_NAMES[$item['countryUID'] ?? ''] ?? '',
             ];
             if ($isRf) {
                 $rf[] = $entry;

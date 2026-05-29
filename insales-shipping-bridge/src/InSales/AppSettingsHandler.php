@@ -433,7 +433,7 @@ final class AppSettingsHandler
         echo 'fi.addEventListener("input",function(){clearTimeout(timer);var q=fi.value.trim();fl.style.display="none";if(q.length<2)return;';
         echo 'timer=setTimeout(function(){fetchJson(freightBase+encodeURIComponent(q)).then(function(j){';
         echo 'if(!j.ok)return;fl.innerHTML="";(j.items||[]).slice(0,15).forEach(function(it){';
-        echo 'var li=document.createElement("li");li.textContent=it.name+(it.comment?" — "+it.comment.slice(0,60):"");';
+        echo 'var li=document.createElement("li");li.textContent=it.name+" — "+it.title+(it.country_name?" ("+it.country_name+")":"");';
         echo 'li.title=it.uid;';
         echo 'li.addEventListener("click",function(){';
         echo 'fh.value=it.uid;fi.value=it.name;';
@@ -452,8 +452,7 @@ final class AppSettingsHandler
         echo 'timer=setTimeout(function(){fetchJson(opfBase+encodeURIComponent(q)).then(function(j){';
         echo 'if(!j.ok)return;ol.innerHTML="";(j.items||[]).slice(0,15).forEach(function(it){';
         echo 'var li=document.createElement("li");';
-        echo 'var isRf=it.country_uid==="0x8f51001438c4d49511dbd774581edb7a";';
-        echo 'li.textContent=(isRf?"🇷🇺 ":"🌍 ")+it.name+" — "+it.title;';
+        echo 'li.textContent=it.name+" — "+it.title+(it.country_name?" ("+it.country_name+")":"");';
         echo 'li.addEventListener("click",function(){oh.value=it.uid;oi.value=it.name+" — "+it.title;';
         echo 'os.innerHTML="Выбрано: <strong>"+it.name+"</strong> <code>"+it.uid+"</code>";ol.style.display="none";});ol.appendChild(li);});';
         echo 'ol.style.display=ol.children.length?"block":"none";});},350);});';

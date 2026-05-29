@@ -161,11 +161,8 @@ final class CarrierApi
                 'Откройте настройки приложения и заполните поле «UID характера груза».'
             );
         }
-        $senderForm = match ($settings->senderType) {
-            'company' => '0xbc1e63c5f81187e244490a5afd657cbd',
-            'ip'      => '0xbc1e63c5f81187e244490a5afd657cbd',
-            default   => '0xAB91FEEA04F6D4AD48DF42161B6C2E7A',
-        };
+        // ОПФ берём из настроек магазина, fallback — физлицо РФ
+        $senderForm = $settings->senderOpfUid ?? '0xAB91FEEA04F6D4AD48DF42161B6C2E7A';
 
         $senderCounterAgent = [
             'form' => $senderForm,
@@ -369,8 +366,29 @@ final class CarrierApi
         $cities = $raw['cities'] ?? [];
 
         return is_array($cities) ? array_values($cities) : [];
+        
     }
-
+    /**
+     * Поиск ОПФ по названию из справочника Dellin.
+     * @return list<array{uid: string, name: string, title: string}>
+     */
+    public function searchOpf(string $sessionId, string $query): array
+    {
+        $raw = $this->postJson('https://api.dellin.ru/v1/references/opf_list.json', [
+            'appkey'    => $this->config->dellinAppkey,
+            'sessionID' => $sessionId,
+            'name'      => $query,
+        ]);
+        $items = [];
+        foreach ($raw['data'] ?? [] as $item) {
+            $items[] = [
+                'uid'   => (string) ($item['uid'] ?? ''),
+                'name'  => (string) ($item['name'] ?? ''),
+                'title' => (string) ($item['title'] ?? ''),
+            ];
+        }
+        return $items;
+    }
     /**
      * @param array{weight?:float,volume?:float,length?:float,width?:float,height?:float,quantity?:int,stated_value?:float} $cargo
      * @return array{price:float|null,days:int|null,metadata:array,raw?:array,errors?:mixed}

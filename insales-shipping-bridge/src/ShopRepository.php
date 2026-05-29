@@ -8,7 +8,7 @@ use PDO;
 
 final class ShopRepository
 {
-    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled';
+    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid';
 
     public function __construct(private readonly PDO $pdo) {}
 
@@ -163,6 +163,7 @@ SQL;
               sender_doc_number     = :sender_doc_number,
               sender_contact_name   = :sender_contact_name,
               sender_contact_phone  = :sender_contact_phone,
+              sender_opf_uid        = :sender_opf_uid,
               freight_uid           = :freight_uid,
               produce_days_offset   = :offset,
               default_stated_value  = :stated,
@@ -188,6 +189,7 @@ SQL;
             ':sender_doc_number'   => trim((string) ($data['sender_doc_number'] ?? '')) ?: null,
             ':sender_contact_name' => trim((string) ($data['sender_contact_name'] ?? '')) ?: null,
             ':sender_contact_phone' => trim((string) ($data['sender_contact_phone'] ?? '')) ?: null,
+            ':sender_opf_uid'       => trim((string) ($data['sender_opf_uid'] ?? '')) ?: null,
             ':freight_uid'         => $freightUid !== '' ? $freightUid : null,
             ':offset'              => $offset,
             ':stated'              => max(0, (float) $data['default_stated_value']),

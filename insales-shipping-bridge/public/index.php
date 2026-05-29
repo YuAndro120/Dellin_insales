@@ -111,6 +111,25 @@ if (str_starts_with($uri, '/insales/')) {
             CarrierJsonHandler::freightSearch($config, $shops);
             exit;
         }
+        if ($uri === '/insales/opf/search' && $method === 'GET') {
+            $q = trim((string) ($_GET['q'] ?? ''));
+            if ($q === '') {
+                Response::json(['ok' => false, 'error' => 'q required'], 422, $cors);
+                exit;
+            }
+            $insalesIdParam = trim((string) ($_GET['insales_id'] ?? $_GET['shop'] ?? ''));
+            $insalesIdParam = $insalesIdParam !== '' ? $insalesIdParam : (string) ($shops->findActiveByHost(trim((string) ($_GET['shop'] ?? '')))['insales_id'] ?? '');
+            $creds = $shops->findCarrierCredentials($insalesIdParam, $config->bridgeSecret);
+            if ($creds === null) {
+                Response::json(['ok' => false, 'error' => 'Нет учётных данных Dellin'], 422, $cors);
+                exit;
+            }
+            $api = new CarrierApi($config);
+            $sid = $api->loginWithPat($creds);
+            $items = $api->searchOpf($sid, $q);
+            Response::json(['ok' => true, 'items' => $items], 200, $cors);
+            exit;
+        }
         if ($uri === '/insales/account' && $method === 'GET') {
             $insalesId = trim((string) ($_GET['insales_id'] ?? ''));
             $auth = $shops->findApiAuthByInsalesId($insalesId !== '' ? $insalesId : '');

@@ -128,6 +128,7 @@ final class AppSettingsHandler
                     'sender_doc_number'    => trim((string) ($_POST['sender_doc_number'] ?? '')),
                     'sender_contact_name'  => trim((string) ($_POST['sender_contact_name'] ?? '')),
                     'sender_contact_phone' => trim((string) ($_POST['sender_contact_phone'] ?? '')),
+                    'sender_opf_uid'       => trim((string) ($_POST['sender_opf_uid'] ?? '')),
                 ]);
                 $settings = $shops->findSettingsByInsalesId($settings->insalesId, $config) ?? $settings;
                 $saved = true;
@@ -311,6 +312,13 @@ final class AppSettingsHandler
 
         echo '<label for="sender_type">Тип отправителя</label>';
         echo '<select id="sender_type" name="sender_type" onchange="toggleSenderType()">';
+        echo '<label for="opfSearch">ОПФ отправителя <span class="hint">(из справочника ДЛ)</span></label>';
+        echo '<input type="text" id="opfSearch" autocomplete="off" placeholder="Начните вводить — ООО, ИП, АО…">';
+        echo '<ul id="opfSuggestions"></ul>';
+        echo '<input type="hidden" id="sender_opf_uid" name="sender_opf_uid" value="' . $h($s->senderOpfUid ?? '') . '">';
+        echo '<p id="opfSelected" class="hint">';
+        echo ($s->senderOpfUid ?? '') !== '' ? 'Сохранённый UID: <code>' . $h($s->senderOpfUid ?? '') . '</code>' : 'Не выбрано';
+        echo '</p>';
         echo '<option value="person"' . ($s->senderType === 'person' ? ' selected' : '') . '>Физическое лицо</option>';
         echo '<option value="ip"'     . ($s->senderType === 'ip'     ? ' selected' : '') . '>ИП</option>';
         echo '<option value="company"' . ($s->senderType === 'company' ? ' selected' : '') . '>Юридическое лицо</option>';
@@ -431,6 +439,19 @@ final class AppSettingsHandler
         echo '})();';
         echo 'function toggleSenderType(){var t=document.getElementById("sender_type").value;document.getElementById("blockInn").style.display=(t==="ip"||t==="company")?"":"none";document.getElementById("blockDoc").style.display=(t==="company")?"none":"";}';
         echo 'document.getElementById("btnLoadFromInsales").addEventListener("click",function(){var btn=this;btn.disabled=true;btn.textContent="Загрузка…";fetch("/insales/account?shop="+shopQ+"&insales_id="+iidQ).then(function(r){return r.json();}).then(function(d){if(!d.ok)throw new Error(d.error||"Ошибка");if(d.organization)document.getElementById("sender_name").value=d.organization;if(d.phone)document.getElementById("sender_contact_phone").value=d.phone.replace(/\\D/g,"");if(d.email)document.getElementById("requester_email").value=d.email;var name=(d.organization||"").toLowerCase();var sel=document.getElementById("sender_type");if(name.indexOf("ип ")===0||name.indexOf("ип\\"")===-1){sel.value="ip";}else if(name.indexOf("ооо")!==-1||name.indexOf("ао")!==-1||name.indexOf("зао")!==-1){sel.value="company";}toggleSenderType();btn.textContent="✓ Загружено";}).catch(function(e){alert("Ошибка: "+e.message);btn.disabled=false;btn.textContent="Загрузить из inSales";});});';
+        echo '(function(){';
+        echo 'var oi=document.getElementById("opfSearch"),ol=document.getElementById("opfSuggestions"),oh=document.getElementById("sender_opf_uid"),os=document.getElementById("opfSelected"),timer;';
+        echo 'if(!oi)return;';
+        echo 'var opfBase="/insales/opf/search?shop="+shopQ+"&insales_id="+iidQ+"&q=";';
+        echo 'oi.addEventListener("input",function(){clearTimeout(timer);var q=oi.value.trim();ol.style.display="none";if(q.length<1)return;';
+        echo 'timer=setTimeout(function(){fetchJson(opfBase+encodeURIComponent(q)).then(function(j){';
+        echo 'if(!j.ok)return;ol.innerHTML="";(j.items||[]).slice(0,15).forEach(function(it){';
+        echo 'var li=document.createElement("li");li.textContent=it.name+" — "+it.title;';
+        echo 'li.addEventListener("click",function(){oh.value=it.uid;oi.value=it.name+" — "+it.title;';
+        echo 'os.innerHTML="Выбрано: <strong>"+it.name+"</strong> <code>"+it.uid+"</code>";ol.style.display="none";});ol.appendChild(li);});';
+        echo 'ol.style.display=ol.children.length?"block":"none";});},350);});';
+        echo 'document.addEventListener("click",function(e){if(!oi.contains(e.target)&&!ol.contains(e.target))ol.style.display="none";});';
+        echo '})();';
         echo '})();</script>';
         echo '</body></html>';
     }

@@ -177,8 +177,16 @@ if (str_starts_with($uri, '/insales/')) {
             OrdersHandler::handleEdit($config, $shops, $method);
             exit;
         }
+        if ($uri === '/insales/orders/preview' && $method === 'POST') {
+            OrderSubmitHandler::preview($config, $shops);
+            exit;
+        }
         if ($uri === '/insales/orders/submit' && $method === 'POST') {
             OrderSubmitHandler::handle($config, $shops);
+            exit;
+        }
+        if ($uri === '/insales/orders/preview' && $method === 'POST') {
+            OrderSubmitHandler::preview($config, $shops);
             exit;
         }
         if ($uri === '/insales/orders/labels' && $method === 'POST') {

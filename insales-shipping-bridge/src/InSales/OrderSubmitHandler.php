@@ -12,6 +12,90 @@ use ShippingBridge\ShopRepository;
 
 final class OrderSubmitHandler
 {
+    public static function preview(Config $config, ShopRepository $shops): void
+    {
+        $cors = Response::corsHeaders($config->corsOrigin);
+        $raw  = file_get_contents('php://input') ?: '';
+        $body = json_decode($raw, true) ?: [];
+
+        $insalesId      = trim((string) ($body['insales_id'] ?? ''));
+        $insalesOrderId = trim((string) ($body['insales_order_id'] ?? ''));
+
+        if ($insalesId === '' || $insalesOrderId === '') {
+            Response::json(['ok' => false, 'error' => 'insales_id и insales_order_id обязательны'], 422, $cors);
+            return;
+        }
+
+        $settings = $shops->findSettingsByInsalesId($insalesId, $config);
+        if ($settings === null) {
+            Response::json(['ok' => false, 'error' => 'Магазин не найден'], 404, $cors);
+            return;
+        }
+
+        // Данные авторизации inSales
+        $auth = $shops->findApiAuthByInsalesId($insalesId);
+        if ($auth === null) {
+            Response::json(['ok' => false, 'error' => 'Нет данных авторизации магазина'], 422, $cors);
+            return;
+        }
+
+        // Получаем заказ из inSales
+        $client = new InSalesClient();
+        try {
+            $insalesOrder = $client->getOrder(
+                $auth['shop_host'],
+                $config->insalesAppId ?? '',
+                $auth['api_password'],
+                (int) $insalesOrderId,
+            );
+        } catch (\Throwable $e) {
+            Response::json(['ok' => false, 'error' => 'Ошибка получения заказа: ' . $e->getMessage()], 422, $cors);
+            return;
+        }
+
+        $order = self::parseInsalesOrder($insalesId, $insalesOrderId, $insalesOrder);
+
+        // Габариты из настроек
+        $dims = explode('x', strtolower($settings->defaultDimensionsCm));
+        $l = round((float) ($dims[0] ?? 20) / 100, 2);
+        $w = round((float) ($dims[1] ?? 20) / 100, 2);
+        $h = round((float) ($dims[2] ?? 20) / 100, 2);
+
+        Response::json([
+            'ok' => true,
+            'sender' => [
+                'name'          => $settings->senderName ?? '—',
+                'type'          => $settings->senderType,
+                'inn'           => $settings->senderInn ?? '—',
+                'contact_name'  => $settings->senderContactName ?? '—',
+                'contact_phone' => $settings->senderContactPhone ?? '—',
+                'terminal_id'   => $settings->senderTerminalId,
+            ],
+            'receiver' => [
+                'name'    => $order['receiver_name'],
+                'phone'   => $order['receiver_phone'],
+                'email'   => $order['receiver_email'],
+                'city'    => $order['arrival_city_name'],
+                'street'  => $order['arrival_street'],
+                'house'   => $order['arrival_house'],
+                'flat'    => $order['arrival_flat'],
+            ],
+            'cargo' => [
+                'weight'       => $order['weight'],
+                'length'       => $l,
+                'width'        => $w,
+                'height'       => $h,
+                'stated_value' => $order['stated_value'],
+                'freight_uid'  => $settings->freightUid ?? '',
+            ],
+            'delivery' => [
+                'interval'      => $order['delivery_interval'] ?? null,
+                'produce_date'  => (new \DateTimeImmutable())
+                    ->modify('+' . $settings->produceDaysOffset . ' days')
+                    ->format('d.m.Y'),
+            ],
+        ], 200, $cors);
+    }
     public static function handle(Config $config, ShopRepository $shops): void
     {
         $cors = Response::corsHeaders($config->corsOrigin);

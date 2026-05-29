@@ -659,7 +659,14 @@ final class CarrierApi
         );
         foreach ($res['data'] ?? [] as $item) {
             if ((string) ($item['orderId'] ?? '') === $orderId) {
-                return $item['files'] ?? [];
+                $files = $item['files'] ?? [];
+                // Нормализуем URL — добавляем https:// если отсутствует
+                return array_map(static function (string $f): string {
+                    if (str_starts_with($f, 'http')) {
+                        return $f;
+                    }
+                    return 'https://' . ltrim($f, '/');
+                }, $files);
             }
         }
         return [];

@@ -42,9 +42,10 @@ final class OrderSubmitHandler
         $existing = $shops->findOrderByInsalesId($insalesId, $insalesOrderId);
         if ($existing !== null && $existing['dellin_request_id'] !== null) {
             Response::json([
-                'ok'      => true,
-                'barcode' => $existing['dellin_barcode'],
-                'message' => 'Заявка уже оформлена',
+                'ok'         => true,
+                'request_id' => $existing['dellin_request_id'],
+                'barcode'    => $existing['dellin_barcode'],
+                'message'    => 'Заявка уже оформлена',
             ], 200, $cors);
             return;
         }

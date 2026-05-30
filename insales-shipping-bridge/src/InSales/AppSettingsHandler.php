@@ -357,51 +357,72 @@ final class AppSettingsHandler
                                 <div class="card-body">
                                     <div class="sec-lbl">Тип отправителя</div>
                                     <div class="seg" id="segSenderType">
-                                        <button type="button" class="seg-btn<?= $s->senderType === 'person'  ? ' on' : '' ?>" data-val="person">Физлицо</button>
-                                        <button type="button" class="seg-btn<?= $s->senderType === 'ip'      ? ' on' : '' ?>" data-val="ip">ИП</button>
-                                        <button type="button" class="seg-btn<?= $s->senderType === 'company' ? ' on' : '' ?>" data-val="company">Юрлицо</button>
+                                        <button type="button" class="seg-btn<?= $s->senderType === 'person' ? ' on' : '' ?>" data-val="person">Физическое лицо</button>
+                                        <button type="button" class="seg-btn<?= $s->senderType !== 'person' ? ' on' : '' ?>" data-val="org">Организация</button>
                                     </div>
                                     <input type="hidden" id="sender_type" name="sender_type" value="<?= $h($s->senderType ?? 'person') ?>">
 
-                                    <div class="g2">
-                                        <div class="field" style="grid-column:1/-1">
-                                            <label>ФИО / Название организации</label>
-                                            <input type="text" id="sender_name" name="sender_name" value="<?= $h($s->senderName ?? '') ?>" placeholder="Иванов Иван Иванович / ООО Ромашка">
+                                    <!-- ФИЗЛИЦО -->
+                                    <div id="blockPerson" class="type-block<?= $s->senderType !== 'person' ? ' hidden' : '' ?>">
+                                        <div class="field">
+                                            <label>ФИО</label>
+                                            <input type="text" id="sender_name" name="sender_name" value="<?= $h($s->senderName ?? '') ?>" placeholder="Иванов Иван Иванович">
                                         </div>
                                         <div class="field">
-                                            <label>ОПФ из справочника ДЛ</label>
-                                            <input type="text" id="opfSearch" autocomplete="off" placeholder="Начните вводить — ИП, ООО, АО…">
-                                            <ul id="opfSuggestions" class="suggestions"></ul>
-                                            <input type="hidden" id="sender_opf_uid" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
-                                            <?php if (($s->senderOpfUid ?? '') !== ''): ?>
-                                                <div class="act" id="opfSelected">Сохранено <span class="act-rm" onclick="clearOpf()">×</span></div>
-                                            <?php else: ?>
-                                                <div class="act" id="opfSelected" style="display:none"></div>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="field" id="blockInn" <?= !in_array($s->senderType, ['ip', 'company'], true) ? ' style="display:none"' : '' ?>>
-                                            <label>ИНН</label>
-                                            <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="1234567890">
-                                            <div class="hint" style="color:#b45309">Обязательно для ИП и юрлиц</div>
-                                        </div>
-                                        <div class="field" id="blockJurAddress" <?= $s->senderType === 'person' ? ' style="display:none"' : '' ?>>
-                                            <label>Юридический адрес</label>
-                                            <input type="text" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>" placeholder="г. Москва, ул. Примерная, д. 1">
-                                        </div>
-                                        <div class="field" id="blockDocType" <?= $s->senderType !== 'person' ? ' style="display:none"' : '' ?>>
                                             <label>Тип документа</label>
                                             <select id="sender_doc_type" name="sender_doc_type">
-                                                <option value="passport" <?= $s->senderDocType === 'passport'      ? ' selected' : '' ?>>Паспорт РФ</option>
+                                                <option value="passport" <?= $s->senderDocType === 'passport'       ? ' selected' : '' ?>>Паспорт РФ</option>
                                                 <option value="drivingLicence" <?= $s->senderDocType === 'drivingLicence' ? ' selected' : '' ?>>Водительское удостоверение</option>
                                             </select>
                                         </div>
-                                        <div class="field" id="blockDocSerial" <?= $s->senderType === 'company' ? ' style="display:none"' : '' ?>>
-                                            <label>Серия</label>
-                                            <input type="text" id="sender_doc_serial" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>" placeholder="5222">
+                                        <div class="g2">
+                                            <div class="field">
+                                                <label>Серия</label>
+                                                <input type="text" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>" placeholder="5222">
+                                            </div>
+                                            <div class="field">
+                                                <label>Номер</label>
+                                                <input type="text" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>" placeholder="191652">
+                                            </div>
                                         </div>
-                                        <div class="field" id="blockDocNumber" <?= $s->senderType === 'company' ? ' style="display:none"' : '' ?>>
-                                            <label>Номер</label>
-                                            <input type="text" id="sender_doc_number" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>" placeholder="191652">
+                                    </div>
+
+                                    <!-- ОРГАНИЗАЦИЯ -->
+                                    <div id="blockOrg" class="type-block<?= $s->senderType === 'person' ? ' hidden' : '' ?>">
+                                        <div class="field">
+                                            <label>Название организации</label>
+                                            <input type="text" id="sender_name" name="sender_name" value="<?= $h($s->senderName ?? '') ?>" placeholder="ИП Иванов / ООО Ромашка">
+                                        </div>
+                                        <div class="field">
+                                            <label>ОПФ из справочника ДЛ</label>
+                                            <?php $hasOpf = ($s->senderOpfUid ?? '') !== ''; ?>
+                                            <div id="opfSaved" <?= !$hasOpf ? ' style="display:none"' : '' ?> class="opf-saved">
+                                                <div>
+                                                    <div class="opf-name" id="opfSavedName">Сохранено</div>
+                                                    <div class="opf-country" id="opfSavedCountry">из справочника ДЛ</div>
+                                                </div>
+                                                <button type="button" class="edit-btn" id="opfEditBtn">
+                                                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                                        <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                    </svg>
+                                                    Изменить
+                                                </button>
+                                            </div>
+                                            <div id="opfSearchWrap" <?= $hasOpf ? ' style="display:none"' : '' ?> class="opf-search-wrap">
+                                                <input class="opf-search-input" type="text" id="opfSearchInput" autocomplete="off" placeholder="Начните вводить — ИП, ООО, АО…">
+                                                <div style="font-size:11px;color:var(--ink3);margin-top:5px">Поиск по справочнику Деловых Линий</div>
+                                                <ul id="opfList" class="opf-list"></ul>
+                                            </div>
+                                            <input type="hidden" id="sender_opf_uid" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
+                                        </div>
+                                        <div class="field">
+                                            <label>ИНН</label>
+                                            <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="1234567890" class="<?= (($s->senderInn ?? '') === '' && $s->senderType !== 'person') ? 'field-err' : '' ?>">
+                                            <div class="field-err-msg" id="innErrMsg">Введите ИНН — обязательное поле для организаций</div>
+                                        </div>
+                                        <div class="field">
+                                            <label>Юридический адрес</label>
+                                            <input type="text" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>" placeholder="г. Москва, ул. Примерная, д. 1">
                                         </div>
                                     </div>
                                 </div>
@@ -747,26 +768,147 @@ final class AppSettingsHandler
 
                 // ── Segment: sender type ──
                 var segBtns = document.querySelectorAll('#segSenderType .seg-btn');
+                var typeInput = $('sender_type');
+
+                function switchType(val, animate) {
+                    var isPerson = val === 'person';
+                    // update hidden input: person → person, org → keep ip/company or default ip
+                    if (isPerson) {
+                        typeInput.value = 'person';
+                    } else {
+                        var cur = typeInput.value;
+                        if (cur === 'person') typeInput.value = 'ip';
+                    }
+                    segBtns.forEach(function(b) {
+                        b.classList.toggle('on', b.dataset.val === val);
+                    });
+
+                    var bPerson = $('blockPerson'),
+                        bOrg = $('blockOrg');
+                    if (!bPerson || !bOrg) return;
+
+                    if (animate) {
+                        var hiding = isPerson ? bOrg : bPerson;
+                        var showing = isPerson ? bPerson : bOrg;
+                        hiding.style.opacity = '0';
+                        hiding.style.transform = 'translateY(-4px)';
+                        setTimeout(function() {
+                            hiding.classList.add('hidden');
+                            hiding.style.opacity = '';
+                            hiding.style.transform = '';
+                            showing.classList.remove('hidden');
+                            showing.style.opacity = '0';
+                            showing.style.transform = 'translateY(4px)';
+                            requestAnimationFrame(function() {
+                                requestAnimationFrame(function() {
+                                    showing.style.opacity = '1';
+                                    showing.style.transform = 'translateY(0)';
+                                });
+                            });
+                            setTimeout(function() {
+                                showing.style.opacity = '';
+                                showing.style.transform = '';
+                            }, 250);
+                        }, 180);
+                    } else {
+                        (isPerson ? bOrg : bPerson).classList.add('hidden');
+                        (isPerson ? bPerson : bOrg).classList.remove('hidden');
+                    }
+
+                    // INN validation reset
+                    var innEl = $('sender_inn'),
+                        innMsg = $('innErrMsg');
+                    if (innEl) innEl.classList.remove('field-err');
+                    if (innMsg) innMsg.style.display = 'none';
+                }
+
                 segBtns.forEach(function(btn) {
                     btn.addEventListener('click', function() {
-                        segBtns.forEach(function(b) {
-                            b.classList.remove('on');
-                        });
-                        this.classList.add('on');
-                        var val = this.dataset.val;
-                        $('sender_type').value = val;
-                        var showInn = val === 'ip' || val === 'company';
-                        var showDoc = val === 'person';
-                        ['blockInn', 'blockJurAddress'].forEach(function(id) {
-                            var el = $(id);
-                            if (el) el.style.display = showInn ? '' : 'none';
-                        });
-                        ['blockDocType', 'blockDocSerial', 'blockDocNumber'].forEach(function(id) {
-                            var el = $(id);
-                            if (el) el.style.display = showDoc ? '' : 'none';
-                        });
+                        switchType(this.dataset.val, true);
                     });
                 });
+
+                // INN live validation
+                var innEl = $('sender_inn');
+                if (innEl) {
+                    innEl.addEventListener('input', function() {
+                        if (this.value.trim()) {
+                            this.classList.remove('field-err');
+                            var msg = $('innErrMsg');
+                            if (msg) msg.style.display = 'none';
+                        }
+                    });
+                }
+
+                // Form submit validation
+                var settingsForm = document.getElementById('settingsForm');
+                if (settingsForm) {
+                    settingsForm.addEventListener('submit', function(e) {
+                        var isPerson = typeInput.value === 'person';
+                        if (!isPerson) {
+                            var inn = $('sender_inn') ? $('sender_inn').value.trim() : '';
+                            if (!inn) {
+                                e.preventDefault();
+                                var innEl2 = $('sender_inn'),
+                                    msg = $('innErrMsg');
+                                if (innEl2) {
+                                    innEl2.classList.add('field-err');
+                                    innEl2.focus();
+                                }
+                                if (msg) msg.style.display = 'block';
+                                return false;
+                            }
+                        }
+                    });
+                }
+
+                // ── OPF saved/search ──
+                var opfEditBtn = $('opfEditBtn');
+                var opfSearchWrap = $('opfSearchWrap');
+                var opfSaved = $('opfSaved');
+                var opfSearchInput = $('opfSearchInput');
+                var opfListEl = $('opfList');
+
+                if (opfEditBtn) {
+                    opfEditBtn.addEventListener('click', function() {
+                        opfSaved.style.display = 'none';
+                        opfSearchWrap.style.display = '';
+                        if (opfSearchInput) opfSearchInput.focus();
+                    });
+                }
+
+                if (opfSearchInput) {
+                    opfSearchInput.addEventListener('input', function() {
+                        var q = this.value.trim();
+                        if (q.length < 1) {
+                            opfListEl.style.display = 'none';
+                            return;
+                        }
+                        fetchJ(opfBase + encodeURIComponent(q)).then(function(j) {
+                            if (!j.ok || !opfListEl) return;
+                            opfListEl.innerHTML = '';
+                            (j.items || []).slice(0, 15).forEach(function(it) {
+                                var li = document.createElement('li');
+                                li.className = 'opf-item';
+                                li.innerHTML = '<div>' + it.name + '</div>' + (it.country_name ? '<div class="opf-item-sub">' + it.country_name + '</div>' : '');
+                                li.addEventListener('click', function() {
+                                    $('sender_opf_uid').value = it.uid;
+                                    $('opfSavedName').textContent = it.name;
+                                    $('opfSavedCountry').textContent = it.country_name || '';
+                                    opfSaved.style.display = 'flex';
+                                    opfSearchWrap.style.display = 'none';
+                                    opfListEl.style.display = 'none';
+                                });
+                                opfListEl.appendChild(li);
+                            });
+                            opfListEl.style.display = opfListEl.children.length ? 'block' : 'none';
+                        });
+                    });
+                    document.addEventListener('click', function(e) {
+                        if (opfSearchInput && opfListEl && !opfSearchInput.contains(e.target) && !opfListEl.contains(e.target))
+                            opfListEl.style.display = 'none';
+                    });
+                }
 
                 // ── City autocomplete ──
                 var cityInput = $('citySearch'),
@@ -959,49 +1101,6 @@ final class AppSettingsHandler
                     $('freight_uid').value = '';
                     $('freightSearch').value = '';
                     $('freightSelected').style.display = 'none';
-                };
-
-                // ── OPF autocomplete ──
-                (function() {
-                    var oi = $('opfSearch'),
-                        ol = $('opfSuggestions'),
-                        oh = $('sender_opf_uid'),
-                        os = $('opfSelected'),
-                        timer;
-                    if (!oi) return;
-                    oi.addEventListener('input', function() {
-                        clearTimeout(timer);
-                        var q = oi.value.trim();
-                        ol.style.display = 'none';
-                        if (q.length < 1) return;
-                        timer = setTimeout(function() {
-                            fetchJ(opfBase + encodeURIComponent(q)).then(function(j) {
-                                if (!j.ok) return;
-                                ol.innerHTML = '';
-                                (j.items || []).slice(0, 15).forEach(function(it) {
-                                    var li = document.createElement('li');
-                                    li.textContent = it.name + (it.country_name ? ' (' + it.country_name + ')' : '');
-                                    li.addEventListener('click', function() {
-                                        oh.value = it.uid;
-                                        oi.value = it.name;
-                                        ol.style.display = 'none';
-                                        os.innerHTML = it.name + ' <span class="act-rm" onclick="clearOpf()">×</span>';
-                                        os.style.display = 'inline-flex';
-                                    });
-                                    ol.appendChild(li);
-                                });
-                                ol.style.display = ol.children.length ? 'block' : 'none';
-                            });
-                        }, 350);
-                    });
-                    document.addEventListener('click', function(e) {
-                        if (!oi.contains(e.target) && !ol.contains(e.target)) ol.style.display = 'none';
-                    });
-                })();
-                window.clearOpf = function() {
-                    $('sender_opf_uid').value = '';
-                    $('opfSearch').value = '';
-                    $('opfSelected').style.display = 'none';
                 };
 
                 // ── Load from inSales ──
@@ -1222,6 +1321,24 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .term-addr{font-size:12px;color:var(--ink2)}
 .term-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
 .chip{font-size:11px;color:var(--ink3);background:var(--s1);border:1px solid var(--line);padding:3px 9px;border-radius:20px}
+
+/* Sender type animation */
+.type-block{transition:opacity .2s ease,transform .2s ease}
+.type-block.hidden{display:none}
+/* OPF saved card */
+.opf-saved{background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.opf-name{font-size:13px;font-weight:500;color:var(--ink)}
+.opf-country{font-size:11px;color:var(--ink3);margin-top:1px}
+.opf-search-wrap{background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);padding:10px 12px}
+.opf-search-input{width:100%;padding:7px 10px;background:var(--s1);border:1px solid var(--line);border-radius:var(--r2);font-size:12px;color:var(--ink);outline:none;transition:border .15s,box-shadow .15s}
+.opf-search-input:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl)}
+.opf-list{margin-top:6px;background:var(--s1);border:1px solid var(--line);border-radius:var(--r2);overflow:hidden;display:none;max-height:180px;overflow-y:auto}
+.opf-item{padding:8px 12px;font-size:12px;color:var(--ink2);border-bottom:1px solid var(--s3);cursor:pointer;transition:background .12s}
+.opf-item:last-child{border-bottom:0}
+.opf-item:hover{background:var(--ambl);color:var(--amber)}
+.opf-item-sub{font-size:11px;color:var(--ink3);margin-top:1px}
+.field input.field-err{border-color:#ef4444;box-shadow:0 0 0 3px #fef2f2;background:var(--s1)}
+.field-err-msg{font-size:11px;color:#b91c1c;margin-top:4px;display:none}
 </style>
 </head>
 <body>

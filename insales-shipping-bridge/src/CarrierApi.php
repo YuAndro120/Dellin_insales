@@ -478,6 +478,7 @@ final class CarrierApi
             'q'      => $q,
             'page'   => $page,
         ]);
+        file_put_contents('/tmp/freight_debug.json', json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         $items = [];
         foreach ($res['freightTypes'] ?? $res['data'] ?? [] as $ft) {
             $items[] = [

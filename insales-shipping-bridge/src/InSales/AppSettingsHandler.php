@@ -890,15 +890,17 @@ final class AppSettingsHandler
                                 var li = document.createElement('li');
                                 li.className = 'opf-item';
                                 li.innerHTML = '<div>' + it.title + '</div>' + (it.country_name ? '<div class="opf-item-sub">' + it.country_name + '</div>' : '');
-                                li.addEventListener('click', function() {
-                                    $('sender_opf_uid').value = it.uid;
-                                    $('sender_opf_name').value = it.title;
-                                    $('opfSavedName').textContent = it.title;
-                                    $('opfSavedCountry').textContent = it.country_name || '';
-                                    opfSaved.style.display = 'flex';
-                                    opfSearchWrap.style.display = 'none';
-                                    opfListEl.style.display = 'none';
-                                });
+                                (function(item) {
+                                    li.addEventListener('click', function() {
+                                        $('sender_opf_uid').value = item.uid;
+                                        $('sender_opf_name').value = item.title;
+                                        $('opfSavedName').textContent = item.title;
+                                        $('opfSavedCountry').textContent = item.country_name || '';
+                                        opfSaved.style.display = 'flex';
+                                        opfSearchWrap.style.display = 'none';
+                                        opfListEl.style.display = 'none';
+                                    });
+                                })(it);
                                 opfListEl.appendChild(li);
                             });
                             opfListEl.style.display = opfListEl.children.length ? 'block' : 'none';

@@ -433,210 +433,252 @@ final class AppSettingsHandler
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                    <div class="field">
-                                        <label>Город терминала</label>
-                                        <input type="text" id="citySearch" autocomplete="off" placeholder="Начните вводить город…">
-                                        <ul id="citySuggestions" class="suggestions"></ul>
+                                    <!-- Поиск (показывается если терминал не выбран или нажата "Изменить") -->
+                                    <div id="termSearch" <?= $tid !== '' ? ' style="display:none"' : '' ?>>
+                                        <div class="field">
+                                            <label>Город терминала</label>
+                                            <input type="text" id="citySearch" autocomplete="off" placeholder="Начните вводить город — Омск, Москва…">
+                                            <ul id="citySuggestions" class="suggestions"></ul>
+                                        </div>
+                                        <div id="termSkeleton" style="display:none;padding:8px 0">
+                                            <div style="height:12px;background:var(--line);border-radius:4px;width:60%;margin-bottom:6px;animation:skel 1.5s ease-in-out infinite"></div>
+                                            <div style="height:12px;background:var(--line);border-radius:4px;width:40%;animation:skel 1.5s ease-in-out infinite"></div>
+                                        </div>
+                                        <div id="termSelectWrap" style="display:none">
+                                            <div class="field">
+                                                <label>Терминал</label>
+                                                <select id="sender_terminal_id" name="sender_terminal_id">
+                                                    <option value="">— выберите терминал —</option>
+                                                    <?php if ($tid !== ''): ?>
+                                                        <option value="<?= $h($tid) ?>" selected>Терминал #<?= $h($tid) ?></option>
+                                                    <?php endif; ?>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="field">
-                                        <label>Терминал</label>
-                                        <p id="termStatus" class="hint">Выберите город чтобы загрузить список терминалов</p>
-                                        <select id="sender_terminal_id" name="sender_terminal_id">
-                                            <option value="">— выберите —</option>
-                                            <?php if ($tid !== ''): ?>
-                                                <option value="<?= $h($tid) ?>" selected>ID <?= $h($tid) ?> (сохранённый)</option>
-                                            <?php endif; ?>
-                                        </select>
-                                        <div id="termInfo"></div>
+
+                                    <!-- Карточка выбранного терминала -->
+                                    <div id="termCard" <?= $tid === '' ? ' style="display:none"' : '' ?>>
+                                        <div class="term-saved">
+                                            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px">
+                                                <div>
+                                                    <div class="term-name" id="termCardName">Терминал #<?= $h($tid) ?></div>
+                                                    <div class="term-addr" id="termCardAddr">Загрузка данных…</div>
+                                                </div>
+                                                <button type="button" id="termEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
+                                                        <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                    </svg>
+                                                    Изменить
+                                                </button>
+                                            </div>
+                                            <div style="height:1px;background:var(--line);margin:10px 0"></div>
+                                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                                                <div>
+                                                    <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Режим работы</div>
+                                                    <div style="font-size:12px;color:var(--ink2);line-height:1.5" id="termCardSchedule">—</div>
+                                                </div>
+                                                <div>
+                                                    <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Макс. параметры</div>
+                                                    <div style="font-size:12px;color:var(--ink2);line-height:1.5" id="termCardDims">—</div>
+                                                </div>
+                                            </div>
+                                            <div class="term-chips" style="margin-top:10px">
+                                                <span class="chip" id="termCardCity"></span>
+                                                <span class="chip" style="background:var(--grnl);color:var(--grn);border-color:var(--grnb)">✓ Принимает груз</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <!-- Hidden field for derival variant (terminal always for MVP) -->
-                                    <input type="hidden" name="derival_variant" value="terminal">
                                     <input type="hidden" id="derival_city_kladr" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
-                                    <input type="hidden" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>">
-                                    <input type="hidden" name="derival_house" value="<?= $h($s->derivalHouse  ?? '') ?>">
                                 </div>
+                                <!-- Hidden field for derival variant (terminal always for MVP) -->
+                                <input type="hidden" name="derival_variant" value="terminal">
+                                <input type="hidden" id="derival_city_kladr" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
+                                <input type="hidden" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>">
+                                <input type="hidden" name="derival_house" value="<?= $h($s->derivalHouse  ?? '') ?>">
                             </div>
-
-                            <!-- Counteragent (hidden, auto-select) -->
-                            <?php
-                            if (count($counteragents) === 1) {
-                                echo '<input type="hidden" name="counteragent_uid" value="' . $h($counteragents[0]->uid) . '">';
-                            } elseif (count($counteragents) > 1) {
-                                echo '<div class="card"><div class="card-hdr"><div class="card-title">Контрагент ДЛ</div></div><div class="card-body">';
-                                echo '<div class="field"><label>Выберите контрагента</label>';
-                                echo '<select name="counteragent_uid" required>';
-                                echo '<option value="">— выберите —</option>';
-                                foreach ($counteragents as $c) {
-                                    $sel = $c->uid === $counteragentUid ? ' selected' : '';
-                                    echo '<option value="' . $h($c->uid) . '"' . $sel . '>' . $h($c->name) . '</option>';
-                                }
-                                echo '</select></div></div></div>';
-                            } else {
-                                echo '<input type="hidden" name="counteragent_uid" value="' . $h($counteragentUid) . '">';
-                            }
-                            ?>
-                            <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
-
-                            <div class="btn-row">
-                                <button type="submit" class="btn-p">Сохранить изменения</button>
-                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
-                            </div>
-                        </form>
                     </div>
 
-                    <!-- ══ ДОСТАВКА ══ -->
-                    <div class="page" id="page-shipping">
-                        <div class="pg-hdr">
-                            <div class="pg-title">Параметры доставки</div>
-                            <div class="pg-sub">Настройки расчёта и оформления заказов</div>
-                        </div>
+                    <!-- Counteragent (hidden, auto-select) -->
+                    <?php
+                    if (count($counteragents) === 1) {
+                        echo '<input type="hidden" name="counteragent_uid" value="' . $h($counteragents[0]->uid) . '">';
+                    } elseif (count($counteragents) > 1) {
+                        echo '<div class="card"><div class="card-hdr"><div class="card-title">Контрагент ДЛ</div></div><div class="card-body">';
+                        echo '<div class="field"><label>Выберите контрагента</label>';
+                        echo '<select name="counteragent_uid" required>';
+                        echo '<option value="">— выберите —</option>';
+                        foreach ($counteragents as $c) {
+                            $sel = $c->uid === $counteragentUid ? ' selected' : '';
+                            echo '<option value="' . $h($c->uid) . '"' . $sel . '>' . $h($c->name) . '</option>';
+                        }
+                        echo '</select></div></div></div>';
+                    } else {
+                        echo '<input type="hidden" name="counteragent_uid" value="' . $h($counteragentUid) . '">';
+                    }
+                    ?>
+                    <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
 
-                        <form method="post" action="/insales/app">
-                            <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
-                            <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
-                            <input type="hidden" name="derival_variant" value="terminal">
-                            <input type="hidden" name="sender_terminal_id" value="<?= $h($tid) ?>">
-                            <input type="hidden" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
-                            <input type="hidden" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>">
-                            <input type="hidden" name="derival_house" value="<?= $h($s->derivalHouse  ?? '') ?>">
-                            <input type="hidden" name="requester_email" value="<?= $h($s->requesterEmail) ?>">
-                            <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
-                            <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
-                            <input type="hidden" name="sender_name" value="<?= $h($s->senderName ?? '') ?>">
-                            <input type="hidden" name="sender_type" value="<?= $h($s->senderType ?? 'person') ?>">
-                            <input type="hidden" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>">
-                            <input type="hidden" name="sender_doc_type" value="<?= $h($s->senderDocType ?? 'passport') ?>">
-                            <input type="hidden" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>">
-                            <input type="hidden" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>">
-                            <input type="hidden" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>">
-                            <input type="hidden" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>">
-                            <input type="hidden" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
+                    <div class="btn-row">
+                        <button type="submit" class="btn-p">Сохранить изменения</button>
+                        <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
+                    </div>
+                    </form>
+                </div>
 
-                            <!-- Груз по умолчанию -->
-                            <div class="card">
-                                <div class="card-hdr">
-                                    <div>
-                                        <div class="card-title">Груз по умолчанию</div>
-                                        <div class="card-sub">Если у товара в inSales не заданы вес или габариты</div>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="g3">
-                                        <div class="field"><label>Вес, кг</label><input type="number" step="0.001" min="0.01" name="default_weight_kg" value="<?= $h((string)$s->defaultWeightKg) ?>"></div>
-                                        <div class="field"><label>Объявл. стоимость, ₽</label><input type="number" step="0.01" min="0" name="default_stated_value" value="<?= $h((string)$s->defaultStatedValue) ?>"></div>
-                                        <div class="field"><label>Дней до отгрузки</label><input type="number" min="0" max="30" name="produce_days_offset" value="<?= $h((string)$s->produceDaysOffset) ?>"></div>
-                                    </div>
-                                    <div class="field"><label>Габариты Д × Ш × В, см</label><input type="text" name="default_dimensions_cm" value="<?= $h($s->defaultDimensionsCm) ?>" placeholder="20x20x20">
-                                        <div class="hint">Формат: длина × ширина × высота в сантиметрах</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Характер груза -->
-                            <div class="card">
-                                <div class="card-hdr">
-                                    <div>
-                                        <div class="card-title">Характер груза</div>
-                                        <div class="card-sub">Из справочника Деловых Линий</div>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="field">
-                                        <label>Название груза</label>
-                                        <input type="text" id="freightSearch" autocomplete="off" placeholder="Начните вводить — бытовая техника, одежда…">
-                                        <ul id="freightSuggestions" class="suggestions"></ul>
-                                        <input type="hidden" id="freight_uid" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
-                                        <?php if (($s->freightUid ?? '') !== ''): ?>
-                                            <div class="act" id="freightSelected">Сохранено <span class="act-rm" onclick="clearFreight()">×</span></div>
-                                        <?php else: ?>
-                                            <div class="act" id="freightSelected" style="display:none"></div>
-                                        <?php endif; ?>
-                                        <div class="hint">Поиск по справочнику ДЛ при вводе</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Расчёт -->
-                            <div class="card">
-                                <div class="card-hdr">
-                                    <div class="card-title">Расчёт доставки</div>
-                                </div>
-                                <div class="card-body sm">
-                                    <div class="ir">
-                                        <span class="ir-l">Показывать доставку в checkout</span>
-                                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-                                            <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
-                                            <span style="font-size:12px;color:var(--ink3)">Включено</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="btn-row">
-                                <button type="submit" class="btn-p">Сохранить изменения</button>
-                            </div>
-                        </form>
+                <!-- ══ ДОСТАВКА ══ -->
+                <div class="page" id="page-shipping">
+                    <div class="pg-hdr">
+                        <div class="pg-title">Параметры доставки</div>
+                        <div class="pg-sub">Настройки расчёта и оформления заказов</div>
                     </div>
 
-                    <!-- ══ ПОДКЛЮЧЕНИЕ ══ -->
-                    <div class="page" id="page-connection">
-                        <div class="pg-hdr">
-                            <div class="pg-title">Подключение</div>
-                            <div class="pg-sub">Авторизация в API Деловых Линий</div>
-                        </div>
+                    <form method="post" action="/insales/app">
+                        <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
+                        <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
+                        <input type="hidden" name="derival_variant" value="terminal">
+                        <input type="hidden" name="sender_terminal_id" value="<?= $h($tid) ?>">
+                        <input type="hidden" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
+                        <input type="hidden" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>">
+                        <input type="hidden" name="derival_house" value="<?= $h($s->derivalHouse  ?? '') ?>">
+                        <input type="hidden" name="requester_email" value="<?= $h($s->requesterEmail) ?>">
+                        <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
+                        <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
+                        <input type="hidden" name="sender_name" value="<?= $h($s->senderName ?? '') ?>">
+                        <input type="hidden" name="sender_type" value="<?= $h($s->senderType ?? 'person') ?>">
+                        <input type="hidden" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>">
+                        <input type="hidden" name="sender_doc_type" value="<?= $h($s->senderDocType ?? 'passport') ?>">
+                        <input type="hidden" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>">
+                        <input type="hidden" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>">
+                        <input type="hidden" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>">
+                        <input type="hidden" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>">
+                        <input type="hidden" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
 
-                        <!-- Статус -->
-                        <div class="card">
-                            <div class="card-hdr">
-                                <div class="card-title">Статус подключения</div>
-                                <span class="bdg bdg-g">Активно</span>
-                            </div>
-                            <div class="card-body sm">
-                                <div class="ir"><span class="ir-l">Сессия API</span><span class="bdg bdg-g">✓ Авторизован</span></div>
-                                <?php if ($counteragentName !== ''): ?>
-                                    <div class="ir"><span class="ir-l">Контрагент ДЛ</span><span class="ir-v"><?= $h($counteragentName) ?></span></div>
-                                <?php endif; ?>
-                                <?php if ($counteragentUid !== ''): ?>
-                                    <div class="ir"><span class="ir-l">UID контрагента</span><span class="ir-v" style="font-size:10px"><?= $h(substr($counteragentUid, 0, 24)) ?>…</span></div>
-                                <?php endif; ?>
-                                <?php if ($counteragentsError !== null): ?>
-                                    <div class="ir"><span class="ir-l" style="color:#c00">Ошибка загрузки контрагентов</span><span class="ir-v" style="font-size:11px;color:#c00"><?= $h($counteragentsError) ?></span></div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-
-                        <!-- PAT -->
+                        <!-- Груз по умолчанию -->
                         <div class="card">
                             <div class="card-hdr">
                                 <div>
-                                    <div class="card-title">Персональный токен (PAT)</div>
-                                    <div class="card-sub">Личный кабинет ДЛ → Настройки → Интеграция API</div>
+                                    <div class="card-title">Груз по умолчанию</div>
+                                    <div class="card-sub">Если у товара в inSales не заданы вес или габариты</div>
                                 </div>
                             </div>
                             <div class="card-body">
-                                <form method="post" action="/insales/app">
-                                    <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
-                                    <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
-                                    <input type="hidden" name="update_pat" value="1">
-                                    <div class="field">
-                                        <label>API-ключ (appkey)</label>
-                                        <input type="text" name="dellin_appkey" required autocomplete="off" placeholder="4D30A73D-…">
-                                    </div>
-                                    <div class="field">
-                                        <label>PAT-токен</label>
-                                        <input type="password" name="dellin_pat" required autocomplete="off" placeholder="dl-api-…">
-                                        <div class="hint">Хранится в зашифрованном виде, не передаётся третьим лицам</div>
-                                    </div>
-                                    <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">
-                                        <button type="submit" class="btn-p">Обновить токен</button>
-                                    </div>
-                                </form>
+                                <div class="g3">
+                                    <div class="field"><label>Вес, кг</label><input type="number" step="0.001" min="0.01" name="default_weight_kg" value="<?= $h((string)$s->defaultWeightKg) ?>"></div>
+                                    <div class="field"><label>Объявл. стоимость, ₽</label><input type="number" step="0.01" min="0" name="default_stated_value" value="<?= $h((string)$s->defaultStatedValue) ?>"></div>
+                                    <div class="field"><label>Дней до отгрузки</label><input type="number" min="0" max="30" name="produce_days_offset" value="<?= $h((string)$s->produceDaysOffset) ?>"></div>
+                                </div>
+                                <div class="field"><label>Габариты Д × Ш × В, см</label><input type="text" name="default_dimensions_cm" value="<?= $h($s->defaultDimensionsCm) ?>" placeholder="20x20x20">
+                                    <div class="hint">Формат: длина × ширина × высота в сантиметрах</div>
+                                </div>
                             </div>
+                        </div>
+
+                        <!-- Характер груза -->
+                        <div class="card">
+                            <div class="card-hdr">
+                                <div>
+                                    <div class="card-title">Характер груза</div>
+                                    <div class="card-sub">Из справочника Деловых Линий</div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="field">
+                                    <label>Название груза</label>
+                                    <input type="text" id="freightSearch" autocomplete="off" placeholder="Начните вводить — бытовая техника, одежда…">
+                                    <ul id="freightSuggestions" class="suggestions"></ul>
+                                    <input type="hidden" id="freight_uid" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
+                                    <?php if (($s->freightUid ?? '') !== ''): ?>
+                                        <div class="act" id="freightSelected">Сохранено <span class="act-rm" onclick="clearFreight()">×</span></div>
+                                    <?php else: ?>
+                                        <div class="act" id="freightSelected" style="display:none"></div>
+                                    <?php endif; ?>
+                                    <div class="hint">Поиск по справочнику ДЛ при вводе</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Расчёт -->
+                        <div class="card">
+                            <div class="card-hdr">
+                                <div class="card-title">Расчёт доставки</div>
+                            </div>
+                            <div class="card-body sm">
+                                <div class="ir">
+                                    <span class="ir-l">Показывать доставку в checkout</span>
+                                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                                        <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
+                                        <span style="font-size:12px;color:var(--ink3)">Включено</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="btn-row">
+                            <button type="submit" class="btn-p">Сохранить изменения</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ══ ПОДКЛЮЧЕНИЕ ══ -->
+                <div class="page" id="page-connection">
+                    <div class="pg-hdr">
+                        <div class="pg-title">Подключение</div>
+                        <div class="pg-sub">Авторизация в API Деловых Линий</div>
+                    </div>
+
+                    <!-- Статус -->
+                    <div class="card">
+                        <div class="card-hdr">
+                            <div class="card-title">Статус подключения</div>
+                            <span class="bdg bdg-g">Активно</span>
+                        </div>
+                        <div class="card-body sm">
+                            <div class="ir"><span class="ir-l">Сессия API</span><span class="bdg bdg-g">✓ Авторизован</span></div>
+                            <?php if ($counteragentName !== ''): ?>
+                                <div class="ir"><span class="ir-l">Контрагент ДЛ</span><span class="ir-v"><?= $h($counteragentName) ?></span></div>
+                            <?php endif; ?>
+                            <?php if ($counteragentUid !== ''): ?>
+                                <div class="ir"><span class="ir-l">UID контрагента</span><span class="ir-v" style="font-size:10px"><?= $h(substr($counteragentUid, 0, 24)) ?>…</span></div>
+                            <?php endif; ?>
+                            <?php if ($counteragentsError !== null): ?>
+                                <div class="ir"><span class="ir-l" style="color:#c00">Ошибка загрузки контрагентов</span><span class="ir-v" style="font-size:11px;color:#c00"><?= $h($counteragentsError) ?></span></div>
+                            <?php endif; ?>
                         </div>
                     </div>
 
-                </div><!-- /content -->
-            </main>
+                    <!-- PAT -->
+                    <div class="card">
+                        <div class="card-hdr">
+                            <div>
+                                <div class="card-title">Персональный токен (PAT)</div>
+                                <div class="card-sub">Личный кабинет ДЛ → Настройки → Интеграция API</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" action="/insales/app">
+                                <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
+                                <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
+                                <input type="hidden" name="update_pat" value="1">
+                                <div class="field">
+                                    <label>API-ключ (appkey)</label>
+                                    <input type="text" name="dellin_appkey" required autocomplete="off" placeholder="4D30A73D-…">
+                                </div>
+                                <div class="field">
+                                    <label>PAT-токен</label>
+                                    <input type="password" name="dellin_pat" required autocomplete="off" placeholder="dl-api-…">
+                                    <div class="hint">Хранится в зашифрованном виде, не передаётся третьим лицам</div>
+                                </div>
+                                <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">
+                                    <button type="submit" class="btn-p">Обновить токен</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+        </div><!-- /content -->
+        </main>
         </div><!-- /app -->
 
         <script>
@@ -726,94 +768,155 @@ final class AppSettingsHandler
                     });
                 });
 
-                // ── City search → terminals ──
-                function bindCity(inputId, listId, onPick) {
-                    var input = $(inputId),
-                        list = $(listId),
-                        timer;
-                    if (!input) return;
-                    input.addEventListener('input', function() {
+                // ── City autocomplete ──
+                var cityInput = $('citySearch'),
+                    citySugg = $('citySuggestions'),
+                    timer;
+                if (cityInput) {
+                    cityInput.addEventListener('input', function() {
                         clearTimeout(timer);
-                        var q = input.value.trim();
-                        list.style.display = 'none';
+                        var q = cityInput.value.trim();
+                        if (citySugg) citySugg.style.display = 'none';
                         if (q.length < 2) return;
                         timer = setTimeout(function() {
                             fetchJ(apiBase + encodeURIComponent(q)).then(function(j) {
-                                if (!j.ok) return;
-                                list.innerHTML = '';
+                                if (!j.ok || !citySugg) return;
+                                citySugg.innerHTML = '';
                                 (j.cities || []).slice(0, 12).forEach(function(c) {
                                     var code = c.code || c.kladr || '';
                                     if (!code) return;
                                     var li = document.createElement('li');
                                     li.textContent = c.name || c.searchString || code;
                                     li.addEventListener('click', function() {
-                                        input.value = li.textContent;
-                                        list.style.display = 'none';
-                                        onPick(code);
+                                        cityInput.value = li.textContent;
+                                        citySugg.style.display = 'none';
+                                        var fld = $('derival_city_kladr');
+                                        if (fld) fld.value = code;
+                                        loadTerminals(code);
                                     });
-                                    list.appendChild(li);
+                                    citySugg.appendChild(li);
                                 });
-                                list.style.display = list.children.length ? 'block' : 'none';
+                                if (citySugg) citySugg.style.display = citySugg.children.length ? 'block' : 'none';
                             });
                         }, 350);
                     });
                     document.addEventListener('click', function(e) {
-                        if (!input.contains(e.target) && !list.contains(e.target)) list.style.display = 'none';
+                        if (citySugg && !cityInput.contains(e.target) && !citySugg.contains(e.target))
+                            citySugg.style.display = 'none';
                     });
                 }
 
+                // ── Load terminals ──
                 function loadTerminals(kladr) {
-                    var sel = $('sender_terminal_id'),
-                        st = $('termStatus');
+                    var wrap = $('termSelectWrap'),
+                        skel = $('termSkeleton'),
+                        sel = $('sender_terminal_id');
                     if (!sel) return;
-                    if (st) st.textContent = 'Загрузка…';
-                    sel.disabled = true;
+                    if (wrap) wrap.style.display = 'none';
+                    if (skel) skel.style.display = 'block';
                     fetchJ(termBase + '&limit=200&city_kladr=' + encodeURIComponent(kladr)).then(function(j) {
-                        if (!j.ok) throw new Error(j.error || 'err');
-                        sel.innerHTML = '';
-                        var o = document.createElement('option');
-                        o.value = '';
-                        o.textContent = '— выберите —';
-                        sel.appendChild(o);
+                        if (skel) skel.style.display = 'none';
+                        if (!j.ok) return;
+                        sel.innerHTML = '<option value="">— выберите терминал —</option>';
                         (j.terminals || []).forEach(function(t) {
                             var opt = document.createElement('option');
-                            opt.value = t.id;
-                            opt.textContent = (t.name || '') + (t.city ? ' (' + t.city + ')' : '');
-                            opt.dataset.address = t.address || '';
+                            opt.value = String(t.id);
+                            opt.textContent = t.name || (t.city + ' #' + t.id);
+                            opt.dataset.addr = t.address || '';
+                            opt.dataset.city = t.city || '';
                             opt.dataset.schedule = t.schedule || '';
-                            opt.dataset.maxWeight = t.max_weight || '';
-                            opt.dataset.maxLength = t.max_length || '';
-                            opt.dataset.maxWidth = t.max_width || '';
-                            opt.dataset.maxHeight = t.max_height || '';
+                            opt.dataset.wt = t.max_weight || '';
+                            opt.dataset.ml = t.max_length || '';
+                            opt.dataset.mw = t.max_width || '';
+                            opt.dataset.mh = t.max_height || '';
                             if (String(t.id) === String(savedTermId)) opt.selected = true;
                             sel.appendChild(opt);
                         });
-                        sel.disabled = !(j.count > 0);
-                        sel.addEventListener('change', function() {
-                            var opt = this.options[this.selectedIndex];
-                            var info = $('termInfo');
-                            if (!info || !opt.value) return;
-                            var dims = [opt.dataset.maxLength, opt.dataset.maxWidth, opt.dataset.maxHeight].filter(Boolean).join('×');
-                            info.innerHTML =
-                                '<div class="term-card" style="margin-top:10px">' +
-                                '<div class="term-name">' + (opt.textContent || '') + '</div>' +
-                                '<div class="term-addr">' + (opt.dataset.address || '') + '</div>' +
-                                '<div class="term-chips">' +
-                                (opt.dataset.schedule ? '<span class="chip">' + opt.dataset.schedule + '</span>' : '') +
-                                (dims ? '<span class="chip">до ' + dims + ' м</span>' : '') +
-                                (opt.dataset.maxWeight ? '<span class="chip">до ' + opt.dataset.maxWeight + ' кг</span>' : '') +
-                                '</div></div>';
-                        });
-                        if (st) st.textContent = 'Найдено: ' + (j.count || 0);
-                    }).catch(function(e) {
-                        if (st) st.textContent = 'Ошибка: ' + e.message;
+                        if (wrap) wrap.style.display = 'block';
+                        // если был сохранён терминал — сразу показать карточку
+                        if (savedTermId !== '' && sel.value !== '') showTermCard(sel.options[sel.selectedIndex]);
+                    }).catch(function() {
+                        if (skel) skel.style.display = 'none';
                     });
                 }
-                bindCity('citySearch', 'citySuggestions', function(kladr) {
-                    var fld = $('derival_city_kladr');
-                    if (fld) fld.value = kladr;
-                    loadTerminals(kladr);
-                });
+
+                // ── Terminal select change ──
+                var termSel = $('sender_terminal_id');
+                if (termSel) {
+                    termSel.addEventListener('change', function() {
+                        var opt = this.options[this.selectedIndex];
+                        if (opt.value) showTermCard(opt);
+                    });
+                }
+
+                // ── Show terminal card ──
+                function showTermCard(opt) {
+                    var search = $('termSearch'),
+                        card = $('termCard');
+                    if (!search || !card) return;
+                    $('termCardName').textContent = opt.textContent.trim();
+                    $('termCardAddr').textContent = 'г. ' + (opt.dataset.city || '') + ', ' + (opt.dataset.addr || '');
+                    $('termCardCity').textContent = 'г. ' + (opt.dataset.city || '');
+                    var sched = (opt.dataset.schedule || '—').split(';').map(function(s) {
+                        return s.trim();
+                    }).join('\n');
+                    $('termCardSchedule').innerHTML = sched.replace(/\n/g, '<br>');
+                    var ml = opt.dataset.ml,
+                        mw = opt.dataset.mw,
+                        mh = opt.dataset.mh,
+                        wt = opt.dataset.wt;
+                    $('termCardDims').innerHTML =
+                        (ml && mw && mh ? 'до ' + ml + ' × ' + mw + ' × ' + mh + ' м<br>' : '') +
+                        (wt ? 'до ' + Number(wt).toLocaleString('ru') + ' кг' : '—');
+                    search.style.display = 'none';
+                    card.style.display = 'block';
+                }
+
+                // ── Edit button ──
+                var editBtn = $('termEditBtn');
+                if (editBtn) {
+                    editBtn.addEventListener('click', function() {
+                        $('termSearch').style.display = 'block';
+                        $('termCard').style.display = 'none';
+                    });
+                }
+
+                // ── Init: если терминал уже сохранён — загрузить список и показать карточку ──
+                if (savedTermId !== '') {
+                    // Загружаем все терминалы по UID города через findCityKladr (на бэке уже есть)
+                    // Временно показываем карточку с минимальными данными
+                    var savedCard = $('termCard'),
+                        savedSearch = $('termSearch');
+                    if (savedCard && savedSearch) {
+                        $('termCardName').textContent = 'Терминал #' + savedTermId;
+                        $('termCardAddr').textContent = 'Загрузка данных…';
+                        $('termCardSchedule').textContent = '—';
+                        $('termCardDims').textContent = '—';
+                        $('termCardCity').textContent = '';
+                        savedSearch.style.display = 'none';
+                        savedCard.style.display = 'block';
+                        // Загружаем реальные данные
+                        fetchJ(termBase + '&limit=500').then(function(j) {
+                            var t = (j.terminals || []).find(function(x) {
+                                return String(x.id) === String(savedTermId);
+                            });
+                            if (!t) return;
+                            var fakeOpt = {
+                                textContent: t.name || 'Терминал #' + t.id,
+                                dataset: {
+                                    addr: t.address || '',
+                                    city: t.city || '',
+                                    schedule: t.schedule || '',
+                                    wt: t.max_weight || '',
+                                    ml: t.max_length || '',
+                                    mw: t.max_width || '',
+                                    mh: t.max_height || ''
+                                }
+                            };
+                            showTermCard(fakeOpt);
+                        });
+                    }
+                }
 
                 // ── Freight autocomplete ──
                 (function() {
@@ -1112,6 +1215,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 @media(max-width:420px){
   .g3{grid-template-columns:1fr}
 }
+/* TERMINAL CARD */
+@keyframes skel{0%,100%{opacity:1}50%{opacity:.4}}
+.term-saved{background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);padding:14px 16px}
+.term-name{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.term-addr{font-size:12px;color:var(--ink2)}
+.term-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
+.chip{font-size:11px;color:var(--ink3);background:var(--s1);border:1px solid var(--line);padding:3px 9px;border-radius:20px}
 </style>
 </head>
 <body>

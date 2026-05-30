@@ -471,6 +471,23 @@ final class CarrierApi
 
         return array_merge($rf, $other);
     }
+    public function searchFreightTypes(string $q, int $page = 1, ?CarrierCredentials $credentials = null): array
+    {
+        $res = $this->postJson(self::URL_FREIGHT_SEARCH, [
+            'appkey' => $this->config->dellinAppkey,
+            'q'      => $q,
+            'page'   => $page,
+        ]);
+        $items = [];
+        foreach ($res['freightTypes'] ?? $res['data'] ?? [] as $ft) {
+            $items[] = [
+                'uid'   => (string) ($ft['uid']   ?? ''),
+                'name'  => (string) ($ft['name']  ?? ''),
+                'title' => (string) ($ft['title'] ?? ''),
+            ];
+        }
+        return $items;
+    }
     /**
      * @param array{weight?:float,volume?:float,length?:float,width?:float,height?:float,quantity?:int,stated_value?:float} $cargo
      * @return array{price:float|null,days:int|null,metadata:array,raw?:array,errors?:mixed}

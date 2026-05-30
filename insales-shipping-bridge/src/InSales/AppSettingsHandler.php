@@ -1038,7 +1038,7 @@ final class AppSettingsHandler
                         savedSearch.style.display = 'none';
                         savedCard.style.display = 'block';
                         // Загружаем реальные данные
-                        fetchJ(termBase + '&limit=500').then(function(j) {
+                        fetchJ(termBase + '&q=' + encodeURIComponent(savedTermId)).then(function(j) {
                             var t = (j.terminals || []).find(function(x) {
                                 return String(x.id) === String(savedTermId);
                             });

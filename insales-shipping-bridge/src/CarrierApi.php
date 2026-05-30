@@ -475,7 +475,7 @@ final class CarrierApi
     {
         $res = $this->postJson(self::URL_FREIGHT_SEARCH, [
             'appkey' => $this->config->dellinAppkey,
-            'q'      => $q,
+            'name'      => $q,
             'page'   => $page,
         ]);
         file_put_contents('/tmp/freight_debug.json', json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));

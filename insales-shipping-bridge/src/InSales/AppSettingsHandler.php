@@ -102,6 +102,7 @@ final class AppSettingsHandler
                     'counteragent_uid'      => trim((string) ($_POST['counteragent_uid']   ?? '')) ?: null,
                     'sender_counteragent_id' => (int) ($_POST['sender_counteragent_id'] ?? 0) ?: null,
                     'freight_uid'           => trim((string) ($_POST['freight_uid']    ?? '')) ?: null,
+                    'freight_name' => trim((string) ($_POST['freight_name'] ?? '')),
                     'produce_days_offset'   => (int) ($_POST['produce_days_offset']    ?? 2),
                     'default_stated_value'  => (float) str_replace(',', '.', (string) ($_POST['default_stated_value'] ?? '0')),
                     'default_weight_kg'     => (float) str_replace(',', '.', (string) ($_POST['default_weight_kg']    ?? '1')),
@@ -416,6 +417,7 @@ final class AppSettingsHandler
                                             </div>
                                             <input type="hidden" id="sender_opf_uid" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
                                             <input type="hidden" id="sender_opf_name" name="sender_opf_name" value="<?= $h($s->senderOpfName) ?>">
+                                            <input type="hidden" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
                                         </div>
                                         <div class="field">
                                             <label>ИНН</label>
@@ -576,6 +578,9 @@ final class AppSettingsHandler
                         <input type="hidden" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>">
                         <input type="hidden" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>">
                         <input type="hidden" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
+                        <input type="hidden" name="sender_opf_name" value="<?= $h($s->senderOpfName ?? '') ?>">
+                        <input type="hidden" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>">
+
 
                         <!-- Груз по умолчанию -->
                         <div class="card">
@@ -606,40 +611,49 @@ final class AppSettingsHandler
                                 </div>
                             </div>
                             <div class="card-body">
+                                <?php $hasFreight = ($s->freightUid ?? '') !== ''; ?>
                                 <div class="field">
-                                    <label>Название груза</label>
-                                    <input type="text" id="freightSearch" autocomplete="off" placeholder="Начните вводить — бытовая техника, одежда…">
-                                    <ul id="freightSuggestions" class="suggestions"></ul>
+                                    <label>Характер груза</label>
+                                    <div id="freightSaved" <?= !$hasFreight ? ' style="display:none"' : '' ?> class="opf-saved">
+                                        <div>
+                                            <div class="opf-name" id="freightSavedName"><?= $h($s->freightName ?? 'Сохранено') ?></div>
+                                            <div class="opf-country">из справочника ДЛ</div>
+                                        </div>
+                                        <button type="button" id="freightEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
+                                                <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
+                                            Изменить
+                                        </button>
+                                    </div>
+                                    <div id="freightSearchWrap" <?= $hasFreight ? ' style="display:none"' : '' ?> class="opf-search-wrap">
+                                        <input class="opf-search-input" type="text" id="freightSearch" autocomplete="off" placeholder="Начните вводить — бытовая техника, одежда…">
+                                        <ul id="freightSuggestions" class="opf-list"></ul>
+                                    </div>
                                     <input type="hidden" id="freight_uid" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
-                                    <?php if (($s->freightUid ?? '') !== ''): ?>
-                                        <div class="act" id="freightSelected">Сохранено <span class="act-rm" onclick="clearFreight()">×</span></div>
-                                    <?php else: ?>
-                                        <div class="act" id="freightSelected" style="display:none"></div>
-                                    <?php endif; ?>
-                                    <div class="hint">Поиск по справочнику ДЛ при вводе</div>
+                                    <input type="hidden" id="freight_name" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Расчёт -->
-                        <div class="card">
-                            <div class="card-hdr">
-                                <div class="card-title">Расчёт доставки</div>
-                            </div>
-                            <div class="card-body sm">
-                                <div class="ir">
-                                    <span class="ir-l">Показывать доставку в checkout</span>
-                                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-                                        <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
-                                        <span style="font-size:12px;color:var(--ink3)">Включено</span>
-                                    </label>
+                            <!-- Расчёт -->
+                            <div class="card">
+                                <div class="card-hdr">
+                                    <div class="card-title">Расчёт доставки</div>
+                                </div>
+                                <div class="card-body sm">
+                                    <div class="ir">
+                                        <span class="ir-l">Показывать доставку в checkout</span>
+                                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                                            <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
+                                            <span style="font-size:12px;color:var(--ink3)">Включено</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="btn-row">
-                            <button type="submit" class="btn-p">Сохранить изменения</button>
-                        </div>
+                            <div class="btn-row">
+                                <button type="submit" class="btn-p">Сохранить изменения</button>
+                            </div>
                     </form>
                 </div>
 
@@ -1066,37 +1080,48 @@ final class AppSettingsHandler
                 }
 
                 // ── Freight autocomplete ──
-                ['freightSearch', 'opfSearchInput', 'citySearch'].forEach(function(id) {
-                    var el = $(id);
-                    if (el) el.addEventListener('keydown', function(e) {
+                var freightSaved = $('freightSaved');
+                var freightSearchWrap = $('freightSearchWrap');
+                var freightEditBtn = $('freightEditBtn');
+                var fi = $('freightSearch'),
+                    fl = $('freightSuggestions'),
+                    fh = $('freight_uid'),
+                    fn = $('freight_name'),
+                    timer;
+
+                if (freightEditBtn) {
+                    freightEditBtn.addEventListener('click', function() {
+                        freightSaved.style.display = 'none';
+                        freightSearchWrap.style.display = '';
+                        if (fi) fi.focus();
+                    });
+                }
+
+                if (fi) {
+                    fi.addEventListener('keydown', function(e) {
                         if (e.key === 'Enter') e.preventDefault();
                     });
-                });
-                (function() {
-                    var fi = $('freightSearch'),
-                        fl = $('freightSuggestions'),
-                        fh = $('freight_uid'),
-                        fs = $('freightSelected'),
-                        timer;
-                    if (!fi) return;
                     fi.addEventListener('input', function() {
                         clearTimeout(timer);
                         var q = fi.value.trim();
-                        fl.style.display = 'none';
+                        if (fl) fl.style.display = 'none';
                         if (q.length < 2) return;
                         timer = setTimeout(function() {
                             fetchJ(freightBase + encodeURIComponent(q)).then(function(j) {
-                                if (!j.ok) return;
+                                if (!j.ok || !fl) return;
                                 fl.innerHTML = '';
                                 (j.items || []).slice(0, 15).forEach(function(it) {
                                     var li = document.createElement('li');
-                                    li.textContent = it.name;
+                                    li.className = 'opf-item';
+                                    li.innerHTML = '<div>' + it.name + '</div>';
                                     li.addEventListener('click', function() {
                                         fh.value = it.uid;
-                                        fi.value = it.name;
+                                        fn.value = it.name;
+                                        $('freightSavedName').textContent = it.name;
+                                        freightSaved.style.display = 'flex';
+                                        freightSearchWrap.style.display = 'none';
                                         fl.style.display = 'none';
-                                        fs.innerHTML = it.name + ' <span class="act-rm" onclick="clearFreight()">×</span>';
-                                        fs.style.display = 'inline-flex';
+                                        fi.value = '';
                                     });
                                     fl.appendChild(li);
                                 });
@@ -1105,15 +1130,17 @@ final class AppSettingsHandler
                         }, 350);
                     });
                     document.addEventListener('click', function(e) {
-                        if (!fi.contains(e.target) && !fl.contains(e.target)) fl.style.display = 'none';
+                        if (fl && fi && !fi.contains(e.target) && !fl.contains(e.target)) fl.style.display = 'none';
                     });
-                })();
-                window.clearFreight = function() {
-                    $('freight_uid').value = '';
-                    $('freightSearch').value = '';
-                    $('freightSelected').style.display = 'none';
-                };
+                }
 
+                window.clearFreight = function() {
+                    fh.value = '';
+                    fn.value = '';
+                    fi.value = '';
+                    freightSaved.style.display = 'none';
+                    freightSearchWrap.style.display = '';
+                };
                 // ── Load from inSales ──
                 var btnLoad = document.getElementById('btnLoadFromInsales');
                 if (btnLoad) {

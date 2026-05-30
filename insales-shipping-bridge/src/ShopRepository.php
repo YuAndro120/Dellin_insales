@@ -8,7 +8,7 @@ use PDO;
 
 final class ShopRepository
 {
-    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_juridical_address, sender_opf_name';
+    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_juridical_address, sender_opf_name, freight_name';
 
     public function __construct(private readonly PDO $pdo) {}
 
@@ -167,6 +167,7 @@ SQL;
               sender_opf_name = :sender_opf_name,
               sender_juridical_address = :sender_juridical_address,
               freight_uid           = :freight_uid,
+              freight_name = :freight_name,
               produce_days_offset   = :offset,
               default_stated_value  = :stated,
               default_weight_kg     = :weight,
@@ -195,6 +196,7 @@ SQL;
             ':sender_opf_name' => trim((string) ($data['sender_opf_name'] ?? '')),
             ':sender_juridical_address' => trim((string) ($data['sender_juridical_address'] ?? '')) ?: null,
             ':freight_uid'         => $freightUid !== '' ? $freightUid : null,
+            ':freight_name' => trim((string) ($data['freight_name'] ?? '')),
             ':offset'              => $offset,
             ':stated'              => max(0, (float) $data['default_stated_value']),
             ':weight'              => max(0.01, (float) $data['default_weight_kg']),

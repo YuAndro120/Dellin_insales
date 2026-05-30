@@ -116,6 +116,7 @@ final class AppSettingsHandler
                     'sender_contact_name'   => trim((string) ($_POST['sender_contact_name']   ?? '')),
                     'sender_contact_phone'  => trim((string) ($_POST['sender_contact_phone']  ?? '')),
                     'sender_opf_uid'        => trim((string) ($_POST['sender_opf_uid']        ?? '')),
+                    'sender_opf_name' => trim((string) ($_POST['sender_opf_name'] ?? '')),
                     'sender_juridical_address' => trim((string) ($_POST['sender_juridical_address'] ?? '')),
                 ]);
                 $settings = $shops->findSettingsByInsalesId($settings->insalesId, $config) ?? $settings;
@@ -397,12 +398,10 @@ final class AppSettingsHandler
                                             <label>ОПФ из справочника ДЛ</label>
                                             <?php $hasOpf = ($s->senderOpfUid ?? '') !== ''; ?>
                                             <div id="opfSaved" <?= !$hasOpf ? ' style="display:none"' : '' ?> class="opf-saved">
-                                                <div>
-                                                    <div class="opf-name" id="opfSavedName">Сохранено</div>
-                                                    <div class="opf-country" id="opfSavedCountry">из справочника ДЛ</div>
-                                                </div>
-                                                <button type="button" class="edit-btn" id="opfEditBtn">
-                                                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                                <div class="opf-name" id="opfSavedName"><?= $h($s->senderOpfName !== '' ? $s->senderOpfName : 'Сохранено') ?></div>
+                                                <div class="opf-country" id="opfSavedCountry">из справочника ДЛ</div>
+                                                <button type="button" id="opfEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
                                                         <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
                                                     </svg>
                                                     Изменить
@@ -413,7 +412,7 @@ final class AppSettingsHandler
                                                 <div style="font-size:11px;color:var(--ink3);margin-top:5px">Поиск по справочнику Деловых Линий</div>
                                                 <ul id="opfList" class="opf-list"></ul>
                                             </div>
-                                            <input type="hidden" id="sender_opf_uid" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
+                                            <input type="hidden" id="sender_opf_name" name="sender_opf_name" value="<?= $h($s->senderOpfName) ?>">
                                         </div>
                                         <div class="field">
                                             <label>ИНН</label>
@@ -893,6 +892,7 @@ final class AppSettingsHandler
                                 li.innerHTML = '<div>' + it.name + '</div>' + (it.country_name ? '<div class="opf-item-sub">' + it.country_name + '</div>' : '');
                                 li.addEventListener('click', function() {
                                     $('sender_opf_uid').value = it.uid;
+                                    $('sender_opf_name').value = it.name;
                                     $('opfSavedName').textContent = it.name;
                                     $('opfSavedCountry').textContent = it.country_name || '';
                                     opfSaved.style.display = 'flex';
@@ -1132,6 +1132,7 @@ final class AppSettingsHandler
                                     b.classList.toggle('on', b.dataset.val === newType);
                                 });
                                 btn.textContent = '✓ Загружено';
+                                btn.disabled = false;
                             })
                             .catch(function(e) {
                                 alert('Ошибка: ' + e.message);

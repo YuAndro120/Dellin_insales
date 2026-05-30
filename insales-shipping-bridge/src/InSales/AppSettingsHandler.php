@@ -160,8 +160,18 @@ final class AppSettingsHandler
         }
         $appkey = trim((string) ($_POST['dellin_appkey'] ?? ''));
         $pat    = trim((string) ($_POST['dellin_pat']    ?? ''));
-        if ($appkey === '' || $pat === '') {
-            return 'Укажите API-ключ и персональный токен (PAT).';
+        if ($pat === '') {
+            return 'Укажите персональный токен (PAT).';
+        }
+        // При обновлении PAT — берём существующий appkey из БД
+        if ($appkey === '' && $config->bridgeSecret !== '') {
+            $existing = $shops->findCarrierCredentials($settings->insalesId, $config->bridgeSecret);
+            if ($existing !== null) {
+                $appkey = $existing->appkey;
+            }
+        }
+        if ($appkey === '') {
+            return 'Укажите API-ключ (appkey).';
         }
         try {
             $api = new CarrierApi($config);
@@ -204,10 +214,6 @@ final class AppSettingsHandler
                     <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                     <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
                     <input type="hidden" name="save_dellin_auth" value="1">
-                    <div class="field">
-                        <label>API-ключ (appkey)</label>
-                        <input type="text" name="dellin_appkey" required autocomplete="off" placeholder="4D30A73D-…">
-                    </div>
                     <div class="field">
                         <label>Персональный токен (PAT)</label>
                         <input type="password" name="dellin_pat" required autocomplete="off" placeholder="dl-api-…">
@@ -739,7 +745,7 @@ final class AppSettingsHandler
                                     var code = c.code || c.kladr || '';
                                     if (!code) return;
                                     var li = document.createElement('li');
-                                    li.textContent = c.name || code;
+                                    li.textContent = c.name || c.searchString || code;
                                     li.addEventListener('click', function() {
                                         input.value = li.textContent;
                                         list.style.display = 'none';

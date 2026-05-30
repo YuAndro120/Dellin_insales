@@ -480,11 +480,10 @@ final class CarrierApi
         ]);
         file_put_contents('/tmp/freight_debug.json', json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         $items = [];
-        foreach ($res['freightTypes'] ?? $res['data'] ?? [] as $ft) {
+        foreach ($res['freight_types'] ?? $res['freightTypes'] ?? $res['data'] ?? [] as $ft) {
             $items[] = [
-                'uid'   => (string) ($ft['uid']   ?? ''),
-                'name'  => (string) ($ft['name']  ?? ''),
-                'title' => (string) ($ft['title'] ?? ''),
+                'uid'  => (string) ($ft['sqlUID'] ?? $ft['uid'] ?? ''),
+                'name' => (string) ($ft['value']  ?? $ft['name'] ?? ''),
             ];
         }
         return $items;

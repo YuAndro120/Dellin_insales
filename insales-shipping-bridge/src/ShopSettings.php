@@ -33,7 +33,7 @@ final class ShopSettings
         public readonly ?string $senderContactName,
         public readonly ?string $senderContactPhone,
         public readonly ?string $senderOpfUid,
-        public readonly string $senderJuridicalAddress,
+        public readonly ?string $senderJuridicalAddress,
         public readonly ?string $freightUid,
         public readonly int $produceDaysOffset,
         public readonly float $defaultStatedValue,

@@ -441,6 +441,7 @@ final class AppSettingsHandler
                                                 <option value="<?= $h($tid) ?>" selected>ID <?= $h($tid) ?> (сохранённый)</option>
                                             <?php endif; ?>
                                         </select>
+                                        <div id="termInfo"></div>
                                     </div>
                                     <!-- Hidden field for derival variant (terminal always for MVP) -->
                                     <input type="hidden" name="derival_variant" value="terminal">
@@ -771,11 +772,32 @@ final class AppSettingsHandler
                         (j.terminals || []).forEach(function(t) {
                             var opt = document.createElement('option');
                             opt.value = t.id;
-                            opt.textContent = (t.name || '') + (t.address ? ' — ' + t.address : '');
+                            opt.textContent = (t.name || '') + (t.city ? ' (' + t.city + ')' : '');
+                            opt.dataset.address = t.address || '';
+                            opt.dataset.schedule = t.schedule || '';
+                            opt.dataset.maxWeight = t.max_weight || '';
+                            opt.dataset.maxLength = t.max_length || '';
+                            opt.dataset.maxWidth = t.max_width || '';
+                            opt.dataset.maxHeight = t.max_height || '';
                             if (String(t.id) === String(savedTermId)) opt.selected = true;
                             sel.appendChild(opt);
                         });
                         sel.disabled = !(j.count > 0);
+                        sel.addEventListener('change', function() {
+                            var opt = this.options[this.selectedIndex];
+                            var info = $('termInfo');
+                            if (!info || !opt.value) return;
+                            var dims = [opt.dataset.maxLength, opt.dataset.maxWidth, opt.dataset.maxHeight].filter(Boolean).join('×');
+                            info.innerHTML =
+                                '<div class="term-card" style="margin-top:10px">' +
+                                '<div class="term-name">' + (opt.textContent || '') + '</div>' +
+                                '<div class="term-addr">' + (opt.dataset.address || '') + '</div>' +
+                                '<div class="term-chips">' +
+                                (opt.dataset.schedule ? '<span class="chip">' + opt.dataset.schedule + '</span>' : '') +
+                                (dims ? '<span class="chip">до ' + dims + ' м</span>' : '') +
+                                (opt.dataset.maxWeight ? '<span class="chip">до ' + opt.dataset.maxWeight + ' кг</span>' : '') +
+                                '</div></div>';
+                        });
                         if (st) st.textContent = 'Найдено: ' + (j.count || 0);
                     }).catch(function(e) {
                         if (st) st.textContent = 'Ошибка: ' + e.message;

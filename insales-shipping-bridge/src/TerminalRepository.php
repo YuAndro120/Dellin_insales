@@ -61,14 +61,32 @@ final class TerminalRepository
                         continue;
                     }
                 }
+                $worktables = $t['worktables']['worktable'] ?? [];
+                $schedule = '';
+                if (is_array($worktables)) {
+                    foreach ($worktables as $wt) {
+                        if (isset($wt['timetable']) && str_contains(strtolower((string)($wt['department'] ?? '')), 'приём')) {
+                            $schedule = (string) $wt['timetable'];
+                            break;
+                        }
+                    }
+                    if ($schedule === '' && isset($worktables[0]['timetable'])) {
+                        $schedule = (string) $worktables[0]['timetable'];
+                    }
+                }
                 $out[] = [
-                    'id' => $id,
-                    'name' => (string) ($t['name'] ?? $t['title'] ?? 'Пункт выдачи'),
-                    'address' => (string) ($t['address'] ?? $t['fullAddress'] ?? ''),
-                    'lat' => $lat,
-                    'lng' => $lon,
-                    'city' => $cityName,
+                    'id'         => $id,
+                    'name'       => (string) ($t['name'] ?? $t['title'] ?? 'Пункт выдачи'),
+                    'address'    => (string) ($t['address'] ?? $t['fullAddress'] ?? ''),
+                    'lat'        => $lat,
+                    'lng'        => $lon,
+                    'city'       => $cityName,
                     'city_kladr' => $cityCode,
+                    'schedule'   => $schedule,
+                    'max_weight' => isset($t['maxWeight']) ? (float) $t['maxWeight'] : null,
+                    'max_length' => isset($t['maxLength']) ? (float) $t['maxLength'] : null,
+                    'max_width'  => isset($t['maxWidth'])  ? (float) $t['maxWidth']  : null,
+                    'max_height' => isset($t['maxHeight']) ? (float) $t['maxHeight'] : null,
                 ];
                 if (count($out) >= $limit) {
                     return $out;

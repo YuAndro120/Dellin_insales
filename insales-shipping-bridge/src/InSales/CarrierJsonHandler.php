@@ -46,7 +46,7 @@ final class CarrierJsonHandler
             Response::json([
                 'ok' => true,
                 'counteragents' => array_map(
-                    static fn (DellinCounteragent $c): array => ['uid' => $c->uid, 'name' => $c->name],
+                    static fn(DellinCounteragent $c): array => ['uid' => $c->uid, 'name' => $c->name],
                     $list,
                 ),
                 'count' => count($list),
@@ -96,7 +96,7 @@ final class CarrierJsonHandler
             return;
         }
 
-        $q = trim((string) ($_GET['q'] ?? ''));
+        $q = trim((string) ($_GET['q'] ?? $_GET['name'] ?? ''));
         if (mb_strlen($q) < 2) {
             Response::json(['ok' => false, 'error' => 'q must be at least 2 chars'], 422, self::cors($config));
             return;

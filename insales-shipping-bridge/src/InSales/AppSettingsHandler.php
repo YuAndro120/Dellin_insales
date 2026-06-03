@@ -569,7 +569,7 @@ final class AppSettingsHandler
                                 </div>
                             </div>
 
-                            <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
+                            <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUidNorm) ?>">
                             <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
 
                             <div class="btn-row">

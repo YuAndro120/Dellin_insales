@@ -419,7 +419,7 @@ final class CarrierApi
 
         $raw = $this->postJson(self::URL_KLADR, [
             'appkey' => $appkey,
-            'name' => $q,
+            'q' => $q,
         ]);
         $cities = $raw['cities'] ?? [];
 

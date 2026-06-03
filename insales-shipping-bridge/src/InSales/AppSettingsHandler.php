@@ -263,7 +263,7 @@ final class AppSettingsHandler
         }
         $counteragentName = '';
         foreach ($counteragents as $c) {
-            if ($c->uid === $counteragentUid) {
+            if ($c->uid === $counteragentUidNorm || $c->uid === $counteragentUid) {
                 $counteragentName = $c->name;
                 break;
             }

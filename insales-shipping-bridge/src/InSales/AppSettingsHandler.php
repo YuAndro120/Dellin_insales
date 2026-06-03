@@ -255,6 +255,12 @@ final class AppSettingsHandler
         if ($counteragentUid === '' && count($counteragents) === 1) {
             $counteragentUid = $counteragents[0]->uid;
         }
+        // Нормализуем uid для сравнения — конвертируем UUID в hex если нужно
+        $counteragentUidNorm = $counteragentUid;
+        if (str_contains($counteragentUid, '-')) {
+            // UUID формат → hex формат ДЛ
+            $counteragentUidNorm = '0x' . strtolower(str_replace('-', '', $counteragentUid));
+        }
         $counteragentName = '';
         foreach ($counteragents as $c) {
             if ($c->uid === $counteragentUid) {
@@ -447,7 +453,7 @@ final class AppSettingsHandler
                                             <select name="counteragent_uid" required>
                                                 <option value="">— выберите —</option>
                                                 <?php foreach ($counteragents as $c): ?>
-                                                    <option value="<?= $h($c->uid) ?>" <?= $c->uid === $counteragentUid ? ' selected' : '' ?>><?= $h($c->name) ?></option>
+                                                    <option value="<?= $h($c->uid) ?>" <?= $c->uid === $counteragentUidNorm ? ' selected' : '' ?>><?= $h($c->name) ?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
@@ -537,10 +543,10 @@ final class AppSettingsHandler
                                             </div>
                                         </div>
                                     </div>
-                                        <input type="hidden" id="derival_city_kladr" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
+                                    <input type="hidden" id="derival_city_kladr" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
                                     <input type="hidden" name="derival_variant" value="terminal">
                                     <input type="hidden" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>">
-                                    <input type="hidden" name="derival_house"  value="<?= $h($s->derivalHouse  ?? '') ?>">
+                                    <input type="hidden" name="derival_house" value="<?= $h($s->derivalHouse  ?? '') ?>">
                                 </div>
                             </div>
 
@@ -555,167 +561,167 @@ final class AppSettingsHandler
                     </div>
 
 
-                <!-- ══ ДОСТАВКА ══ -->
-                <div class="page" id="page-shipping">
-                    <div class="pg-hdr">
-                        <div class="pg-title">Параметры доставки</div>
-                        <div class="pg-sub">Настройки расчёта и оформления заказов</div>
-                    </div>
-                    <form method="post" action="/insales/app">
-                        <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
-                        <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
-                        <input type="hidden" name="derival_variant" value="terminal">
-                        <input type="hidden" name="sender_terminal_id" value="<?= $h($tid) ?>">
-                        <input type="hidden" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
-                        <input type="hidden" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>">
-                        <input type="hidden" name="derival_house" value="<?= $h($s->derivalHouse  ?? '') ?>">
-                        <input type="hidden" name="requester_email" value="<?= $h($s->requesterEmail) ?>">
-                        <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
-                        <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
-                        <input type="hidden" name="sender_name" value="<?= $h($s->senderName ?? '') ?>">
-                        <input type="hidden" name="sender_type" value="<?= $h($s->senderType ?? 'person') ?>">
-                        <input type="hidden" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>">
-                        <input type="hidden" name="sender_doc_type" value="<?= $h($s->senderDocType ?? 'passport') ?>">
-                        <input type="hidden" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>">
-                        <input type="hidden" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>">
-                        <input type="hidden" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>">
-                        <input type="hidden" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>">
-                        <input type="hidden" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
-                        <input type="hidden" name="sender_opf_name" value="<?= $h($s->senderOpfName ?? '') ?>">
-                        <input type="hidden" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>">
+                    <!-- ══ ДОСТАВКА ══ -->
+                    <div class="page" id="page-shipping">
+                        <div class="pg-hdr">
+                            <div class="pg-title">Параметры доставки</div>
+                            <div class="pg-sub">Настройки расчёта и оформления заказов</div>
+                        </div>
+                        <form method="post" action="/insales/app">
+                            <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
+                            <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
+                            <input type="hidden" name="derival_variant" value="terminal">
+                            <input type="hidden" name="sender_terminal_id" value="<?= $h($tid) ?>">
+                            <input type="hidden" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
+                            <input type="hidden" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>">
+                            <input type="hidden" name="derival_house" value="<?= $h($s->derivalHouse  ?? '') ?>">
+                            <input type="hidden" name="requester_email" value="<?= $h($s->requesterEmail) ?>">
+                            <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
+                            <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
+                            <input type="hidden" name="sender_name" value="<?= $h($s->senderName ?? '') ?>">
+                            <input type="hidden" name="sender_type" value="<?= $h($s->senderType ?? 'person') ?>">
+                            <input type="hidden" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>">
+                            <input type="hidden" name="sender_doc_type" value="<?= $h($s->senderDocType ?? 'passport') ?>">
+                            <input type="hidden" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>">
+                            <input type="hidden" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>">
+                            <input type="hidden" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>">
+                            <input type="hidden" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>">
+                            <input type="hidden" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
+                            <input type="hidden" name="sender_opf_name" value="<?= $h($s->senderOpfName ?? '') ?>">
+                            <input type="hidden" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>">
 
-                        <!-- Груз по умолчанию -->
-                        <div class="card">
-                            <div class="card-hdr">
-                                <div>
-                                    <div class="card-title">Груз по умолчанию</div>
-                                    <div class="card-sub">Если у товара в inSales не заданы вес или габариты</div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="g2">
-                                    <div class="field"><label>Вес, кг</label><input type="number" step="0.001" min="0.01" name="default_weight_kg" value="<?= $h((string)$s->defaultWeightKg) ?>"></div>
-                                    <div class="field"><label>Объявл. стоимость, ₽</label><input type="number" step="0.01" min="0" name="default_stated_value" value="<?= $h((string)$s->defaultStatedValue) ?>"></div>
-                                    <div class="field"><label>Дней до отгрузки</label><input type="number" min="0" max="30" name="produce_days_offset" value="<?= $h((string)$s->produceDaysOffset) ?>"></div>
-                                    <div class="field"><label>Габариты Д × Ш × В, см</label><input type="text" name="default_dimensions_cm" value="<?= $h($s->defaultDimensionsCm) ?>" placeholder="20x20x20">
-                                        <div class="hint">Длина × ширина × высота в сантиметрах</div>
+                            <!-- Груз по умолчанию -->
+                            <div class="card">
+                                <div class="card-hdr">
+                                    <div>
+                                        <div class="card-title">Груз по умолчанию</div>
+                                        <div class="card-sub">Если у товара в inSales не заданы вес или габариты</div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <!-- Характер груза -->
-                        <div class="card">
-                            <div class="card-hdr">
-                                <div>
-                                    <div class="card-title">Характер груза</div>
-                                    <div class="card-sub">Из справочника Деловых Линий</div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <?php $hasFreight = ($s->freightUid ?? '') !== ''; ?>
-                                <div class="field">
-                                    <label>Характер груза</label>
-                                    <div id="freightSaved" <?= !$hasFreight ? ' style="display:none"' : '' ?> class="opf-saved">
-                                        <div>
-                                            <div class="opf-name" id="freightSavedName"><?= $h($s->freightName ?? 'Сохранено') ?></div>
-                                            <div class="opf-country">из справочника ДЛ</div>
+                                <div class="card-body">
+                                    <div class="g2">
+                                        <div class="field"><label>Вес, кг</label><input type="number" step="0.001" min="0.01" name="default_weight_kg" value="<?= $h((string)$s->defaultWeightKg) ?>"></div>
+                                        <div class="field"><label>Объявл. стоимость, ₽</label><input type="number" step="0.01" min="0" name="default_stated_value" value="<?= $h((string)$s->defaultStatedValue) ?>"></div>
+                                        <div class="field"><label>Дней до отгрузки</label><input type="number" min="0" max="30" name="produce_days_offset" value="<?= $h((string)$s->produceDaysOffset) ?>"></div>
+                                        <div class="field"><label>Габариты Д × Ш × В, см</label><input type="text" name="default_dimensions_cm" value="<?= $h($s->defaultDimensionsCm) ?>" placeholder="20x20x20">
+                                            <div class="hint">Длина × ширина × высота в сантиметрах</div>
                                         </div>
-                                        <button type="button" id="freightEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
-                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
-                                                <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-                                            Изменить
-                                        </button>
                                     </div>
-                                    <div id="freightSearchWrap" <?= $hasFreight ? ' style="display:none"' : '' ?> class="opf-search-wrap">
-                                        <input class="opf-search-input" type="text" id="freightSearch" autocomplete="off" placeholder="Начните вводить — бытовая техника, одежда…">
-                                        <ul id="freightSuggestions" class="opf-list"></ul>
-                                    </div>
-                                    <input type="hidden" id="freight_uid" name="freight_uid" value="<?= $h($s->freightUid  ?? '') ?>">
-                                    <input type="hidden" id="freight_name" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
                                 </div>
                             </div>
+
+                            <!-- Характер груза -->
+                            <div class="card">
+                                <div class="card-hdr">
+                                    <div>
+                                        <div class="card-title">Характер груза</div>
+                                        <div class="card-sub">Из справочника Деловых Линий</div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <?php $hasFreight = ($s->freightUid ?? '') !== ''; ?>
+                                    <div class="field">
+                                        <label>Характер груза</label>
+                                        <div id="freightSaved" <?= !$hasFreight ? ' style="display:none"' : '' ?> class="opf-saved">
+                                            <div>
+                                                <div class="opf-name" id="freightSavedName"><?= $h($s->freightName ?? 'Сохранено') ?></div>
+                                                <div class="opf-country">из справочника ДЛ</div>
+                                            </div>
+                                            <button type="button" id="freightEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
+                                                    <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                </svg>
+                                                Изменить
+                                            </button>
+                                        </div>
+                                        <div id="freightSearchWrap" <?= $hasFreight ? ' style="display:none"' : '' ?> class="opf-search-wrap">
+                                            <input class="opf-search-input" type="text" id="freightSearch" autocomplete="off" placeholder="Начните вводить — бытовая техника, одежда…">
+                                            <ul id="freightSuggestions" class="opf-list"></ul>
+                                        </div>
+                                        <input type="hidden" id="freight_uid" name="freight_uid" value="<?= $h($s->freightUid  ?? '') ?>">
+                                        <input type="hidden" id="freight_name" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Расчёт доставки -->
+                            <div class="card">
+                                <div class="card-hdr">
+                                    <div class="card-title">Расчёт доставки</div>
+                                </div>
+                                <div class="card-body sm">
+                                    <div class="ir">
+                                        <span class="ir-l">Показывать доставку в checkout</span>
+                                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                                            <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
+                                            <span style="font-size:12px;color:var(--ink3)">Включено</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="btn-row">
+                                <button type="submit" class="btn-p">Сохранить изменения</button>
+                            </div>
+                        </form>
+                    </div>
+
+
+                    <!-- ══ ПОДКЛЮЧЕНИЕ ══ -->
+                    <div class="page" id="page-connection">
+                        <div class="pg-hdr">
+                            <div class="pg-title">Подключение</div>
+                            <div class="pg-sub">Авторизация в API Деловых Линий</div>
                         </div>
 
-                        <!-- Расчёт доставки -->
+                        <!-- Статус -->
                         <div class="card">
                             <div class="card-hdr">
-                                <div class="card-title">Расчёт доставки</div>
+                                <div class="card-title">Статус подключения</div>
+                                <span class="bdg bdg-g">Активно</span>
                             </div>
                             <div class="card-body sm">
-                                <div class="ir">
-                                    <span class="ir-l">Показывать доставку в checkout</span>
-                                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-                                        <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
-                                        <span style="font-size:12px;color:var(--ink3)">Включено</span>
-                                    </label>
-                                </div>
+                                <div class="ir"><span class="ir-l">Сессия API</span><span class="bdg bdg-g">✓ Авторизован</span></div>
+                                <?php if ($counteragentName !== ''): ?>
+                                    <div class="ir"><span class="ir-l">Контрагент ДЛ</span><span class="ir-v"><?= $h($counteragentName) ?></span></div>
+                                <?php endif; ?>
+                                <?php if ($counteragentUid !== ''): ?>
+                                    <div class="ir"><span class="ir-l">UID контрагента</span><span class="ir-v" style="font-size:10px"><?= $h(substr($counteragentUid, 0, 24)) ?>…</span></div>
+                                <?php endif; ?>
+                                <?php if ($counteragentsError !== null): ?>
+                                    <div class="ir"><span class="ir-l" style="color:#c00">Ошибка загрузки контрагентов</span><span class="ir-v" style="font-size:11px;color:#c00"><?= $h($counteragentsError) ?></span></div>
+                                <?php endif; ?>
                             </div>
                         </div>
 
-                        <div class="btn-row">
-                            <button type="submit" class="btn-p">Сохранить изменения</button>
-                        </div>
-                    </form>
-                </div>
-
-
-                <!-- ══ ПОДКЛЮЧЕНИЕ ══ -->
-                <div class="page" id="page-connection">
-                    <div class="pg-hdr">
-                        <div class="pg-title">Подключение</div>
-                        <div class="pg-sub">Авторизация в API Деловых Линий</div>
-                    </div>
-
-                    <!-- Статус -->
-                    <div class="card">
-                        <div class="card-hdr">
-                            <div class="card-title">Статус подключения</div>
-                            <span class="bdg bdg-g">Активно</span>
-                        </div>
-                        <div class="card-body sm">
-                            <div class="ir"><span class="ir-l">Сессия API</span><span class="bdg bdg-g">✓ Авторизован</span></div>
-                            <?php if ($counteragentName !== ''): ?>
-                                <div class="ir"><span class="ir-l">Контрагент ДЛ</span><span class="ir-v"><?= $h($counteragentName) ?></span></div>
-                            <?php endif; ?>
-                            <?php if ($counteragentUid !== ''): ?>
-                                <div class="ir"><span class="ir-l">UID контрагента</span><span class="ir-v" style="font-size:10px"><?= $h(substr($counteragentUid, 0, 24)) ?>…</span></div>
-                            <?php endif; ?>
-                            <?php if ($counteragentsError !== null): ?>
-                                <div class="ir"><span class="ir-l" style="color:#c00">Ошибка загрузки контрагентов</span><span class="ir-v" style="font-size:11px;color:#c00"><?= $h($counteragentsError) ?></span></div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <!-- PAT -->
-                    <div class="card">
-                        <div class="card-hdr">
-                            <div>
-                                <div class="card-title">Персональный токен (PAT)</div>
-                                <div class="card-sub">Личный кабинет ДЛ → Настройки → Интеграция API</div>
+                        <!-- PAT -->
+                        <div class="card">
+                            <div class="card-hdr">
+                                <div>
+                                    <div class="card-title">Персональный токен (PAT)</div>
+                                    <div class="card-sub">Личный кабинет ДЛ → Настройки → Интеграция API</div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="/insales/app">
+                                    <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
+                                    <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
+                                    <input type="hidden" name="update_pat" value="1">
+                                    <div class="field">
+                                        <label>PAT-токен</label>
+                                        <input type="password" name="dellin_pat" autocomplete="off" placeholder="dl-api-…">
+                                        <div class="hint">Хранится в зашифрованном виде, не передаётся третьим лицам</div>
+                                    </div>
+                                    <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">
+                                        <button type="submit" class="btn-p">Обновить токен</button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
-                        <div class="card-body">
-                            <form method="post" action="/insales/app">
-                                <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
-                                <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
-                                <input type="hidden" name="update_pat" value="1">
-                                <div class="field">
-                                    <label>PAT-токен</label>
-                                    <input type="password" name="dellin_pat" autocomplete="off" placeholder="dl-api-…">
-                                    <div class="hint">Хранится в зашифрованном виде, не передаётся третьим лицам</div>
-                                </div>
-                                <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">
-                                    <button type="submit" class="btn-p">Обновить токен</button>
-                                </div>
-                            </form>
-                        </div>
                     </div>
-                </div>
 
-        </div><!-- /content -->
-        </main>
+                </div><!-- /content -->
+            </main>
         </div><!-- /app -->
 
         <script>

@@ -537,25 +537,22 @@ final class AppSettingsHandler
                                             </div>
                                         </div>
                                     </div>
-                                    <input type="hidden" id="derival_city_kladr" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
+                                        <input type="hidden" id="derival_city_kladr" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
+                                    <input type="hidden" name="derival_variant" value="terminal">
+                                    <input type="hidden" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>">
+                                    <input type="hidden" name="derival_house"  value="<?= $h($s->derivalHouse  ?? '') ?>">
                                 </div>
-                                <!-- Hidden field for derival variant (terminal always for MVP) -->
-                                <input type="hidden" name="derival_variant" value="terminal">
-                                <input type="hidden" id="derival_city_kladr" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
-                                <input type="hidden" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>">
-                                <input type="hidden" name="derival_house" value="<?= $h($s->derivalHouse  ?? '') ?>">
                             </div>
-                    </div>
 
-                    <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
-                    <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
+                            <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
+                            <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
 
-                    <div class="btn-row">
-                        <button type="submit" class="btn-p">Сохранить изменения</button>
-                        <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
+                            <div class="btn-row">
+                                <button type="submit" class="btn-p">Сохранить изменения</button>
+                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
+                            </div>
+                        </form>
                     </div>
-                    </form>
-                </div>
 
 
                 <!-- ══ ДОСТАВКА ══ -->

@@ -434,7 +434,7 @@ final class AppSettingsHandler
                             </div>
 
                             <!-- Контрагент ДЛ -->
-                            <?php if (count($counteragents) > 1): ?>
+                            <?php if (count($counteragents) >= 1): ?>
                                 <div class="card">
                                     <div class="card-hdr">
                                         <div>
@@ -445,6 +445,7 @@ final class AppSettingsHandler
                                     <div class="card-body">
                                         <div class="field">
                                             <label>Контрагент</label>
+                                            <!-- DEBUG: <?= $counteragentUid ?> -->
                                             <select name="counteragent_uid" required>
                                                 <option value="">— выберите —</option>
                                                 <?php foreach ($counteragents as $c): ?>

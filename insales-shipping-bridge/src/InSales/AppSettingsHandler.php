@@ -547,7 +547,6 @@ final class AppSettingsHandler
                             </div>
                     </div>
 
-                    <!-- Counteragent (hidden, auto-select) -->
                     <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
                     <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
 

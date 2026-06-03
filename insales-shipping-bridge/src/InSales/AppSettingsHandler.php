@@ -432,6 +432,29 @@ final class AppSettingsHandler
                                 </div>
                             </div>
 
+                            <!-- Контрагент ДЛ -->
+                            <?php if (count($counteragents) > 1): ?>
+                                <div class="card">
+                                    <div class="card-hdr">
+                                        <div>
+                                            <div class="card-title">Контрагент ДЛ</div>
+                                            <div class="card-sub">Выберите контрагента для оформления заявок</div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="field">
+                                            <label>Контрагент</label>
+                                            <select name="counteragent_uid" required>
+                                                <option value="">— выберите —</option>
+                                                <?php foreach ($counteragents as $c): ?>
+                                                    <option value="<?= $h($c->uid) ?>" <?= $c->uid === $counteragentUid ? ' selected' : '' ?>><?= $h($c->name) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
                             <!-- Контактное лицо -->
                             <div class="card">
                                 <div class="card-hdr">
@@ -535,13 +558,13 @@ final class AppSettingsHandler
                     </form>
                 </div>
 
+
                 <!-- ══ ДОСТАВКА ══ -->
                 <div class="page" id="page-shipping">
                     <div class="pg-hdr">
                         <div class="pg-title">Параметры доставки</div>
                         <div class="pg-sub">Настройки расчёта и оформления заказов</div>
                     </div>
-
                     <form method="post" action="/insales/app">
                         <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                         <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
@@ -565,7 +588,6 @@ final class AppSettingsHandler
                         <input type="hidden" name="sender_opf_name" value="<?= $h($s->senderOpfName ?? '') ?>">
                         <input type="hidden" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>">
 
-
                         <!-- Груз по умолчанию -->
                         <div class="card">
                             <div class="card-hdr">
@@ -575,13 +597,13 @@ final class AppSettingsHandler
                                 </div>
                             </div>
                             <div class="card-body">
-                                <div class="g3">
+                                <div class="g2">
                                     <div class="field"><label>Вес, кг</label><input type="number" step="0.001" min="0.01" name="default_weight_kg" value="<?= $h((string)$s->defaultWeightKg) ?>"></div>
                                     <div class="field"><label>Объявл. стоимость, ₽</label><input type="number" step="0.01" min="0" name="default_stated_value" value="<?= $h((string)$s->defaultStatedValue) ?>"></div>
                                     <div class="field"><label>Дней до отгрузки</label><input type="number" min="0" max="30" name="produce_days_offset" value="<?= $h((string)$s->produceDaysOffset) ?>"></div>
-                                </div>
-                                <div class="field"><label>Габариты Д × Ш × В, см</label><input type="text" name="default_dimensions_cm" value="<?= $h($s->defaultDimensionsCm) ?>" placeholder="20x20x20">
-                                    <div class="hint">Формат: длина × ширина × высота в сантиметрах</div>
+                                    <div class="field"><label>Габариты Д × Ш × В, см</label><input type="text" name="default_dimensions_cm" value="<?= $h($s->defaultDimensionsCm) ?>" placeholder="20x20x20">
+                                        <div class="hint">Длина × ширина × высота в сантиметрах</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -614,32 +636,34 @@ final class AppSettingsHandler
                                         <input class="opf-search-input" type="text" id="freightSearch" autocomplete="off" placeholder="Начните вводить — бытовая техника, одежда…">
                                         <ul id="freightSuggestions" class="opf-list"></ul>
                                     </div>
-                                    <input type="hidden" id="freight_uid" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
+                                    <input type="hidden" id="freight_uid" name="freight_uid" value="<?= $h($s->freightUid  ?? '') ?>">
                                     <input type="hidden" id="freight_name" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Расчёт -->
-                            <div class="card">
-                                <div class="card-hdr">
-                                    <div class="card-title">Расчёт доставки</div>
-                                </div>
-                                <div class="card-body sm">
-                                    <div class="ir">
-                                        <span class="ir-l">Показывать доставку в checkout</span>
-                                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-                                            <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
-                                            <span style="font-size:12px;color:var(--ink3)">Включено</span>
-                                        </label>
-                                    </div>
+                        <!-- Расчёт доставки -->
+                        <div class="card">
+                            <div class="card-hdr">
+                                <div class="card-title">Расчёт доставки</div>
+                            </div>
+                            <div class="card-body sm">
+                                <div class="ir">
+                                    <span class="ir-l">Показывать доставку в checkout</span>
+                                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                                        <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
+                                        <span style="font-size:12px;color:var(--ink3)">Включено</span>
+                                    </label>
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="btn-row">
-                                <button type="submit" class="btn-p">Сохранить изменения</button>
-                            </div>
+                        <div class="btn-row">
+                            <button type="submit" class="btn-p">Сохранить изменения</button>
+                        </div>
                     </form>
                 </div>
+
 
                 <!-- ══ ПОДКЛЮЧЕНИЕ ══ -->
                 <div class="page" id="page-connection">
@@ -682,12 +706,8 @@ final class AppSettingsHandler
                                 <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
                                 <input type="hidden" name="update_pat" value="1">
                                 <div class="field">
-                                    <label>API-ключ (appkey)</label>
-                                    <input type="text" name="dellin_appkey" required autocomplete="off" placeholder="4D30A73D-…">
-                                </div>
-                                <div class="field">
                                     <label>PAT-токен</label>
-                                    <input type="password" name="dellin_pat" required autocomplete="off" placeholder="dl-api-…">
+                                    <input type="password" name="dellin_pat" autocomplete="off" placeholder="dl-api-…">
                                     <div class="hint">Хранится в зашифрованном виде, не передаётся третьим лицам</div>
                                 </div>
                                 <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">

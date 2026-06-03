@@ -255,20 +255,10 @@ final class AppSettingsHandler
         if ($counteragentUid === '' && count($counteragents) === 1) {
             $counteragentUid = $counteragents[0]->uid;
         }
-        // Нормализуем uid для сравнения — конвертируем UUID в hex если нужно
         $counteragentUidNorm = $counteragentUid;
-        if (str_contains($counteragentUid, '-')) {
-            // ДЛ использует mixed-endian формат UUID
-            $parts = explode('-', $counteragentUid);
-            // time_low, time_mid, time_hi переставляются побайтово
-            $p0 = implode('', array_reverse(str_split($parts[0], 2)));
-            $p1 = implode('', array_reverse(str_split($parts[1], 2)));
-            $p2 = implode('', array_reverse(str_split($parts[2], 2)));
-            $counteragentUidNorm = '0x' . strtolower($p0 . $p1 . $p2 . $parts[3] . $parts[4]);
-        }
         $counteragentName = '';
         foreach ($counteragents as $c) {
-            if ($c->uid === $counteragentUidNorm || $c->uid === $counteragentUid) {
+            if ($c->uid === $counteragentUid) {
                 $counteragentName = $c->name;
                 break;
             }
@@ -569,7 +559,7 @@ final class AppSettingsHandler
                                 </div>
                             </div>
 
-                            <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUidNorm) ?>">
+                            <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
                             <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
 
                             <div class="btn-row">

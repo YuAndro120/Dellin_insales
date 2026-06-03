@@ -258,8 +258,13 @@ final class AppSettingsHandler
         // Нормализуем uid для сравнения — конвертируем UUID в hex если нужно
         $counteragentUidNorm = $counteragentUid;
         if (str_contains($counteragentUid, '-')) {
-            // UUID формат → hex формат ДЛ
-            $counteragentUidNorm = '0x' . strtolower(str_replace('-', '', $counteragentUid));
+            // ДЛ использует mixed-endian формат UUID
+            $parts = explode('-', $counteragentUid);
+            // time_low, time_mid, time_hi переставляются побайтово
+            $p0 = implode('', array_reverse(str_split($parts[0], 2)));
+            $p1 = implode('', array_reverse(str_split($parts[1], 2)));
+            $p2 = implode('', array_reverse(str_split($parts[2], 2)));
+            $counteragentUidNorm = '0x' . strtolower($p0 . $p1 . $p2 . $parts[3] . $parts[4]);
         }
         $counteragentName = '';
         foreach ($counteragents as $c) {

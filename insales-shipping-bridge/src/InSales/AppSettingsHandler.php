@@ -525,23 +525,7 @@ final class AppSettingsHandler
                     </div>
 
                     <!-- Counteragent (hidden, auto-select) -->
-                    <?php
-                    if (count($counteragents) === 1) {
-                        echo '<input type="hidden" name="counteragent_uid" value="' . $h($counteragents[0]->uid) . '">';
-                    } elseif (count($counteragents) > 1) {
-                        echo '<div class="card"><div class="card-hdr"><div class="card-title">Контрагент ДЛ</div></div><div class="card-body">';
-                        echo '<div class="field"><label>Выберите контрагента</label>';
-                        echo '<select name="counteragent_uid" required>';
-                        echo '<option value="">— выберите —</option>';
-                        foreach ($counteragents as $c) {
-                            $sel = $c->uid === $counteragentUid ? ' selected' : '';
-                            echo '<option value="' . $h($c->uid) . '"' . $sel . '>' . $h($c->name) . '</option>';
-                        }
-                        echo '</select></div></div></div>';
-                    } else {
-                        echo '<input type="hidden" name="counteragent_uid" value="' . $h($counteragentUid) . '">';
-                    }
-                    ?>
+                    <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
                     <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
 
                     <div class="btn-row">

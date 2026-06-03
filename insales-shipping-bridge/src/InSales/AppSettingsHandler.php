@@ -258,8 +258,12 @@ final class AppSettingsHandler
         $counteragentUidNorm = $counteragentUid;
         $counteragentName = '';
         foreach ($counteragents as $c) {
-            if ($c->uid === $counteragentUid) {
+            // Сравниваем без 0x префикса
+            $cClean = strtolower(ltrim($c->uid, '0x'));
+            $uClean = strtolower(ltrim($counteragentUid, '0x'));
+            if ($c->uid === $counteragentUid || $cClean === $uClean) {
                 $counteragentName = $c->name;
+                $counteragentUidNorm = $c->uid;
                 break;
             }
         }

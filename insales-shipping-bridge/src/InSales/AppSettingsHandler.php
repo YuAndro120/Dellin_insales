@@ -459,6 +459,20 @@ final class AppSettingsHandler
                                         </div>
                                     </div>
                                 </div>
+                            <?php elseif (count($counteragents) === 1): ?>
+                                <div class="card">
+                                    <div class="card-hdr">
+                                        <div>
+                                            <div class="card-title">Контрагент ДЛ</div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body sm">
+                                        <div class="ir">
+                                            <span class="ir-l">Выбран контрагент</span>
+                                            <span class="ir-v"><?= $h($counteragentName) ?></span>
+                                        </div>
+                                    </div>
+                                </div>
                             <?php endif; ?>
 
                             <!-- Контактное лицо -->

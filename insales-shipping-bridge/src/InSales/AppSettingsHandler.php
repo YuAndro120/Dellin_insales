@@ -456,8 +456,11 @@ final class AppSettingsHandler
                                             <label>Контрагент</label>
                                             <select name="counteragent_uid" required>
                                                 <option value="">— выберите —</option>
+                                                <?php if (count($counteragents) === 0 && $counteragentUid !== ''): ?>
+                                                    <option value="<?= $h($counteragentUid) ?>" selected><?= $h($counteragentName ?: $counteragentUid) ?></option>
+                                                <?php endif; ?>
                                                 <?php foreach ($counteragents as $c): ?>
-                                                    <option value="<?= $h($c->uid) ?>" <?= $c->uid === $counteragentUidNorm ? ' selected' : '' ?>><?= $h($c->name) ?></option>
+                                                    <option value="<?= $h($c->uid) ?>" <?= $c->uid === $counteragentUid ? ' selected' : '' ?>><?= $h($c->name) ?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
@@ -568,7 +571,7 @@ final class AppSettingsHandler
                                 </div>
                             </div>
 
-                            <?php if (count($counteragents) <= 1): ?>
+                            <?php if (count($counteragents) >= 1 || $counteragentUid !== ''): ?>
                                 <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
                             <?php endif; ?>
                             <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">

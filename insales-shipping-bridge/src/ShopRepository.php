@@ -173,7 +173,7 @@ SQL;
               default_weight_kg     = :weight,
               default_dimensions_cm = :dims,
               is_enabled            = :enabled
-              delivery_payer = :delivery_payer,
+              delivery_payer = :delivery_payer
              WHERE insales_id = :iid AND uninstalled_at IS NULL'
         );
         $st->execute([

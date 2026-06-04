@@ -1224,7 +1224,8 @@ final class AppSettingsHandler
                     b.classList.remove('on');
                 });
                 btn.classList.add('on');
-                $('delivery_payer').value = val;
+                var el = document.getElementById('delivery_payer');
+                if (el) el.value = val;
             };
         </script>
 <?php

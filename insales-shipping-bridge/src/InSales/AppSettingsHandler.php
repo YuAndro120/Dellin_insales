@@ -91,6 +91,10 @@ final class AppSettingsHandler
                 if (in_array($senderType, ['ip', 'company'], true) && $senderInn === '') {
                     throw new \RuntimeException('Заполните ИНН — он обязателен для ИП и юридических лиц.');
                 }
+                $senderOpfUid = trim((string) ($_POST['sender_opf_uid'] ?? ''));
+                if (in_array($senderType, ['ip', 'company'], true) && $senderOpfUid === '') {
+                    throw new \RuntimeException('Выберите ОПФ из справочника Деловых Линий.');
+                }
                 $variant = (string) ($_POST['derival_variant'] ?? ShopSettings::DERIVAL_TERMINAL);
                 $shops->saveDeliverySettings($settings->insalesId, [
                     'derival_variant'       => $variant,

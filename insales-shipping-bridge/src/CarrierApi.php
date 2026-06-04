@@ -205,7 +205,11 @@ final class CarrierApi
             );
         }
         // ОПФ берём из настроек магазина, fallback — физлицо РФ
-        $senderForm = $settings->senderOpfUid ?? '0xAB91FEEA04F6D4AD48DF42161B6C2E7A';
+        if ($settings->senderType === 'person') {
+            $senderForm = '0xAB91FEEA04F6D4AD48DF42161B6C2E7A'; // физлицо РФ
+        } else {
+            $senderForm = $settings->senderOpfUid ?? '0xbc1e63c5f81187e244490a5afd657cbd'; // ИП/юрлицо
+        }
 
         $senderCounterAgent = [
             'form' => $senderForm,

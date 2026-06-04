@@ -246,6 +246,12 @@ final class CarrierApi
                 ],
             ];
         }
+        // Габариты из настроек или дефолтные
+        $dims = $settings->defaultDimensionsCm; // формат "30x20x20"
+        $dimParts = array_map('floatval', explode('x', strtolower($dims)));
+        $dimL = isset($dimParts[0]) && $dimParts[0] > 0 ? round($dimParts[0] / 100, 2) : 0.30;
+        $dimW = isset($dimParts[1]) && $dimParts[1] > 0 ? round($dimParts[1] / 100, 2) : 0.20;
+        $dimH = isset($dimParts[2]) && $dimParts[2] > 0 ? round($dimParts[2] / 100, 2) : 0.20;
         $body = [
             'appkey'    => $appkey,
             'sessionID' => $sessionId,
@@ -281,10 +287,10 @@ final class CarrierApi
                 'quantity'    => 1,
                 'weight'      => $weight,
                 'totalWeight' => $weight,
-                'length'      => 0.3,
-                'width'       => 0.2,
-                'height'      => 0.2,
-                'totalVolume' => round(0.3 * 0.2 * 0.2, 4),
+                'length'      => $dimL,
+                'width'       => $dimW,
+                'height'      => $dimH,
+                'totalVolume' => round($dimL * $dimW * $dimH, 4),
                 'insurance'   => [
                     'statedValue' => $statedValue,
                     'term'        => true,
@@ -293,7 +299,7 @@ final class CarrierApi
             ],
             'payment' => [
                 'type'         => 'noncash',
-                'primaryPayer' => $settings->deliveryPayer ?? 'sender',
+                'primaryPayer' => 'sender',
             ]
         ];
         $res = $this->postJson(self::URL_ORDER, $body);

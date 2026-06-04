@@ -55,15 +55,15 @@ final class ExternalCheckoutHandler
             $cargo = CargoFromInsalesOrder::aggregate($lines, $settings);
 
             if ($uri === '/insales/external/v2/courier') {
-                self::courier($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors, $settings);
+                self::courier($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors);
                 return;
             }
             if ($uri === '/insales/external/v2/pickup_points') {
-                self::pickupPoints($body, $api, $creds, $termRepo, $senderId, $cargo, $calcCtx, $cors, $settings);
+                self::pickupPoints($body, $api, $creds, $termRepo, $senderId, $cargo, $calcCtx, $cors);
                 return;
             }
             if ($uri === '/insales/external/v2/pickup_point') {
-                self::pickupPoint($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors, $settings);
+                self::pickupPoint($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors);
                 return;
             }
 
@@ -82,7 +82,6 @@ final class ExternalCheckoutHandler
         array $cargo,
         CalculatorContext $calcCtx,
         array $cors,
-        ShopSettings $settings,
     ): void {
         $kladr = InsalesOrderParser::cityKladr($body);
         if ($kladr === null || strlen($kladr) < 10) {
@@ -108,18 +107,11 @@ final class ExternalCheckoutHandler
             return;
         }
 
-        $displayPrice = (float) $calc['price'];
-        $receiverPays = $settings->deliveryPayer === 'receiver';
-        $chargePrice  = $receiverPays ? 0.0 : $displayPrice;
-        $title = $receiverPays
-            ? 'Курьерская доставка ДЛ (~' . number_format($displayPrice, 0, '.', ' ') . ' ₽, оплата при получении)'
-            : 'Курьерская доставка Деловых Линий';
-
         Response::json([[
-            'price'                   => $chargePrice,
+            'price'                   => (float) $calc['price'],
             'tariff_id'               => 'dellin_courier',
             'shipping_company_handle' => self::COMPANY,
-            'title'                   => $title,
+            'title'                   => 'Курьерская доставка Деловых Линий',
             'description'             => 'Доставка до адреса получателя',
             'delivery_interval'       => self::interval($calc['days']),
             'fields_values'           => [
@@ -140,7 +132,6 @@ final class ExternalCheckoutHandler
         array $cargo,
         CalculatorContext $calcCtx,
         array $cors,
-        ShopSettings $settings,
     ): void {
         $kladr = InsalesOrderParser::cityKladr($body);
         if ($kladr === null) {
@@ -156,7 +147,6 @@ final class ExternalCheckoutHandler
         }
 
         $sid = $api->login($creds);
-        $receiverPays = $settings->deliveryPayer === 'receiver';
         $out = [];
         foreach ($points as $t) {
             $tid = (int) ($t['id'] ?? 0);
@@ -184,9 +174,7 @@ final class ExternalCheckoutHandler
             if ($price === null) {
                 continue;
             }
-            $displayPrice = (float) $price;
-            $chargePrice  = $receiverPays ? 0.0 : $displayPrice;
-            $out[] = self::mapPickupPoint($t, $chargePrice, $days, $displayPrice, $receiverPays);
+            $out[] = self::mapPickupPoint($t, (float) $price, $days);
             if (count($out) >= 50) {
                 break;
             }
@@ -204,7 +192,6 @@ final class ExternalCheckoutHandler
         array $cargo,
         CalculatorContext $calcCtx,
         array $cors,
-        ShopSettings $settings,
     ): void {
         $pointId = InsalesOrderParser::pickupPointId($body);
         if ($pointId === null || $pointId <= 0) {
@@ -220,39 +207,25 @@ final class ExternalCheckoutHandler
             return;
         }
 
-        $receiverPays = $settings->deliveryPayer === 'receiver';
-        $displayPrice = (float) $calc['price'];
-        $chargePrice  = $receiverPays ? 0.0 : $displayPrice;
-
         Response::json([self::mapPickupPoint([
             'id'      => $pointId,
             'name'    => 'ПВЗ #' . $pointId,
             'address' => '',
             'lat'     => 0,
             'lng'     => 0,
-        ], $chargePrice, $calc['days'], $displayPrice, $receiverPays)], 200, $cors);
+        ], (float) $calc['price'], $calc['days'])], 200, $cors);
     }
 
     /** @param array<string, mixed> $t */
-    private static function mapPickupPoint(
-        array $t,
-        float $price,
-        ?int $days,
-        float $displayPrice = 0.0,
-        bool $receiverPays = false,
-    ): array {
-        $title = (string) ($t['name'] ?? 'Пункт выдачи');
-        if ($receiverPays && $displayPrice > 0) {
-            $title .= ' (~' . number_format($displayPrice, 0, '.', ' ') . ' ₽, оплата при получении)';
-        }
-
+    private static function mapPickupPoint(array $t, float $price, ?int $days): array
+    {
         return [
             'id'                      => (int) ($t['id'] ?? 0),
             'latitude'                => (float) ($t['lat'] ?? 0),
             'longitude'               => (float) ($t['lng'] ?? 0),
             'shipping_company_handle' => self::COMPANY,
             'price'                   => $price,
-            'title'                   => $title,
+            'title'                   => (string) ($t['name'] ?? 'Пункт выдачи'),
             'type'                    => 'pvz',
             'address'                 => (string) ($t['address'] ?? ''),
             'description'             => (string) ($t['city'] ?? ''),

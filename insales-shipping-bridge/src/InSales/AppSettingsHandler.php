@@ -683,14 +683,14 @@ final class AppSettingsHandler
                                             <span style="font-size:12px;color:var(--ink3)">Включено</span>
                                         </label>
                                     </div>
-                                    <div class="ir">
+                                    <?php /* <div class="ir">
                                         <span class="ir-l">Плательщик за доставку</span>
                                         <div class="seg" style="width:auto;margin-bottom:0">
                                             <button type="button" class="seg-btn<?= $s->deliveryPayer === 'sender' ? ' on' : '' ?>" onclick="setDeliveryPayer(this,'sender')">Отправитель</button>
                                             <button type="button" class="seg-btn<?= $s->deliveryPayer === 'receiver' ? ' on' : '' ?>" onclick="setDeliveryPayer(this,'receiver')">Получатель</button>
                                         </div>
                                         <input type="hidden" id="delivery_payer" name="delivery_payer" value="<?= $h($s->deliveryPayer) ?>">
-                                    </div>
+                                    </div> <?php */ ?>
                                 </div>
                             </div>
 
@@ -1219,14 +1219,14 @@ final class AppSettingsHandler
                     });
                 }
             })();
-            window.setDeliveryPayer = function(btn, val) {
+            <?php /* ?>  window.setDeliveryPayer = function(btn, val) {
                 btn.parentNode.querySelectorAll('.seg-btn').forEach(function(b) {
                     b.classList.remove('on');
                 });
                 btn.classList.add('on');
                 var el = document.getElementById('delivery_payer');
                 if (el) el.value = val;
-            };
+            }; <?php */ ?>
         </script>
 <?php
         echo '</body></html>';

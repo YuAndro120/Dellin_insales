@@ -309,11 +309,9 @@ final class CarrierApi
 
     private static function toUuid(string $uid): string
     {
-        // Если уже UUID формат — возвращаем как есть
         if (str_contains($uid, '-')) {
             return $uid;
         }
-        // Конвертируем hex без 0x в UUID
         $h = strtolower(ltrim($uid, '0x'));
         if (strlen($h) !== 32) {
             return $uid;

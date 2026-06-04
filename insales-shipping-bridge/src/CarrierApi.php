@@ -158,9 +158,11 @@ final class CarrierApi
             ];
         } else {
             // Нет адреса — доставка до ближайшего терминала по КЛАДР города
+            // Берём только код города (первые 13 символов) и дополняем нулями
+            $cityKladrForTerminal = $arrivalCityKladr !== '' ? str_pad(substr($arrivalCityKladr, 0, 13), 25, '0') : '';
             $arrivalBlock = [
                 'variant' => 'terminal',
-                'city'    => $arrivalCityKladr,
+                'city'    => $cityKladrForTerminal,
             ];
         }
 
@@ -268,6 +270,7 @@ final class CarrierApi
                     'contactPersons' => [['name' => $settings->senderContactName ?? $settings->senderName ?? 'Отправитель']],
                     'phoneNumbers'   => [['number' => preg_replace('/\D/', '', $settings->senderContactPhone ?? '') ?: '70000000000']],
                     'dataForReceipt' => [
+                        'send'        => true,
                         'email'       => $settings->requesterEmail ?? null,
                         'phoneNumber' => preg_replace('/\D/', '', $settings->senderContactPhone ?? '') ?: null,
                     ],

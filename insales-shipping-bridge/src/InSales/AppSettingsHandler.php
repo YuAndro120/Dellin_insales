@@ -96,6 +96,7 @@ final class AppSettingsHandler
                     throw new \RuntimeException('Выберите ОПФ из справочника Деловых Линий.');
                 }
                 $variant = (string) ($_POST['derival_variant'] ?? ShopSettings::DERIVAL_TERMINAL);
+                file_put_contents('/tmp/post_debug.json', json_encode($_POST, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
                 $shops->saveDeliverySettings($settings->insalesId, [
                     'derival_variant'       => $variant,
                     'sender_terminal_id'    => (int) ($_POST['sender_terminal_id']    ?? 0),

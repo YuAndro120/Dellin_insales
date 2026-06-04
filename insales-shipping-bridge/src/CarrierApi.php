@@ -293,8 +293,8 @@ final class CarrierApi
             ],
             'payment' => [
                 'type'         => 'noncash',
-                'primaryPayer' => 'sender',
-            ],
+                'primaryPayer' => $settings->deliveryPayer ?? 'sender',
+            ]
         ];
         $res = $this->postJson(self::URL_ORDER, $body);
 

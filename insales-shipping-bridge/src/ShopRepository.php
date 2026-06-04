@@ -8,7 +8,7 @@ use PDO;
 
 final class ShopRepository
 {
-    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_juridical_address, sender_opf_name, freight_name';
+    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_juridical_address, sender_opf_name, freight_name, delivery_payer';
 
     public function __construct(private readonly PDO $pdo) {}
 
@@ -173,6 +173,7 @@ SQL;
               default_weight_kg     = :weight,
               default_dimensions_cm = :dims,
               is_enabled            = :enabled
+              delivery_payer = :delivery_payer,
              WHERE insales_id = :iid AND uninstalled_at IS NULL'
         );
         $st->execute([
@@ -203,6 +204,7 @@ SQL;
             ':dims'                => $data['default_dimensions_cm'],
             ':enabled'             => $data['is_enabled'] ? 1 : 0,
             ':iid'                 => $insalesId,
+            ':delivery_payer' => in_array($data['delivery_payer'] ?? 'sender', ['sender', 'receiver'], true) ? $data['delivery_payer'] : 'sender',
         ]);
         $this->assertActiveShop($insalesId);
     }

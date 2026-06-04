@@ -124,6 +124,7 @@ final class AppSettingsHandler
                     'sender_opf_uid'        => trim((string) ($_POST['sender_opf_uid']        ?? '')),
                     'sender_opf_name' => trim((string) ($_POST['sender_opf_name'] ?? '')),
                     'sender_juridical_address' => trim((string) ($_POST['sender_juridical_address'] ?? '')),
+                    'delivery_payer' => trim((string) ($_POST['delivery_payer'] ?? 'sender')),
                 ]);
                 $settings = $shops->findSettingsByInsalesId($settings->insalesId, $config) ?? $settings;
                 $saved    = true;
@@ -691,6 +692,18 @@ final class AppSettingsHandler
                         </form>
                     </div>
 
+                    <!-- ══ ПЛАТЕЛЬЩИК ПО УМОЛЧАНИЮ ══ -->
+
+                    <div class="ir">
+                        <span class="ir-l">Плательщик за доставку</span>
+                        <div class="seg" style="width:auto;margin-bottom:0">
+                            <button type="button" class="seg-btn<?= $s->deliveryPayer === 'sender' ? ' on' : '' ?>"
+                                onclick="setDeliveryPayer(this,'sender')">Отправитель</button>
+                            <button type="button" class="seg-btn<?= $s->deliveryPayer === 'receiver' ? ' on' : '' ?>"
+                                onclick="setDeliveryPayer(this,'receiver')">Получатель</button>
+                        </div>
+                        <input type="hidden" id="delivery_payer" name="delivery_payer" value="<?= $h($s->deliveryPayer) ?>">
+                    </div>
 
                     <!-- ══ ПОДКЛЮЧЕНИЕ ══ -->
                     <div class="page" id="page-connection">
@@ -1211,6 +1224,13 @@ final class AppSettingsHandler
                     });
                 }
             })();
+            window.setDeliveryPayer = function(btn, val) {
+                btn.parentNode.querySelectorAll('.seg-btn').forEach(function(b) {
+                    b.classList.remove('on');
+                });
+                btn.classList.add('on');
+                $('delivery_payer').value = val;
+            };
         </script>
 <?php
         echo '</body></html>';

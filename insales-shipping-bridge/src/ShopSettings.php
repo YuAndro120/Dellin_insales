@@ -42,6 +42,7 @@ final class ShopSettings
         public readonly float $defaultWeightKg,
         public readonly string $defaultDimensionsCm,
         public readonly bool $isEnabled,
+        public readonly string $deliveryPayer,
     ) {}
 
     public function isDerivalTerminal(): bool
@@ -109,6 +110,7 @@ final class ShopSettings
             defaultWeightKg: max(0.01, (float) ($row['default_weight_kg'] ?? 1)),
             defaultDimensionsCm: self::normalizeDimensions((string) ($row['default_dimensions_cm'] ?? '20x20x20')),
             isEnabled: (int) ($row['is_enabled'] ?? 1) === 1,
+            deliveryPayer: in_array($row['delivery_payer'] ?? 'sender', ['sender', 'receiver'], true) ? (string) $row['delivery_payer'] : 'sender',
         );
     }
 

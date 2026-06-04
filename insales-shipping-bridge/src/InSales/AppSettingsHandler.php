@@ -423,6 +423,7 @@ final class AppSettingsHandler
                                             <input type="hidden" id="sender_opf_uid" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
                                             <input type="hidden" id="sender_opf_name" name="sender_opf_name" value="<?= $h($s->senderOpfName) ?>">
                                             <input type="hidden" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
+                                            <input type="hidden" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
                                         </div>
                                         <div class="field">
                                             <label>ИНН</label>

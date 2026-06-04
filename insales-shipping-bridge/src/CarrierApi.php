@@ -262,7 +262,7 @@ final class CarrierApi
             'members' => [
                 'requester' => [
                     'role'  => 'sender',
-                    'uid'   => $settings->counteragentUid ?? '',
+                    'uid' => self::toUuid($settings->counteragentUid ?? ''),
                     'email' => $settings->requesterEmail ?? '',
                 ],
                 'sender' => [
@@ -305,6 +305,27 @@ final class CarrierApi
         }
 
         return ['request_id' => $requestId, 'barcode' => $barcode];
+    }
+
+    private static function toUuid(string $uid): string
+    {
+        // Если уже UUID формат — возвращаем как есть
+        if (str_contains($uid, '-')) {
+            return $uid;
+        }
+        // Конвертируем hex без 0x в UUID
+        $h = strtolower(ltrim($uid, '0x'));
+        if (strlen($h) !== 32) {
+            return $uid;
+        }
+        return sprintf(
+            '%s-%s-%s-%s-%s',
+            substr($h, 24, 8),
+            substr($h, 20, 4),
+            substr($h, 16, 4),
+            substr($h, 12, 4),
+            substr($h, 0, 12)
+        );
     }
 
     /**
@@ -861,7 +882,7 @@ final class CarrierApi
             'email' => $calcCtx->requesterEmail,
         ];
         if ($calcCtx->counteragentUid !== null && $calcCtx->counteragentUid !== '') {
-            $requester['uid'] = $calcCtx->counteragentUid;
+            $requester['uid'] = self::toUuid($calcCtx->counteragentUid);
         }
 
         return $requester;

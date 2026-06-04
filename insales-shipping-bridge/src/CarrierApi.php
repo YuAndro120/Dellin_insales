@@ -11,7 +11,7 @@ final class CarrierApi
 {
     private const URL_LOGIN_V4 = 'https://api.dellin.ru/v4/auth/login.json';
     private const URL_LOGIN_V1 = 'https://api.dellin.ru/v1/customers/login.json';
-    private const URL_BOOK_COUNTERAGENTS = 'https://api.dellin.ru/v2/book/counteragents.json';
+    private const URL_BOOK_COUNTERAGENTS = 'https://api.dellin.ru/v2/counteragents.json';
     private const URL_CALC = 'https://api.dellin.ru/v2/calculator.json';
     private const URL_KLADR = 'https://api.dellin.ru/v2/public/kladr.json';
     private const URL_KLADR_STREET = 'https://api.dellin.ru/v1/public/kladr_street.json';
@@ -86,19 +86,13 @@ final class CarrierApi
     {
         $loginRes = $this->postJson(self::URL_LOGIN_V4, [
             'appkey' => $credentials->appkey,
-            'pat' => $credentials->pat,
+            'pat'    => $credentials->pat,
         ]);
-        $list = $this->parseCounteragents($loginRes);
-        if ($list !== []) {
-            return $list;
-        }
-
         $sid = $this->extractSessionId($loginRes);
         $bookRes = $this->postJson(self::URL_BOOK_COUNTERAGENTS, [
-            'appkey' => $credentials->appkey,
+            'appkey'    => $credentials->appkey,
             'sessionID' => $sid,
         ]);
-
         return $this->parseCounteragents($bookRes);
     }
 
@@ -266,7 +260,7 @@ final class CarrierApi
             'members' => [
                 'requester' => [
                     'role'  => 'sender',
-                    'uid' => self::toUuid($settings->counteragentUid ?? ''),
+                    'uid' => $settings->counteragentUid ?? '',
                     'email' => $settings->requesterEmail ?? '',
                 ],
                 'sender' => [
@@ -884,7 +878,7 @@ final class CarrierApi
             'email' => $calcCtx->requesterEmail,
         ];
         if ($calcCtx->counteragentUid !== null && $calcCtx->counteragentUid !== '') {
-            $requester['uid'] = self::toUuid($calcCtx->counteragentUid);
+            $requester['uid'] = $calcCtx->counteragentUid;
         }
 
         return $requester;

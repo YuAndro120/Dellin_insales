@@ -683,6 +683,14 @@ final class AppSettingsHandler
                                             <span style="font-size:12px;color:var(--ink3)">Включено</span>
                                         </label>
                                     </div>
+                                    <div class="ir">
+                                        <span class="ir-l">Плательщик за доставку</span>
+                                        <div class="seg" style="width:auto;margin-bottom:0">
+                                            <button type="button" class="seg-btn<?= $s->deliveryPayer === 'sender' ? ' on' : '' ?>" onclick="setDeliveryPayer(this,'sender')">Отправитель</button>
+                                            <button type="button" class="seg-btn<?= $s->deliveryPayer === 'receiver' ? ' on' : '' ?>" onclick="setDeliveryPayer(this,'receiver')">Получатель</button>
+                                        </div>
+                                        <input type="hidden" id="delivery_payer" name="delivery_payer" value="<?= $h($s->deliveryPayer) ?>">
+                                    </div>
                                 </div>
                             </div>
 
@@ -690,19 +698,6 @@ final class AppSettingsHandler
                                 <button type="submit" class="btn-p">Сохранить изменения</button>
                             </div>
                         </form>
-                    </div>
-
-                    <!-- ══ ПЛАТЕЛЬЩИК ПО УМОЛЧАНИЮ ══ -->
-
-                    <div class="ir">
-                        <span class="ir-l">Плательщик за доставку</span>
-                        <div class="seg" style="width:auto;margin-bottom:0">
-                            <button type="button" class="seg-btn<?= $s->deliveryPayer === 'sender' ? ' on' : '' ?>"
-                                onclick="setDeliveryPayer(this,'sender')">Отправитель</button>
-                            <button type="button" class="seg-btn<?= $s->deliveryPayer === 'receiver' ? ' on' : '' ?>"
-                                onclick="setDeliveryPayer(this,'receiver')">Получатель</button>
-                        </div>
-                        <input type="hidden" id="delivery_payer" name="delivery_payer" value="<?= $h($s->deliveryPayer) ?>">
                     </div>
 
                     <!-- ══ ПОДКЛЮЧЕНИЕ ══ -->

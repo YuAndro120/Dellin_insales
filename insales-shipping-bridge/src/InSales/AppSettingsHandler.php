@@ -443,7 +443,7 @@ final class AppSettingsHandler
                             </div>
 
                             <!-- Контрагент ДЛ -->
-                            <?php if (count($counteragents) >= 1): ?>
+                            <?php if (count($counteragents) >= 1 || $counteragentUid !== ''): ?>
                                 <div class="card">
                                     <div class="card-hdr">
                                         <div>

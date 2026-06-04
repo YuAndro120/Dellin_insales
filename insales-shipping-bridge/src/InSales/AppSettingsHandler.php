@@ -568,7 +568,9 @@ final class AppSettingsHandler
                                 </div>
                             </div>
 
-                            <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
+                            <?php if (count($counteragents) <= 1): ?>
+                                <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
+                            <?php endif; ?>
                             <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
 
                             <div class="btn-row">

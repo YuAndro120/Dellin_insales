@@ -267,8 +267,11 @@ final class CarrierApi
                     'counteragent'   => $senderCounterAgent,
                     'contactPersons' => [['name' => $settings->senderContactName ?? $settings->senderName ?? 'Отправитель']],
                     'phoneNumbers'   => [['number' => preg_replace('/\D/', '', $settings->senderContactPhone ?? '') ?: '70000000000']],
+                    'dataForReceipt' => [
+                        'email'       => $settings->requesterEmail ?? null,
+                        'phoneNumber' => preg_replace('/\D/', '', $settings->senderContactPhone ?? '') ?: null,
+                    ],
                 ],
-                'receiver' => $receiverBlock,
             ],
             'cargo' => [
                 'quantity'    => 1,

@@ -321,8 +321,8 @@ final class CarrierApi
             substr($h, 24, 8),
             substr($h, 20, 4),
             substr($h, 16, 4),
-            substr($h, 12, 4),
-            substr($h, 0, 12)
+            substr($h, 0, 4),
+            substr($h, 4, 12)
         );
     }
 

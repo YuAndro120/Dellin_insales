@@ -275,6 +275,7 @@ final class CarrierApi
                         'phoneNumber' => preg_replace('/\D/', '', $settings->senderContactPhone ?? '') ?: null,
                     ],
                 ],
+                'receiver' => $receiverBlock,
             ],
             'cargo' => [
                 'quantity'    => 1,

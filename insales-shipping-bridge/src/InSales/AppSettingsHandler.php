@@ -125,6 +125,7 @@ final class AppSettingsHandler
                     'sender_opf_name' => trim((string) ($_POST['sender_opf_name'] ?? '')),
                     'sender_juridical_address' => trim((string) ($_POST['sender_juridical_address'] ?? '')),
                     'delivery_payer' => trim((string) ($_POST['delivery_payer'] ?? 'sender')),
+                    'requester_role' => trim((string) ($_POST['requester_role'] ?? 'sender')),
                 ]);
                 $settings = $shops->findSettingsByInsalesId($settings->insalesId, $config) ?? $settings;
                 $saved    = true;
@@ -683,14 +684,15 @@ final class AppSettingsHandler
                                             <span style="font-size:12px;color:var(--ink3)">Включено</span>
                                         </label>
                                     </div>
-                                    <?php /* <div class="ir">
-                                        <span class="ir-l">Плательщик за доставку</span>
+                                    <div class="ir">
+                                        <span class="ir-l">Роль для скидок ДЛ</span>
                                         <div class="seg" style="width:auto;margin-bottom:0">
-                                            <button type="button" class="seg-btn<?= $s->deliveryPayer === 'sender' ? ' on' : '' ?>" onclick="setDeliveryPayer(this,'sender')">Отправитель</button>
-                                            <button type="button" class="seg-btn<?= $s->deliveryPayer === 'receiver' ? ' on' : '' ?>" onclick="setDeliveryPayer(this,'receiver')">Получатель</button>
+                                            <button type="button" class="seg-btn<?= $s->requesterRole === 'sender' ? ' on' : '' ?>" onclick="setRequesterRole(this,'sender')">Отправитель</button>
+                                            <button type="button" class="seg-btn<?= $s->requesterRole === 'receiver' ? ' on' : '' ?>" onclick="setRequesterRole(this,'receiver')">Получатель</button>
+                                            <button type="button" class="seg-btn<?= $s->requesterRole === 'payer' ? ' on' : '' ?>" onclick="setRequesterRole(this,'payer')">Плательщик</button>
                                         </div>
-                                        <input type="hidden" id="delivery_payer" name="delivery_payer" value="<?= $h($s->deliveryPayer) ?>">
-                                    </div> <?php */ ?>
+                                        <input type="hidden" id="requester_role" name="requester_role" value="<?= $h($s->requesterRole) ?>">
+                                    </div>
                                 </div>
                             </div>
 
@@ -1219,14 +1221,14 @@ final class AppSettingsHandler
                     });
                 }
             })();
-            <?php /* ?>  window.setDeliveryPayer = function(btn, val) {
+            window.setRequesterRole = function(btn, val) {
                 btn.parentNode.querySelectorAll('.seg-btn').forEach(function(b) {
                     b.classList.remove('on');
                 });
                 btn.classList.add('on');
-                var el = document.getElementById('delivery_payer');
+                var el = document.getElementById('requester_role');
                 if (el) el.value = val;
-            }; <?php */ ?>
+            };
         </script>
 <?php
         echo '</body></html>';

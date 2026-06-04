@@ -267,7 +267,7 @@ final class CarrierApi
             ],
             'members' => [
                 'requester' => [
-                    'role'  => 'sender',
+                    'role'  => $settings->requesterRole ?? 'sender',
                     'uid' => $settings->counteragentUid ?? '',
                     'email' => $settings->requesterEmail ?? '',
                 ],
@@ -887,7 +887,7 @@ final class CarrierApi
     private function buildRequester(CalculatorContext $calcCtx): array
     {
         $requester = [
-            'role' => 'sender',
+            'role'  => $calcCtx->requesterRole ?? 'sender',
             'email' => $calcCtx->requesterEmail,
         ];
         if ($calcCtx->counteragentUid !== null && $calcCtx->counteragentUid !== '') {

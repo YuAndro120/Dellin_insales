@@ -43,6 +43,7 @@ final class ShopSettings
         public readonly string $defaultDimensionsCm,
         public readonly bool $isEnabled,
         public readonly string $deliveryPayer,
+        public readonly string $requesterRole,
     ) {}
 
     public function isDerivalTerminal(): bool
@@ -111,6 +112,7 @@ final class ShopSettings
             defaultDimensionsCm: self::normalizeDimensions((string) ($row['default_dimensions_cm'] ?? '20x20x20')),
             isEnabled: (int) ($row['is_enabled'] ?? 1) === 1,
             deliveryPayer: in_array($row['delivery_payer'] ?? 'sender', ['sender', 'receiver'], true) ? (string) $row['delivery_payer'] : 'sender',
+            requesterRole: in_array($row['requester_role'] ?? 'sender', ['sender', 'receiver', 'payer'], true) ? (string)$row['requester_role'] : 'sender',
         );
     }
 

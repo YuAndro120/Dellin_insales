@@ -13,7 +13,7 @@ use ShippingBridge\Http\Response;
 use ShippingBridge\ShopDeliveryContext;
 use ShippingBridge\ShopRepository;
 use ShippingBridge\ShopSettings;
-use ShippingBridge\TerminalRepository;
+
 
 /**
  * Эндпоинты для «Внешнего способа доставки» inSales (checkout API v2).

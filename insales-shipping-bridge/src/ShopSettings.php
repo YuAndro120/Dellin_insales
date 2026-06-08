@@ -37,11 +37,14 @@ final class ShopSettings
         public readonly ?string $senderJuridicalAddress,
         public readonly ?string $freightUid,
         public readonly string $freightName,
+        public readonly string $packageUid,
+        public readonly string $packageName,
         public readonly int $produceDaysOffset,
         public readonly float $defaultStatedValue,
         public readonly float $defaultWeightKg,
         public readonly string $defaultDimensionsCm,
         public readonly bool $isEnabled,
+        public readonly array $deliveryTypes,
         public readonly string $deliveryPayer,
         public readonly string $requesterRole,
     ) {}
@@ -106,11 +109,17 @@ final class ShopSettings
             senderJuridicalAddress: self::nullableString($row['sender_juridical_address'] ?? null),
             freightUid: self::nullableString($row['freight_uid'] ?? null),
             freightName: (string) ($row['freight_name'] ?? ''),
+            packageUid: (string) ($row['package_uid']  ?? ''),
+            packageName: (string) ($row['package_name'] ?? ''),
             produceDaysOffset: $offset,
             defaultStatedValue: (float) ($row['default_stated_value'] ?? 0),
             defaultWeightKg: max(0.01, (float) ($row['default_weight_kg'] ?? 1)),
             defaultDimensionsCm: self::normalizeDimensions((string) ($row['default_dimensions_cm'] ?? '20x20x20')),
             isEnabled: (int) ($row['is_enabled'] ?? 1) === 1,
+            deliveryTypes: array_filter(
+                explode(',', (string) ($row['delivery_types'] ?? 'auto')),
+                static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small_package'], true)
+            ),
             deliveryPayer: in_array($row['delivery_payer'] ?? 'sender', ['sender', 'receiver'], true) ? (string) $row['delivery_payer'] : 'sender',
             requesterRole: in_array($row['requester_role'] ?? 'sender', ['sender', 'receiver', 'payer'], true) ? (string)$row['requester_role'] : 'sender',
         );

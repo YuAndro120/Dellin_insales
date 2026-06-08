@@ -95,6 +95,10 @@ final class AppSettingsHandler
                 if (in_array($senderType, ['ip', 'company'], true) && $senderOpfUid === '') {
                     throw new \RuntimeException('Выберите ОПФ из справочника Деловых Линий.');
                 }
+                $types = array_filter(
+                    (array) ($_POST['delivery_types'] ?? ['auto']),
+                    static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small_package'], true)
+                );
                 $variant = (string) ($_POST['derival_variant'] ?? ShopSettings::DERIVAL_TERMINAL);
                 file_put_contents('/tmp/post_debug.json', json_encode($_POST, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
                 $shops->saveDeliverySettings($settings->insalesId, [
@@ -108,6 +112,8 @@ final class AppSettingsHandler
                     'sender_counteragent_id' => (int) ($_POST['sender_counteragent_id'] ?? 0) ?: null,
                     'freight_uid'           => trim((string) ($_POST['freight_uid']    ?? '')) ?: null,
                     'freight_name' => trim((string) ($_POST['freight_name'] ?? '')),
+                    'package_uid'  => trim((string) ($_POST['package_uid']  ?? '')),
+                    'package_name' => trim((string) ($_POST['package_name'] ?? '')),
                     'produce_days_offset'   => (int) ($_POST['produce_days_offset']    ?? 2),
                     'default_stated_value'  => (float) str_replace(',', '.', (string) ($_POST['default_stated_value'] ?? '0')),
                     'default_weight_kg'     => (float) str_replace(',', '.', (string) ($_POST['default_weight_kg']    ?? '1')),
@@ -126,6 +132,7 @@ final class AppSettingsHandler
                     'sender_juridical_address' => trim((string) ($_POST['sender_juridical_address'] ?? '')),
                     'delivery_payer' => trim((string) ($_POST['delivery_payer'] ?? 'sender')),
                     'requester_role' => trim((string) ($_POST['requester_role'] ?? 'sender')),
+                    'delivery_types' => implode(',', $types) ?: 'auto',
                 ]);
                 $settings = $shops->findSettingsByInsalesId($settings->insalesId, $config) ?? $settings;
                 $saved    = true;
@@ -431,6 +438,8 @@ final class AppSettingsHandler
                                             <input type="hidden" id="sender_opf_name" name="sender_opf_name" value="<?= $h($s->senderOpfName) ?>">
                                             <input type="hidden" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
                                             <input type="hidden" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
+                                            <input type="hidden" name="package_uid" value="<?= $h($s->packageUid  ?? '') ?>">
+                                            <input type="hidden" name="package_name" value="<?= $h($s->packageName ?? '') ?>">
                                         </div>
                                         <div class="field">
                                             <label>ИНН</label>
@@ -616,6 +625,8 @@ final class AppSettingsHandler
                             <input type="hidden" name="sender_opf_name" value="<?= $h($s->senderOpfName ?? '') ?>">
                             <input type="hidden" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>">
                             <input type="hidden" name="is_enabled" value="<?= $s->isEnabled ? '1' : '' ?>">
+                            <input type="hidden" name="package_uid" value="<?= $h($s->packageUid) ?>">
+                            <input type="hidden" name="package_name" value="<?= $h($s->packageName) ?>">
 
                             <!-- Груз по умолчанию -->
                             <div class="card">
@@ -671,6 +682,41 @@ final class AppSettingsHandler
                                 </div>
                             </div>
 
+                            <!-- Упаковка -->
+                            <div class="card">
+                                <div class="card-hdr">
+                                    <div>
+                                        <div class="card-title">Упаковка</div>
+                                        <div class="card-sub">Из справочника Деловых Линий</div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <?php $hasPkg = $s->packageUid !== ''; ?>
+                                    <div class="field">
+                                        <label>Вид упаковки</label>
+                                        <div id="pkgSaved" <?= !$hasPkg ? ' style="display:none"' : '' ?> class="opf-saved">
+                                            <div>
+                                                <div class="opf-name" id="pkgSavedName"><?= $h($s->packageName ?: 'Сохранено') ?></div>
+                                                <div class="opf-country">из справочника ДЛ</div>
+                                            </div>
+                                            <button type="button" id="pkgEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px">
+                                                    <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                </svg>
+                                                Изменить
+                                            </button>
+                                        </div>
+                                        <div id="pkgSearchWrap" <?= $hasPkg ? ' style="display:none"' : '' ?> class="opf-search-wrap">
+                                            <div id="pkgLoading" style="font-size:12px;color:var(--ink3);padding:6px 0">Загрузка упаковок…</div>
+                                            <ul id="pkgList" class="opf-list" style="display:none"></ul>
+                                            <button type="button" id="pkgClearBtn" class="btn-g" style="font-size:11px;margin-top:8px">Без упаковки</button>
+                                        </div>
+                                        <input type="hidden" id="package_uid" name="package_uid" value="<?= $h($s->packageUid) ?>">
+                                        <input type="hidden" id="package_name" name="package_name" value="<?= $h($s->packageName) ?>">
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Расчёт доставки -->
                             <div class="card">
                                 <div class="card-hdr">
@@ -683,6 +729,26 @@ final class AppSettingsHandler
                                             <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
                                             <span style="font-size:12px;color:var(--ink3)">Включено</span>
                                         </label>
+                                    </div>
+                                    <div class="ir" style="align-items:flex-start;flex-direction:column;gap:10px">
+                                        <span class="ir-l">Типы доставки в корзине</span>
+                                        <div style="display:flex;flex-direction:column;gap:8px">
+                                            <?php foreach (
+                                                [
+                                                    'auto'          => 'Автодоставка',
+                                                    'avia'          => 'Авиадоставка',
+                                                    'express'       => 'Экспресс',
+                                                    'small_package' => 'Мелкий пакет (МГГ)',
+                                                ] as $val => $label
+                                            ): ?>
+                                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--ink2)">
+                                                    <input type="checkbox" name="delivery_types[]" value="<?= $val ?>"
+                                                        <?= in_array($val, $s->deliveryTypes, true) ? 'checked' : '' ?>
+                                                        style="width:auto;cursor:pointer;accent-color:var(--amber)">
+                                                    <?= $label ?>
+                                                </label>
+                                            <?php endforeach; ?>
+                                        </div>
                                     </div>
                                     <div class="ir">
                                         <span class="ir-l">Роль для скидок ДЛ</span>
@@ -1218,6 +1284,71 @@ final class AppSettingsHandler
                                 btn.disabled = false;
                                 btn.textContent = '⬇ Из inSales';
                             });
+                    });
+                }
+                // ── Package ──
+                var pkgEditBtn = document.getElementById('pkgEditBtn');
+                var pkgSearchWrap = document.getElementById('pkgSearchWrap');
+                var pkgSaved = document.getElementById('pkgSaved');
+                var pkgList = document.getElementById('pkgList');
+                var pkgLoading = document.getElementById('pkgLoading');
+
+                function loadPackages() {
+                    if (!pkgList) return;
+                    pkgLoading.style.display = 'block';
+                    pkgList.style.display = 'none';
+                    var dims = <?= json_encode($s->defaultDimensionsCm) ?>.split('x');
+                    var l = parseFloat(dims[0] || 20) / 100;
+                    var w = parseFloat(dims[1] || 20) / 100;
+                    var h = parseFloat(dims[2] || 20) / 100;
+                    var wt = <?= json_encode($s->defaultWeightKg) ?>;
+                    var kladr = <?= json_encode($s->derivalCityKladr ?? '') ?>;
+                    var url = '/insales/packages?insales_id=' + iidQ +
+                        '&length=' + l + '&width=' + w + '&height=' + h +
+                        '&weight=' + wt + '&kladr=' + encodeURIComponent(kladr);
+                    fetchJ(url).then(function(j) {
+                        pkgLoading.style.display = 'none';
+                        if (!j.ok || !j.items || !j.items.length) {
+                            pkgLoading.textContent = 'Нет доступных упаковок';
+                            pkgLoading.style.display = 'block';
+                            return;
+                        }
+                        pkgList.innerHTML = '';
+                        j.items.forEach(function(pkg) {
+                            var li = document.createElement('li');
+                            li.className = 'opf-item';
+                            li.innerHTML = '<div>' + pkg.name + '</div>';
+                            li.addEventListener('click', function() {
+                                document.getElementById('package_uid').value = pkg.uid;
+                                document.getElementById('package_name').value = pkg.name;
+                                document.getElementById('pkgSavedName').textContent = pkg.name;
+                                pkgSaved.style.display = 'flex';
+                                pkgSearchWrap.style.display = 'none';
+                            });
+                            pkgList.appendChild(li);
+                        });
+                        pkgList.style.display = 'block';
+                    }).catch(function() {
+                        pkgLoading.textContent = 'Ошибка загрузки';
+                        pkgLoading.style.display = 'block';
+                    });
+                }
+
+                if (pkgEditBtn) {
+                    pkgEditBtn.addEventListener('click', function() {
+                        pkgSaved.style.display = 'none';
+                        pkgSearchWrap.style.display = '';
+                        loadPackages();
+                    });
+                }
+
+                var pkgClearBtn = document.getElementById('pkgClearBtn');
+                if (pkgClearBtn) {
+                    pkgClearBtn.addEventListener('click', function() {
+                        document.getElementById('package_uid').value = '';
+                        document.getElementById('package_name').value = '';
+                        pkgSaved.style.display = 'none';
+                        pkgSearchWrap.style.display = 'none';
                     });
                 }
             })();

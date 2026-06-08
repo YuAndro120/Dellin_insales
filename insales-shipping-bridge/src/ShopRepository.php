@@ -8,7 +8,7 @@ use PDO;
 
 final class ShopRepository
 {
-    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_juridical_address, sender_opf_name, freight_name, delivery_payer, requester_role';
+    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_juridical_address, sender_opf_name, freight_name, delivery_payer, requester_role, package_uid, package_name, delivery_types';
 
     public function __construct(private readonly PDO $pdo) {}
 
@@ -168,11 +168,14 @@ SQL;
               sender_juridical_address = :sender_juridical_address,
               freight_uid           = :freight_uid,
               freight_name = :freight_name,
+              package_uid  = :package_uid,
+              package_name = :package_name,
               produce_days_offset   = :offset,
               default_stated_value  = :stated,
               default_weight_kg     = :weight,
               default_dimensions_cm = :dims,
               is_enabled            = :enabled,
+              delivery_types = :delivery_types,
               delivery_payer = :delivery_payer,
               requester_role = :requester_role
              WHERE insales_id = :iid AND uninstalled_at IS NULL'
@@ -199,6 +202,8 @@ SQL;
             ':sender_juridical_address' => trim((string) ($data['sender_juridical_address'] ?? '')) ?: null,
             ':freight_uid'         => $freightUid !== '' ? $freightUid : null,
             ':freight_name' => trim((string) ($data['freight_name'] ?? '')),
+            ':package_uid'  => trim((string) ($data['package_uid']  ?? '')),
+            ':package_name' => trim((string) ($data['package_name'] ?? '')),
             ':offset'              => $offset,
             ':stated'              => max(0, (float) $data['default_stated_value']),
             ':weight'              => max(0.01, (float) $data['default_weight_kg']),
@@ -207,6 +212,10 @@ SQL;
             ':iid'                 => $insalesId,
             ':delivery_payer' => in_array($data['delivery_payer'] ?? 'sender', ['sender', 'receiver'], true) ? $data['delivery_payer'] : 'sender',
             ':requester_role' => in_array($data['requester_role'] ?? 'sender', ['sender', 'receiver', 'payer'], true) ? $data['requester_role'] : 'sender',
+            ':delivery_types' => implode(',', array_filter(
+                (array) ($data['delivery_types'] ?? ['auto']),
+                static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small_package'], true)
+            )) ?: 'auto',
         ]);
         $this->assertActiveShop($insalesId);
     }

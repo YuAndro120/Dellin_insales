@@ -185,12 +185,16 @@ if (str_starts_with($uri, '/insales/')) {
             OrderSubmitHandler::preview($config, $shops);
             exit;
         }
-        if ($uri === '/insales/modal' && $method === 'GET') {  // ← добавить сюда
+        if ($uri === '/insales/modal' && $method === 'GET') {
             \ShippingBridge\InSales\ModalHandler::handle($config, $shops);
             exit;
         }
         if ($uri === '/insales/orders/submit' && $method === 'POST') {
             OrderSubmitHandler::handle($config, $shops);
+            exit;
+        }
+        if ($uri === '/insales/packages' && $method === 'GET') {
+            CarrierJsonHandler::packages($config, $shops);
             exit;
         }
         if ($uri === '/insales/orders/labels' && $method === 'POST') {

@@ -63,7 +63,6 @@ final class CarrierApi
         if ($creds !== null && $creds->isComplete()) {
             return $this->loginWithPat($creds);
         }
-
         throw new \RuntimeException('PAT не настроен. Укажите персональный токен в настройках магазина.');
     }
 
@@ -71,15 +70,13 @@ final class CarrierApi
     {
         $res = $this->postJson(self::URL_LOGIN_V4, [
             'appkey' => $credentials->appkey,
-            'pat' => $credentials->pat,
+            'pat'    => $credentials->pat,
         ]);
-
         return $this->extractSessionId($res);
     }
 
     /**
-     * Контрагенты, доступные по PAT (сначала из ответа login, иначе адресная книга).
-     *
+     * Контрагенты, доступные по PAT.
      * @return list<DellinCounteragent>
      */
     public function listCounteragents(CarrierCredentials $credentials): array
@@ -95,6 +92,76 @@ final class CarrierApi
         ]);
         return $this->parseCounteragents($bookRes);
     }
+ 
+    // ─────────────────────────────────────────────────────────────
+    // Справочник упаковок
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Справочник всех упаковок с названиями.
+     * @return array<string,string>  uid => name
+     */
+    public function getPackagesReference(): array
+    {
+        $res = $this->postJson('https://api.dellin.ru/v1/references/packages.json', [
+            'appkey' => $this->config->dellinAppkey,
+        ]);
+        $items = [];
+        foreach ($res['data'] ?? $res['packages'] ?? [] as $pkg) {
+            $uid = (string) ($pkg['uid'] ?? '');
+            if ($uid === '') continue;
+            $items[$uid] = (string) ($pkg['name'] ?? $uid);
+        }
+        return $items;
+    }
+
+    /**
+     * Условия заказа: доступные упаковки, day_to_day, страхование.
+     * @return array<string,mixed>
+     */
+    public function getRequestConditions(
+        float $weight,
+        float $volume,
+        float $length,
+        float $width,
+        float $height,
+        int $quantity = 1,
+        ?string $derivalKladr = null,
+        ?int $derivalTerminalId = null,
+        string $deliveryType = 'auto',
+    ): array {
+        $typeIdMap = [
+            'auto'          => 1,
+            'avia'          => 2,
+            'express'       => 6,
+            'small_package' => 7,
+        ];
+        $body = [
+            'appkey'       => $this->config->dellinAppkey,
+            'blocks'       => ['packages', 'day_to_day', 'insurance'],
+            'weight'       => $weight,
+            'volume'       => $volume,
+            'length'       => $length,
+            'width'        => $width,
+            'height'       => $height,
+            'quantity'     => $quantity,
+            'deliveryType' => $typeIdMap[$deliveryType] ?? 1,
+        ];
+        if ($derivalKladr !== null && $derivalKladr !== '') {
+            $body['derivalPoint'] = $derivalKladr;
+        }
+        if ($derivalTerminalId !== null && $derivalTerminalId > 0) {
+            $body['derivalTerminalID'] = $derivalTerminalId;
+        }
+        return $this->postJson(
+            'https://api.dellin.ru/v1/public/request_conditions.json',
+            $body
+        );
+    }
+ 
+    // ─────────────────────────────────────────────────────────────
+    // Оформление заявки
+    // ─────────────────────────────────────────────────────────────
 
     /**
      * Оформление заявки на доставку в Деловые Линии.
@@ -107,6 +174,7 @@ final class CarrierApi
         \ShippingBridge\ShopSettings $settings,
         array $order,
         ?CarrierCredentials $credentials = null,
+        string $deliveryType = 'auto',
     ): array {
         $appkey = $this->resolveAppkey($credentials);
 
@@ -118,7 +186,6 @@ final class CarrierApi
         $statedValue      = max(1.0, (float) ($order['stated_value'] ?? 1000.0));
         $receiverName     = (string) ($order['receiver_name'] ?? 'Получатель');
         $receiverPhone    = preg_replace('/\D/', '', (string) ($order['receiver_phone'] ?? ''));
-        $receiverEmail    = (string) ($order['receiver_email'] ?? '');
 
         // Резолвим КЛАДР улицы
         $streetKladr = null;
@@ -134,9 +201,7 @@ final class CarrierApi
             ->modify('+' . $settings->produceDaysOffset . ' days')
             ->format('Y-m-d');
 
-        // Адрес прибытия: variant=address + address object, или terminal + city если адреса нет.
-        // При variant=address передача city запрещена документацией API.
-        // Если есть адрес — доставка до адреса, иначе до ближайшего терминала в городе
+        // Блок прибытия
         if ($streetKladr !== null && $arrivalHouse !== '') {
             $arrivalBlock = [
                 'variant' => 'address',
@@ -148,7 +213,7 @@ final class CarrierApi
             ];
         } elseif ($arrivalStreet !== '' && $arrivalHouse !== '') {
             $cityName = (string) ($order['arrival_city_name'] ?? '');
-            $search = implode(', ', array_filter([$cityName, $arrivalStreet, $arrivalHouse]));
+            $search   = implode(', ', array_filter([$cityName, $arrivalStreet, $arrivalHouse]));
             $arrivalBlock = [
                 'variant' => 'address',
                 'address' => array_filter([
@@ -157,16 +222,16 @@ final class CarrierApi
                 ]),
             ];
         } else {
-            // Нет адреса — доставка до ближайшего терминала по КЛАДР города
-            // Берём только код города (первые 13 символов) и дополняем нулями
-            $cityKladrForTerminal = $arrivalCityKladr !== '' ? str_pad(substr($arrivalCityKladr, 0, 13), 25, '0') : '';
+            $cityKladrForTerminal = $arrivalCityKladr !== ''
+                ? str_pad(substr($arrivalCityKladr, 0, 13), 25, '0')
+                : '';
             $arrivalBlock = [
                 'variant' => 'terminal',
                 'city'    => $cityKladrForTerminal,
             ];
         }
 
-        // Добавляем интервал если адресная доставка
+        // Интервал доставки
         $deliveryInterval = (string) ($order['delivery_interval'] ?? '');
         if ($deliveryInterval !== '' && ($arrivalBlock['variant'] ?? '') === 'address') {
             $parts = explode('-', $deliveryInterval);
@@ -177,7 +242,8 @@ final class CarrierApi
                 ];
             }
         }
-        // Телефон получателя — для анонимного получателя нужен формат 7ХХХХХХХХХХ (11 цифр)
+
+        // Телефон получателя
         $receiverPhoneNorm = $receiverPhone;
         if (strlen($receiverPhoneNorm) === 10) {
             $receiverPhoneNorm = '7' . $receiverPhoneNorm;
@@ -186,25 +252,20 @@ final class CarrierApi
             $receiverPhoneNorm = '70000000000';
         }
 
-        // Заказчик: uid обязателен для авторизованных пользователей с полным доступом к контрагентам
-        $requester = array_filter([
-            'role'  => 'sender',
-            'email' => $settings->requesterEmail ?? '',
-        ]);
-
-        // freightUID: характер груза из настроек магазина
+        // freightUID
         $freightUid = $settings->freightUid ?? '';
         if ($freightUid === '') {
             throw new \RuntimeException(
                 'Не задан UID характера груза (freight_uid). ' .
-                    'Откройте настройки приложения и заполните поле «UID характера груза».'
+                    'Откройте настройки приложения и заполните поле «Характер груза».'
             );
         }
-        // ОПФ берём из настроек магазина, fallback — физлицо РФ
+
+        // ОПФ отправителя
         if ($settings->senderType === 'person') {
-            $senderForm = '0xAB91FEEA04F6D4AD48DF42161B6C2E7A'; // физлицо РФ
+            $senderForm = '0xAB91FEEA04F6D4AD48DF42161B6C2E7A';
         } else {
-            $senderForm = $settings->senderOpfUid ?? '0xbc1e63c5f81187e244490a5afd657cbd'; // ИП/юрлицо
+            $senderForm = $settings->senderOpfUid ?? '0xbc1e63c5f81187e244490a5afd657cbd';
         }
 
         $senderCounterAgent = [
@@ -216,15 +277,15 @@ final class CarrierApi
         }
         if ($settings->senderType === 'person') {
             $senderCounterAgent['document'] = [
-                'type'   => $settings->senderDocType ?? 'passport',
+                'type'   => $settings->senderDocType   ?? 'passport',
                 'serial' => $settings->senderDocSerial ?? '0000',
                 'number' => $settings->senderDocNumber ?? '000000',
             ];
         }
-        // Определяем блок получателя
+
+        // Блок получателя
         $isJuridical = str_contains($order['receiver_type'] ?? '', 'Juridical');
         $receiverInn = (string) ($order['receiver_inn'] ?? '');
-
         if ($isJuridical && $receiverInn !== '') {
             $receiverBlock = [
                 'counteragent'   => [
@@ -246,29 +307,76 @@ final class CarrierApi
                 ],
             ];
         }
-        // Габариты из настроек или дефолтные
-        $dims = $settings->defaultDimensionsCm; // формат "30x20x20"
+
+        // Габариты
+        $dims     = $settings->defaultDimensionsCm;
         $dimParts = array_map('floatval', explode('x', strtolower($dims)));
         $dimL = isset($dimParts[0]) && $dimParts[0] > 0 ? round($dimParts[0] / 100, 2) : 0.30;
         $dimW = isset($dimParts[1]) && $dimParts[1] > 0 ? round($dimParts[1] / 100, 2) : 0.20;
         $dimH = isset($dimParts[2]) && $dimParts[2] > 0 ? round($dimParts[2] / 100, 2) : 0.20;
+
+        // Упаковка — проверяем доступность и совместимость
+        $packageUid = $settings->packageUid ?? '';
+        if ($packageUid !== '') {
+            try {
+                $vol        = round($dimL * $dimW * $dimH, 4);
+                $conditions = $this->getRequestConditions(
+                    $weight,
+                    $vol,
+                    $dimL,
+                    $dimW,
+                    $dimH,
+                    1,
+                    $settings->derivalCityKladr,
+                    $settings->senderTerminalId,
+                    $deliveryType
+                );
+                $availableUids = array_column($conditions['packages'] ?? [], 'uid');
+                if (!in_array($packageUid, $availableUids, true)) {
+                    error_log('DELLIN: package ' . $packageUid . ' not available for route, skipping');
+                    $packageUid = '';
+                }
+            } catch (\Throwable $ex) {
+                error_log('DELLIN package check error: ' . $ex->getMessage());
+                $packageUid = '';
+            }
+        }
+
+        // Блок cargo
+        $cargoBlock = [
+            'quantity'    => 1,
+            'weight'      => $weight,
+            'totalWeight' => $weight,
+            'length'      => $dimL,
+            'width'       => $dimW,
+            'height'      => $dimH,
+            'totalVolume' => round($dimL * $dimW * $dimH, 4),
+            'insurance'   => [
+                'statedValue' => $statedValue,
+                'term'        => true,
+            ],
+            'freightUID'  => $freightUid,
+        ];
+        if ($packageUid !== '') {
+            $cargoBlock['packages'] = [['uid' => $packageUid, 'count' => 1]];
+        }
+
+        // Блок derival (терминал или адрес)
+        $derivalBlock = $this->buildDerivalForOrder($settings, $produceDate);
+
         $body = [
             'appkey'    => $appkey,
             'sessionID' => $sessionId,
             'inOrder'   => true,
             'delivery'  => [
-                'deliveryType' => ['type' => 'auto'],
-                'derival'      => [
-                    'produceDate' => $produceDate,
-                    'variant'     => 'terminal',
-                    'terminalID'  => (string) $settings->senderTerminalId,
-                ],
-                'arrival' => $arrivalBlock,
+                'deliveryType' => ['type' => $deliveryType],
+                'derival'      => $derivalBlock,
+                'arrival'      => $arrivalBlock,
             ],
             'members' => [
                 'requester' => [
                     'role'  => $settings->requesterRole ?? 'sender',
-                    'uid' => $settings->counteragentUid ?? '',
+                    'uid'   => $settings->counteragentUid ?? '',
                     'email' => $settings->requesterEmail ?? '',
                 ],
                 'sender' => [
@@ -283,25 +391,13 @@ final class CarrierApi
                 ],
                 'receiver' => $receiverBlock,
             ],
-            'cargo' => [
-                'quantity'    => 1,
-                'weight'      => $weight,
-                'totalWeight' => $weight,
-                'length'      => $dimL,
-                'width'       => $dimW,
-                'height'      => $dimH,
-                'totalVolume' => round($dimL * $dimW * $dimH, 4),
-                'insurance'   => [
-                    'statedValue' => $statedValue,
-                    'term'        => true,
-                ],
-                'freightUID' => $freightUid,
-            ],
+            'cargo'   => $cargoBlock,
             'payment' => [
                 'type'         => 'noncash',
                 'primaryPayer' => 'sender',
-            ]
+            ],
         ];
+
         $res = $this->postJson(self::URL_ORDER, $body);
 
         if (!empty($res['errors'])) {
@@ -317,207 +413,11 @@ final class CarrierApi
 
         return ['request_id' => $requestId, 'barcode' => $barcode];
     }
+ 
+    // ─────────────────────────────────────────────────────────────
+    // Расчёт стоимости
+    // ─────────────────────────────────────────────────────────────
 
-    private static function toUuid(string $uid): string
-    {
-        if (str_contains($uid, '-')) {
-            return $uid;
-        }
-        $h = strtolower(ltrim($uid, '0x'));
-        if (strlen($h) !== 32) {
-            return $uid;
-        }
-        return sprintf(
-            '%s-%s-%s-%s-%s',
-            substr($h, 24, 8),
-            substr($h, 20, 4),
-            substr($h, 16, 4),
-            substr($h, 0, 4),
-            substr($h, 4, 12)
-        );
-    }
-
-    /**
-     * @param array<string, mixed> $res
-     * @return list<DellinCounteragent>
-     */
-    private function parseCounteragents(array $res): array
-    {
-        if (!empty($res['errors'])) {
-            return [];
-        }
-
-        $raw = $res['data']['counteragents']
-            ?? $res['counteragents']
-            ?? $res['data']['counterAgents']
-            ?? $res['counterAgents']
-            ?? $res['data']['members']
-            ?? $res['members']
-            ?? null;
-
-        if ($raw === null && isset($res['data']) && is_array($res['data']) && array_is_list($res['data'])) {
-            $raw = $res['data'];
-        }
-
-        $items = $this->normalizeList($raw);
-        $byUid = [];
-        foreach ($items as $item) {
-            if (!is_array($item)) {
-                continue;
-            }
-            $uid = $item['uid'] ?? $item['UID'] ?? $item['counteragentUID'] ?? $item['id'] ?? null;
-            if ($uid === null || $uid === '') {
-                continue;
-            }
-            $uid = (string) $uid;
-            $name = trim((string) (
-                $item['name']
-                ?? $item['brand']
-                ?? $item['juridicalName']
-                ?? $item['fullName']
-                ?? $item['title']
-                ?? ''
-            ));
-            if ($name === '') {
-                $name = 'Контрагент ' . $uid;
-            }
-            $inn = trim((string) ($item['inn'] ?? ''));
-            if ($inn !== '') {
-                $name .= ' (ИНН ' . $inn . ')';
-            }
-            // Integer counteragentID для использования в sender.counteragentID запроса заявки
-            $counteragentId = null;
-            foreach (['counteragentID', 'counterAgentId', 'id'] as $k) {
-                if (isset($item[$k]) && is_numeric($item[$k]) && (int) $item[$k] > 0) {
-                    $counteragentId = (int) $item[$k];
-                    break;
-                }
-            }
-            $byUid[$uid] = new DellinCounteragent($uid, $name, $counteragentId);
-        }
-
-        $list = array_values($byUid);
-        usort($list, static fn(DellinCounteragent $a, DellinCounteragent $b): int => strcasecmp($a->name, $b->name));
-
-        return $list;
-    }
-
-    private function normalizeList(mixed $raw): array
-    {
-        if ($raw === null) {
-            return [];
-        }
-        if (is_array($raw) && array_is_list($raw)) {
-            return $raw;
-        }
-        if (is_array($raw)) {
-            foreach (['counteragent', 'counteragents', 'member', 'members'] as $key) {
-                if (isset($raw[$key])) {
-                    return $this->normalizeList($raw[$key]);
-                }
-            }
-
-            return array_values($raw);
-        }
-
-        return [];
-    }
-
-    /** @param array<string,mixed> $res */
-    private function extractSessionId(array $res): string
-    {
-        if (!empty($res['errors'])) {
-            $err = is_string($res['errors']) ? $res['errors'] : json_encode($res['errors'], JSON_UNESCAPED_UNICODE);
-            throw new \RuntimeException('Ошибка авторизации Dellin: ' . $err);
-        }
-        $sid = $res['sessionID'] ?? $res['data']['sessionID'] ?? $res['data']['sessionId'] ?? null;
-        if (!is_string($sid) || $sid === '') {
-            throw new \RuntimeException('sessionID not in response: ' . json_encode($res, JSON_UNESCAPED_UNICODE));
-        }
-
-        return $sid;
-    }
-
-    /** @return list<array<string,mixed>> */
-    public function searchCities(string $q, ?CarrierCredentials $credentials = null): array
-    {
-        $creds = $credentials ?? $this->config->defaultCarrierCredentials();
-        $appkey = $creds?->appkey ?? $this->config->dellinAppkey;
-        if ($appkey === '') {
-            throw new \RuntimeException('API-ключ Dellin не задан');
-        }
-
-        $raw = $this->postJson(self::URL_KLADR, [
-            'appkey' => $appkey,
-            'q' => $q,
-        ]);
-        $cities = $raw['cities'] ?? [];
-
-        return is_array($cities) ? array_values($cities) : [];
-    }
-    /**
-     * Поиск ОПФ по названию из справочника Dellin.
-     * @return list<array{uid: string, name: string, title: string}>
-     */
-    public function searchOpf(string $sessionId, string $query): array
-    {
-        $raw = $this->postJson('https://api.dellin.ru/v1/references/opf_list.json', [
-            'appkey'    => $this->config->dellinAppkey,
-            'sessionID' => $sessionId,
-            'name'      => $query,
-        ]);
-
-        // Приоритет: сначала РФ, потом остальные
-        $rf = [];
-        $other = [];
-        $seen = [];
-
-        foreach ($raw['data'] ?? [] as $item) {
-            $uid  = (string) ($item['uid'] ?? '');
-            $name = (string) ($item['name'] ?? '');
-            if ($uid === '' || $name === '') {
-                continue;
-            }
-            $key = $name . '|' . ($item['countryUID'] ?? '');
-            if (isset($seen[$key])) {
-                continue;
-            }
-            $seen[$key] = true;
-
-            $isRf = ($item['countryUID'] ?? '') === '0x8f51001438c4d49511dbd774581edb7a';
-            $entry = [
-                'uid'        => $uid,
-                'name'       => $name,
-                'title'      => (string) ($item['title'] ?? ''),
-                'country_uid' => (string) ($item['countryUID'] ?? ''),
-                'country_name' => self::COUNTRY_NAMES[$item['countryUID'] ?? ''] ?? '',
-            ];
-            if ($isRf) {
-                $rf[] = $entry;
-            } else {
-                $other[] = $entry;
-            }
-        }
-
-        return array_merge($rf, $other);
-    }
-    public function searchFreightTypes(string $q, int $page = 1, ?CarrierCredentials $credentials = null): array
-    {
-        $res = $this->postJson(self::URL_FREIGHT_SEARCH, [
-            'appkey' => $this->config->dellinAppkey,
-            'name'      => $q,
-            'page'   => $page,
-        ]);
-        file_put_contents('/tmp/freight_debug.json', json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-        $items = [];
-        foreach ($res['freight_types'] ?? $res['freightTypes'] ?? $res['data'] ?? [] as $ft) {
-            $items[] = [
-                'uid'  => (string) ($ft['sqlUID'] ?? $ft['uid'] ?? ''),
-                'name' => (string) ($ft['value']  ?? $ft['name'] ?? ''),
-            ];
-        }
-        return $items;
-    }
     /**
      * @param array{weight?:float,volume?:float,length?:float,width?:float,height?:float,quantity?:int,stated_value?:float} $cargo
      * @return array{price:float|null,days:int|null,metadata:array,raw?:array,errors?:mixed}
@@ -530,6 +430,7 @@ final class CarrierApi
         array $cargo,
         CalculatorContext $calcCtx,
         ?CarrierCredentials $credentials = null,
+        string $deliveryType = 'auto',
     ): array {
         $body = $this->buildCalculatorBody(
             $sessionId,
@@ -539,43 +440,137 @@ final class CarrierApi
             $cargo,
             $calcCtx,
             $credentials,
+            $deliveryType,
         );
         $res = $this->postJson(self::URL_CALC, $body);
-
         return $this->parseCalculatorResponse($res);
     }
 
-    // --- Резолвинг КЛАДР улицы для расчёта доставки до адреса ---
+    public function calculateToCity(
+        string $sessionId,
+        int $senderTerminalId,
+        string $arrivalCityKladr,
+        ?string $arrivalStreet,
+        ?string $arrivalHouse,
+        array $cargo,
+        CalculatorContext $calcCtx,
+        ?CarrierCredentials $credentials = null,
+        string $deliveryType = 'auto',
+    ): array {
+        $streetKladr = null;
+        if ($arrivalStreet !== null && $arrivalStreet !== '') {
+            $cityId = $this->getCityId($arrivalCityKladr, $credentials);
+            if ($cityId !== null) {
+                $streetKladr = $this->getStreetKladr($cityId, $arrivalStreet, $credentials);
+            }
+        }
+        $body = $this->buildCalculatorBodyCityArrival(
+            $sessionId,
+            $senderTerminalId,
+            $arrivalCityKladr,
+            $arrivalStreet,
+            $arrivalHouse,
+            $cargo,
+            $calcCtx,
+            $credentials,
+            $streetKladr,
+            $deliveryType,
+        );
+        $res = $this->postJson(self::URL_CALC, $body);
+        return $this->parseCalculatorResponse($res);
+    }
+ 
+    // ─────────────────────────────────────────────────────────────
+    // Справочники
+    // ─────────────────────────────────────────────────────────────
+
+    /** @return list<array<string,mixed>> */
+    public function searchCities(string $q, ?CarrierCredentials $credentials = null): array
+    {
+        $creds  = $credentials ?? $this->config->defaultCarrierCredentials();
+        $appkey = $creds?->appkey ?? $this->config->dellinAppkey;
+        if ($appkey === '') {
+            throw new \RuntimeException('API-ключ Dellin не задан');
+        }
+        $raw    = $this->postJson(self::URL_KLADR, ['appkey' => $appkey, 'q' => $q]);
+        $cities = $raw['cities'] ?? [];
+        return is_array($cities) ? array_values($cities) : [];
+    }
+
+    /** @return list<array{uid: string, name: string, title: string}> */
+    public function searchOpf(string $sessionId, string $query): array
+    {
+        $raw = $this->postJson('https://api.dellin.ru/v1/references/opf_list.json', [
+            'appkey'    => $this->config->dellinAppkey,
+            'sessionID' => $sessionId,
+            'name'      => $query,
+        ]);
+        $rf    = [];
+        $other = [];
+        $seen  = [];
+        foreach ($raw['data'] ?? [] as $item) {
+            $uid  = (string) ($item['uid']  ?? '');
+            $name = (string) ($item['name'] ?? '');
+            if ($uid === '' || $name === '') continue;
+            $key = $name . '|' . ($item['countryUID'] ?? '');
+            if (isset($seen[$key])) continue;
+            $seen[$key] = true;
+            $isRf = ($item['countryUID'] ?? '') === '0x8f51001438c4d49511dbd774581edb7a';
+            $entry = [
+                'uid'          => $uid,
+                'name'         => $name,
+                'title'        => (string) ($item['title']      ?? ''),
+                'country_uid'  => (string) ($item['countryUID'] ?? ''),
+                'country_name' => self::COUNTRY_NAMES[$item['countryUID'] ?? ''] ?? '',
+            ];
+            if ($isRf) {
+                $rf[] = $entry;
+            } else {
+                $other[] = $entry;
+            }
+        }
+        return array_merge($rf, $other);
+    }
+
+    public function searchFreightTypes(string $q, int $page = 1, ?CarrierCredentials $credentials = null): array
+    {
+        $res = $this->postJson(self::URL_FREIGHT_SEARCH, [
+            'appkey' => $this->config->dellinAppkey,
+            'name'   => $q,
+            'page'   => $page,
+        ]);
+        $items = [];
+        foreach ($res['freight_types'] ?? $res['freightTypes'] ?? $res['data'] ?? [] as $ft) {
+            $items[] = [
+                'uid'  => (string) ($ft['sqlUID'] ?? $ft['uid']  ?? ''),
+                'name' => (string) ($ft['value']  ?? $ft['name'] ?? ''),
+            ];
+        }
+        return $items;
+    }
 
     public function getCityId(string $cityKladr, ?CarrierCredentials $credentials = null): ?int
     {
         $appkey = $this->resolveAppkey($credentials);
-        $raw = $this->postJson(self::URL_KLADR, [
-            'appkey' => $appkey,
-            'code'   => $cityKladr,
-        ]);
+        $raw    = $this->postJson(self::URL_KLADR, ['appkey' => $appkey, 'code' => $cityKladr]);
         $cities = $raw['cities'] ?? [];
         return isset($cities[0]['cityID']) ? (int) $cities[0]['cityID'] : null;
     }
 
     public function getStreetKladr(int $cityId, string $streetName, ?CarrierCredentials $credentials = null): ?string
     {
-        $appkey = $this->resolveAppkey($credentials);
-        $raw = $this->postJson(self::URL_KLADR_STREET, [
+        $appkey  = $this->resolveAppkey($credentials);
+        $raw     = $this->postJson(self::URL_KLADR_STREET, [
             'appkey' => $appkey,
             'cityID' => $cityId,
             'street' => $streetName,
-            'limit'  => 1,
+            'limit' => 1,
         ]);
         $streets = $raw['streets'] ?? [];
         return isset($streets[0]['code']) ? (string) $streets[0]['code'] : null;
     }
 
-    /**
-     * Подсказки адреса по введённой строке (требует отдельного доступа от Dellin).
-     *
-     * @return list<array{value: string, data: array<string, mixed>}>
-     */
+    /** @return list<array{value: string, data: array<string, mixed>}> */
     public function suggestAddress(
         string $sessionId,
         string $query,
@@ -591,16 +586,10 @@ final class CarrierApi
             'count'     => $count,
             'mode'      => 'pretty',
         ]);
-
         return $raw['suggestions'] ?? [];
     }
 
-    /**
-     * Стандартизация адреса — получить КЛАДР улицы и дом из произвольной строки.
-     * Требует отдельного доступа от Dellin.
-     *
-     * @return array<string, mixed>|null
-     */
+    /** @return array<string, mixed>|null */
     public function cleanAddress(
         string $sessionId,
         string $address,
@@ -613,75 +602,34 @@ final class CarrierApi
             'type'      => 'address',
             'mode'      => 'pretty',
         ]);
-
         $items = $raw['cleanEssenceResponse']['data'] ?? [];
         return $items[0] ?? null;
-    }
-
-    public function calculateToCity(
-        string $sessionId,
-        int $senderTerminalId,
-        string $arrivalCityKladr,
-        ?string $arrivalStreet,
-        ?string $arrivalHouse,
-        array $cargo,
-        CalculatorContext $calcCtx,
-        ?CarrierCredentials $credentials = null,
-    ): array {
-
-
-        // Резолвим КЛАДР улицы если передана улица
-        $streetKladr = null;
-        if ($arrivalStreet !== null && $arrivalStreet !== '') {
-            $cityId = $this->getCityId($arrivalCityKladr, $credentials);
-            if ($cityId !== null) {
-                $streetKladr = $this->getStreetKladr($cityId, $arrivalStreet, $credentials);
-            }
-        }
-
-        $body = $this->buildCalculatorBodyCityArrival(
-            $sessionId,
-            $senderTerminalId,
-            $arrivalCityKladr,
-            $arrivalStreet,
-            $arrivalHouse,
-            $cargo,
-            $calcCtx,
-            $credentials,
-            $streetKladr,
-        );
-        $res = $this->postJson(self::URL_CALC, $body);
-        return $this->parseCalculatorResponse($res);
     }
 
     /** @return array{url:string,hash?:string} */
     public function terminalsManifest(?CarrierCredentials $credentials = null): array
     {
-        $creds = $credentials ?? $this->config->defaultCarrierCredentials();
+        $creds  = $credentials ?? $this->config->defaultCarrierCredentials();
         $appkey = $creds?->appkey ?? $this->config->dellinAppkey;
-        if ($appkey === '') {
-            throw new \RuntimeException('API-ключ Dellin не задан');
-        }
-
+        if ($appkey === '') throw new \RuntimeException('API-ключ Dellin не задан');
         $res = $this->postJson(self::URL_TERMINALS_MANIFEST, ['appkey' => $appkey]);
         if (empty($res['url']) || !is_string($res['url'])) {
             throw new \RuntimeException('Terminals manifest: missing url. ' . json_encode($res, JSON_UNESCAPED_UNICODE));
         }
-
         return ['url' => $res['url'], 'hash' => $res['hash'] ?? null];
     }
 
     public function fetchTerminalsDataset(string $url): array
     {
         $json = $this->http('GET', $url, null);
-        $data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
-
+        $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
         return is_array($data) ? $data : [];
     }
 
-    /**
-     * Передача артикулов грузовых мест (инициация генерации этикеток).
-     */
+    // ─────────────────────────────────────────────────────────────
+    // Этикетки
+    // ─────────────────────────────────────────────────────────────
+
     public function submitShipmentLabels(
         string $sessionId,
         string $orderId,
@@ -697,20 +645,14 @@ final class CarrierApi
                 'format'    => $format,
                 'orders'    => [[
                     'orderID'     => $orderId,
-                    'cargoPlaces' => [[
-                        'cargoPlace' => $cargoPlace,
-                        'amount'     => 1,
-                    ]],
+                    'cargoPlaces' => [['cargoPlace' => $cargoPlace, 'amount' => 1]],
                 ]],
             ]
         );
         return ($res['data']['state'] ?? '') === 'enqueued';
     }
 
-    /**
-     * Получение ссылок на этикетки.
-     * @return list<string>
-     */
+    /** @return list<string> */
     public function getShipmentLabels(
         string $sessionId,
         string $orderId,
@@ -726,17 +668,48 @@ final class CarrierApi
         );
         foreach ($res['data'] ?? [] as $item) {
             if ((string) ($item['orderId'] ?? '') === $orderId) {
-                $files = $item['files'] ?? [];
-                // Нормализуем URL — добавляем https:// если отсутствует
                 return array_map(static function (string $f): string {
-                    if (str_starts_with($f, 'http')) {
-                        return $f;
-                    }
-                    return 'https://' . ltrim($f, '/');
-                }, $files);
+                    return str_starts_with($f, 'http') ? $f : 'https://' . ltrim($f, '/');
+                }, $item['files'] ?? []);
             }
         }
         return [];
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Приватные методы
+    // ─────────────────────────────────────────────────────────────
+
+    private function buildDerivalForOrder(
+        \ShippingBridge\ShopSettings $settings,
+        string $produceDate,
+    ): array {
+        if ($settings->isDerivalTerminal()) {
+            return [
+                'produceDate'  => $produceDate,
+                'variant'      => 'terminal',
+                'terminalID'   => (string) $settings->senderTerminalId,
+                'requirements' => [],
+            ];
+        }
+        $cityKladr = $settings->derivalCityKladr ?? '';
+        $street    = $settings->derivalStreet    ?? '';
+        $house     = $settings->derivalHouse     ?? '';
+        if ($cityKladr === '' || $street === '' || $house === '') {
+            throw new \RuntimeException(
+                'Заполните адрес забора груза в настройках приложения (город, улица, дом).'
+            );
+        }
+        return [
+            'produceDate'  => $produceDate,
+            'variant'      => 'address',
+            'address'      => [
+                'city'   => ['code' => $cityKladr],
+                'street' => $street,
+                'house'  => $house,
+            ],
+            'requirements' => [],
+        ];
     }
 
     private function buildCalculatorBody(
@@ -747,30 +720,30 @@ final class CarrierApi
         array $cargo,
         CalculatorContext $calcCtx,
         ?CarrierCredentials $credentials,
+        string $deliveryType = 'auto',
     ): array {
-        $c = $this->normalizeCargo($cargo);
+        $c         = $this->normalizeCargo($cargo);
         $requester = $this->buildRequester($calcCtx);
-
         return [
             'sessionID' => $sessionId,
-            'appkey' => $this->resolveAppkey($credentials),
-            'delivery' => [
-                'deliveryType' => ['type' => 'auto'],
-                'arrival' => [
-                    'variant' => 'terminal',
-                    'terminalID' => $arrivalTerminalId,
+            'appkey'    => $this->resolveAppkey($credentials),
+            'delivery'  => [
+                'deliveryType' => ['type' => $deliveryType],
+                'arrival'      => [
+                    'variant'      => 'terminal',
+                    'terminalID'   => $arrivalTerminalId,
                     'requirements' => [],
                 ],
-                'derival' => $this->buildDerival($calcCtx, $senderTerminalId),
+                'derival'  => $this->buildDerival($calcCtx, $senderTerminalId),
                 'packages' => [],
             ],
-            'cargo' => $c,
-            'members' => ['requester' => $requester],
-            'payment' => $this->buildPayment($arrivalCityKladr),
+            'cargo'       => $c,
+            'members'     => ['requester' => $requester],
+            'payment'     => $this->buildPayment($arrivalCityKladr),
             'productInfo' => [
-                'type' => 4,
+                'type'        => 4,
                 'productType' => 5,
-                'info' => [['param' => 'shipping-bridge', 'value' => 'mvp-1']],
+                'info'        => [['param' => 'shipping-bridge', 'value' => 'mvp-1']],
             ],
         ];
     }
@@ -785,28 +758,21 @@ final class CarrierApi
         CalculatorContext $calcCtx,
         ?CarrierCredentials $credentials,
         ?string $streetKladr = null,
+        string $deliveryType = 'auto',
     ): array {
-        $c = $this->normalizeCargo($cargo);
-        $requester = $this->buildRequester($calcCtx);
-
+        $c               = $this->normalizeCargo($cargo);
+        $requester       = $this->buildRequester($calcCtx);
         $paddedCityKladr = str_pad($arrivalCityKladr, 25, '0');
-        $arrival = [
-            'variant' => 'address',
-        ];
+        $arrival         = ['variant' => 'address'];
 
         if ($arrivalHouse !== null && $arrivalHouse !== '') {
             if ($streetKladr !== null && $streetKladr !== '') {
-                $arrival['city'] = $paddedCityKladr;
-                $arrival['address'] = [
-                    'street' => $streetKladr,
-                    'house' => $arrivalHouse,
-                ];
+                $arrival['city']    = $paddedCityKladr;
+                $arrival['address'] = ['street' => $streetKladr, 'house' => $arrivalHouse];
             } elseif ($arrivalStreet !== null && $arrivalStreet !== '') {
-                $cityName = $calcCtx->arrivalCityName ?? '';
-                $searchStr = ($cityName !== '' ? $cityName . ', ' : '') . $arrivalStreet . ', ' . $arrivalHouse;
-                $arrival['address'] = [
-                    'search' => $searchStr,
-                ];
+                $cityName   = $calcCtx->arrivalCityName ?? '';
+                $searchStr  = ($cityName !== '' ? $cityName . ', ' : '') . $arrivalStreet . ', ' . $arrivalHouse;
+                $arrival['address'] = ['search' => $searchStr];
             } else {
                 $arrival['city'] = $paddedCityKladr;
             }
@@ -815,58 +781,40 @@ final class CarrierApi
         }
 
         return [
-            'sessionID' => $sessionId,
-            'appkey' => $this->resolveAppkey($credentials),
-            'delivery' => [
-                'deliveryType' => [
-                    'type' => 'auto',
-                ],
-                'arrival' => $arrival,
-                'derival' => $this->buildDerival(
-                    $calcCtx,
-                    $senderTerminalId
-                ),
-                'packages' => [],
+            'sessionID'   => $sessionId,
+            'appkey'      => $this->resolveAppkey($credentials),
+            'delivery'    => [
+                'deliveryType' => ['type' => $deliveryType],
+                'arrival'      => $arrival,
+                'derival'      => $this->buildDerival($calcCtx, $senderTerminalId),
+                'packages'     => [],
             ],
-            'cargo' => $c,
-            'members' => [
-                'requester' => $requester,
-            ],
-            'payment' => $this->buildPayment($paddedCityKladr),
+            'cargo'       => $c,
+            'members'     => ['requester' => $requester],
+            'payment'     => $this->buildPayment($paddedCityKladr),
             'productInfo' => [
-                'type' => 4,
+                'type'        => 4,
                 'productType' => 5,
-                'info' => [
-                    [
-                        'param' => 'shipping-bridge',
-                        'value' => 'mvp-1-city',
-                    ],
-                ],
+                'info'        => [['param' => 'shipping-bridge', 'value' => 'mvp-1-city']],
             ],
         ];
     }
 
-    /** @return array<string, mixed> */
     private function buildDerival(CalculatorContext $calcCtx, int $senderTerminalId): array
     {
         $produce = date('Y-m-d', strtotime('+' . $calcCtx->produceDaysOffset . ' days'));
 
         if ($calcCtx->derivalVariant === ShopSettings::DERIVAL_ADDRESS) {
-            $city = $calcCtx->derivalCityKladr ?? '';
-            $street = $calcCtx->derivalStreet ?? '';
-            $house = $calcCtx->derivalHouse ?? '';
+            $city   = $calcCtx->derivalCityKladr ?? '';
+            $street = $calcCtx->derivalStreet    ?? '';
+            $house  = $calcCtx->derivalHouse     ?? '';
             if (strlen($city) < 10 || $street === '' || $house === '') {
                 throw new \InvalidArgumentException('Адрес забора груза не заполнен');
             }
-
             return [
-                'variant' => 'address',
-                'address' => [
-                    'city' => ['code' => $city],
-                    'street' => $street,
-                    'house' => $house,
-                ],
-                'produceDate' => $produce,
+                'variant'      => 'address',
+                'address'      => ['city' => ['code' => $city], 'street' => $street, 'house' => $house],
+                'produceDate'  => $produce,
                 'requirements' => [],
             ];
         }
@@ -874,16 +822,14 @@ final class CarrierApi
         if ($senderTerminalId <= 0) {
             throw new \InvalidArgumentException('Терминал отгрузки не настроен');
         }
-
         return [
-            'variant' => 'terminal',
-            'terminalID' => $senderTerminalId,
-            'produceDate' => $produce,
+            'variant'      => 'terminal',
+            'terminalID'   => $senderTerminalId,
+            'produceDate'  => $produce,
             'requirements' => [],
         ];
     }
 
-    /** @return array<string, mixed> */
     private function buildRequester(CalculatorContext $calcCtx): array
     {
         $requester = [
@@ -893,150 +839,181 @@ final class CarrierApi
         if ($calcCtx->counteragentUid !== null && $calcCtx->counteragentUid !== '') {
             $requester['uid'] = $calcCtx->counteragentUid;
         }
-
         return $requester;
     }
 
     private function resolveAppkey(?CarrierCredentials $credentials): string
     {
-        $creds = $credentials ?? $this->config->defaultCarrierCredentials();
+        $creds  = $credentials ?? $this->config->defaultCarrierCredentials();
         $appkey = $creds?->appkey ?? $this->config->dellinAppkey;
-        if ($appkey === '') {
-            throw new \RuntimeException('API-ключ Dellin не задан');
-        }
-
+        if ($appkey === '') throw new \RuntimeException('API-ключ Dellin не задан');
         return $appkey;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     private function buildPayment(?string $paymentCityKladr): array
     {
-        $payment = [
-            'type' => 'noncash',
-            'primaryPayer' => 'sender',
-        ];
+        $payment = ['type' => 'noncash', 'primaryPayer' => 'sender'];
         if ($paymentCityKladr !== null && $paymentCityKladr !== '') {
             $payment['paymentCity'] = str_pad($paymentCityKladr, 25, '0');
         }
-
         return $payment;
     }
 
-    /** @param array<string,mixed> $cargo */
     private function normalizeCargo(array $cargo): array
     {
-        $w = (float) ($cargo['weight'] ?? 1.0);
-        $l = (float) ($cargo['length'] ?? 0.2);
-        $wd = (float) ($cargo['width'] ?? 0.2);
-        $h = (float) ($cargo['height'] ?? 0.2);
-        $q = (int) ($cargo['quantity'] ?? 1);
+        $w      = max(0.01, (float) ($cargo['weight']   ?? 1.0));
+        $l      = max(0.01, (float) ($cargo['length']   ?? 0.2));
+        $wd     = max(0.01, (float) ($cargo['width']    ?? 0.2));
+        $h      = max(0.01, (float) ($cargo['height']   ?? 0.2));
+        $q      = max(1,    (int)   ($cargo['quantity'] ?? 1));
         $stated = (float) ($cargo['stated_value'] ?? 0.0);
-
-        $w = max(0.01, $w);
-        $l = max(0.01, $l);
-        $wd = max(0.01, $wd);
-        $h = max(0.01, $h);
-        $q = max(1, $q);
-
         return [
-            'quantity' => $q,
-            'length' => round($l, 2),
-            'width' => round($wd, 2),
-            'height' => round($h, 2),
-            'weight' => round($w, 2),
+            'quantity'    => $q,
+            'length'      => round($l,  2),
+            'width'       => round($wd, 2),
+            'height'      => round($h,  2),
+            'weight'      => round($w,  2),
             'totalVolume' => round($l * $wd * $h * $q, 4),
             'totalWeight' => round($w * $q, 2),
-            'insurance' => [
+            'insurance'   => [
                 'statedValue' => round($stated, 2),
-                'payer' => 'sender',
-                'term' => false,
+                'payer'       => 'sender',
+                'term'        => false,
             ],
         ];
     }
 
-    /** @param array<string,mixed> $res */
-    private function parseCalculatorResponse(array $res): array
+    private function parseCounteragents(array $res): array
     {
-        $meta = $res['metadata'] ?? [];
-        $status = (int) ($meta['status'] ?? 0);
-        $errors = $res['errors'] ?? null;
-
-        if ($errors !== null || $status !== 200) {
-            return [
-                'price' => null,
-                'days' => null,
-                'metadata' => is_array($meta) ? $meta : [],
-                'errors' => $errors,
-                'raw' => $res,
-            ];
+        if (!empty($res['errors'])) return [];
+        $raw = $res['data']['counteragents']
+            ?? $res['counteragents']
+            ?? $res['data']['counterAgents']
+            ?? $res['counterAgents']
+            ?? $res['data']['members']
+            ?? $res['members']
+            ?? null;
+        if ($raw === null && isset($res['data']) && is_array($res['data']) && array_is_list($res['data'])) {
+            $raw = $res['data'];
         }
-
-        $data = $res['data'] ?? [];
-        $price = isset($data['price']) ? (float) $data['price'] : null;
-
-        $days = null;
-        if (isset($data['orderDates']['arrivalToOspReceiver'])) {
-            try {
-                $d0 = new \DateTimeImmutable('today');
-                $d1 = new \DateTimeImmutable((string) $data['orderDates']['arrivalToOspReceiver']);
-                $days = (int) $d0->diff($d1)->format('%a');
-            } catch (\Throwable) {
-                $days = null;
+        $items = $this->normalizeList($raw);
+        $byUid = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) continue;
+            $uid = $item['uid'] ?? $item['UID'] ?? $item['counteragentUID'] ?? $item['id'] ?? null;
+            if ($uid === null || $uid === '') continue;
+            $uid  = (string) $uid;
+            $name = trim((string) (
+                $item['name'] ?? $item['brand'] ?? $item['juridicalName'] ??
+                $item['fullName'] ?? $item['title'] ?? ''
+            ));
+            if ($name === '') $name = 'Контрагент ' . $uid;
+            $inn = trim((string) ($item['inn'] ?? ''));
+            if ($inn !== '') $name .= ' (ИНН ' . $inn . ')';
+            $counteragentId = null;
+            foreach (['counteragentID', 'counterAgentId', 'id'] as $k) {
+                if (isset($item[$k]) && is_numeric($item[$k]) && (int) $item[$k] > 0) {
+                    $counteragentId = (int) $item[$k];
+                    break;
+                }
             }
+            $byUid[$uid] = new DellinCounteragent($uid, $name, $counteragentId);
         }
-
-        return [
-            'price' => $price,
-            'days' => $days,
-            'metadata' => is_array($meta) ? $meta : [],
-            'raw' => $res,
-        ];
+        $list = array_values($byUid);
+        usort($list, static fn(DellinCounteragent $a, DellinCounteragent $b): int => strcasecmp($a->name, $b->name));
+        return $list;
     }
 
-    /** @return array<string,mixed> */
+    private function normalizeList(mixed $raw): array
+    {
+        if ($raw === null) return [];
+        if (is_array($raw) && array_is_list($raw)) return $raw;
+        if (is_array($raw)) {
+            foreach (['counteragent', 'counteragents', 'member', 'members'] as $key) {
+                if (isset($raw[$key])) return $this->normalizeList($raw[$key]);
+            }
+            return array_values($raw);
+        }
+        return [];
+    }
+
+    private function extractSessionId(array $res): string
+    {
+        if (!empty($res['errors'])) {
+            $err = is_string($res['errors']) ? $res['errors'] : json_encode($res['errors'], JSON_UNESCAPED_UNICODE);
+            throw new \RuntimeException('Ошибка авторизации Dellin: ' . $err);
+        }
+        $sid = $res['sessionID'] ?? $res['data']['sessionID'] ?? $res['data']['sessionId'] ?? null;
+        if (!is_string($sid) || $sid === '') {
+            throw new \RuntimeException('sessionID not in response: ' . json_encode($res, JSON_UNESCAPED_UNICODE));
+        }
+        return $sid;
+    }
+
+    private function parseCalculatorResponse(array $res): array
+    {
+        $meta   = $res['metadata'] ?? [];
+        $status = (int) ($meta['status'] ?? 0);
+        $errors = $res['errors'] ?? null;
+        if ($errors !== null || $status !== 200) {
+            return ['price' => null, 'days' => null, 'metadata' => is_array($meta) ? $meta : [], 'errors' => $errors, 'raw' => $res];
+        }
+        $data  = $res['data'] ?? [];
+        $price = isset($data['price']) ? (float) $data['price'] : null;
+        $days  = null;
+        if (isset($data['orderDates']['arrivalToOspReceiver'])) {
+            try {
+                $d0   = new \DateTimeImmutable('today');
+                $d1   = new \DateTimeImmutable((string) $data['orderDates']['arrivalToOspReceiver']);
+                $days = (int) $d0->diff($d1)->format('%a');
+            } catch (\Throwable) {
+            }
+        }
+        return ['price' => $price, 'days' => $days, 'metadata' => is_array($meta) ? $meta : [], 'raw' => $res];
+    }
+
     private function postJson(string $url, ?array $body): array
     {
         $json = $this->http('POST', $url, $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE));
-
         return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
     }
 
     private function http(string $method, string $url, ?string $jsonBody): string
     {
         $ch = curl_init($url);
-        if ($ch === false) {
-            throw new \RuntimeException('curl_init failed');
-        }
+        if ($ch === false) throw new \RuntimeException('curl_init failed');
         $headers = ['Accept: application/json'];
-        if ($jsonBody !== null) {
-            $headers[] = 'Content-Type: application/json; charset=utf-8';
-        }
+        if ($jsonBody !== null) $headers[] = 'Content-Type: application/json; charset=utf-8';
         $opts = [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_TIMEOUT => 120,
+            CURLOPT_CUSTOMREQUEST  => $method,
+            CURLOPT_HTTPHEADER     => $headers,
+            CURLOPT_TIMEOUT        => 120,
         ];
-        if ($method === 'POST' && $jsonBody !== null) {
-            $opts[CURLOPT_POSTFIELDS] = $jsonBody;
-        }
-        if ($method === 'GET') {
-            $opts[CURLOPT_HTTPGET] = true;
-        }
+        if ($method === 'POST' && $jsonBody !== null) $opts[CURLOPT_POSTFIELDS] = $jsonBody;
+        if ($method === 'GET') $opts[CURLOPT_HTTPGET] = true;
         curl_setopt_array($ch, $opts);
-        $out = curl_exec($ch);
-        $err = curl_error($ch);
+        $out  = curl_exec($ch);
+        $err  = curl_error($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        if ($out === false) {
-            throw new \RuntimeException('HTTP error: ' . $err);
-        }
-        if ($code >= 400) {
-            throw new \RuntimeException("HTTP {$code}: " . mb_substr($out, 0, 2000));
-        }
-
+        if ($out === false) throw new \RuntimeException('HTTP error: ' . $err);
+        if ($code >= 400) throw new \RuntimeException("HTTP {$code}: " . mb_substr($out, 0, 2000));
         return $out;
+    }
+
+    private static function toUuid(string $uid): string
+    {
+        if (str_contains($uid, '-')) return $uid;
+        $h = strtolower(ltrim($uid, '0x'));
+        if (strlen($h) !== 32) return $uid;
+        return sprintf(
+            '%s-%s-%s-%s-%s',
+            substr($h, 24, 8),
+            substr($h, 20, 4),
+            substr($h, 16, 4),
+            substr($h, 0, 4),
+            substr($h, 4, 12)
+        );
     }
 }

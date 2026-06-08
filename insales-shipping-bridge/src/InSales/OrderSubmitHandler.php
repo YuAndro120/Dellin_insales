@@ -168,7 +168,13 @@ final class OrderSubmitHandler
         $api = new CarrierApi($config);
         try {
             $sid    = $api->loginWithPat($creds);
-            $result = $api->createOrder($sid, $settings, $order, $creds);
+            $deliveryType = in_array(
+                $order['delivery_calc_type'] ?? 'auto',
+                ['auto', 'avia', 'express', 'small_package'],
+                true
+            ) ? $order['delivery_calc_type'] : 'auto';
+
+            $result = $api->createOrder($sid, $settings, $order, $creds, $deliveryType);
         } catch (\Throwable $e) {
             Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
             return;
@@ -214,10 +220,13 @@ final class OrderSubmitHandler
         }
         // Интервал доставки из кастомного поля
         $deliveryInterval = null;
+        $deliveryCalcType = 'auto';
         foreach ($raw['fields_values'] ?? [] as $fv) {
             if (($fv['handle'] ?? '') === 'delivery_interval') {
                 $deliveryInterval = (string) ($fv['value'] ?? '');
-                break;
+            }
+            if (($fv['handle'] ?? '') === 'dellin_calc_type') {
+                $deliveryCalcType = (string) ($fv['value'] ?? 'auto');
             }
         }
         return [
@@ -235,6 +244,7 @@ final class OrderSubmitHandler
             'weight'             => round($weight, 3),
             'stated_value'       => round($statedValue, 2),
             'delivery_interval'  => $deliveryInterval,
+            'delivery_calc_type' => $deliveryCalcType,
             'receiver_type'             => (string) ($client['type'] ?? 'Client::Person'),
             'receiver_inn'              => (string) ($client['inn'] ?? ''),
             'receiver_kpp'              => (string) ($client['kpp'] ?? ''),

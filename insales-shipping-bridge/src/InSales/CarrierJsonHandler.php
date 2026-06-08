@@ -33,6 +33,61 @@ final class CarrierJsonHandler
         Response::json(['ok' => true, 'cities' => $list], 200, self::cors($config));
     }
 
+    public static function packages(Config $config, ShopRepository $shops): void
+    {
+        $cors = self::cors($config);
+        $creds = self::resolveCredentials($shops, $config);
+        if ($creds === null) return;
+
+        try {
+            $insalesId = trim((string) ($_GET['insales_id'] ?? ''));
+            $settings  = $shops->findSettingsByInsalesId($insalesId, $config);
+
+            $api = new CarrierApi($config);
+            $reference = $api->getPackagesReference();
+
+            $dims = explode('x', strtolower($settings?->defaultDimensionsCm ?? '20x20x20'));
+            $l  = (float) ($_GET['length'] ?? ((float)($dims[0] ?? 20) / 100));
+            $w  = (float) ($_GET['width']  ?? ((float)($dims[1] ?? 20) / 100));
+            $h  = (float) ($_GET['height'] ?? ((float)($dims[2] ?? 20) / 100));
+            $wt = (float) ($_GET['weight'] ?? ($settings?->defaultWeightKg ?? 1.0));
+            $vol   = round($l * $w * $h, 4);
+            $kladr = trim((string) ($_GET['kladr'] ?? ($settings?->derivalCityKladr ?? '')));
+            $tid   = $settings?->senderTerminalId ?? null;
+            $dtype = trim((string) ($_GET['delivery_type'] ?? 'auto'));
+
+            $conditions = $api->getRequestConditions(
+                $wt,
+                $vol,
+                $l,
+                $w,
+                $h,
+                1,
+                $kladr ?: null,
+                $tid,
+                $dtype
+            );
+
+            $availableUids = array_column($conditions['packages'] ?? [], 'uid');
+            $items = [];
+            foreach ($availableUids as $uid) {
+                $items[] = [
+                    'uid'  => $uid,
+                    'name' => $reference[$uid] ?? 'Упаковка',
+                ];
+            }
+
+            Response::json([
+                'ok'         => true,
+                'items'      => $items,
+                'day_to_day' => $conditions['day_to_day'] ?? null,
+                'insurance'  => $conditions['insurance']  ?? null,
+            ], 200, $cors);
+        } catch (\Throwable $e) {
+            Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
+        }
+    }
+
     public static function counteragents(Config $config, ShopRepository $shops): void
     {
         $creds = self::resolveCredentials($shops, $config);

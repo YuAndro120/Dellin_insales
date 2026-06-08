@@ -55,15 +55,15 @@ final class ExternalCheckoutHandler
             $cargo = CargoFromInsalesOrder::aggregate($lines, $settings);
 
             if ($uri === '/insales/external/v2/courier') {
-                self::courier($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors);
+                self::courier($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors, $settings);
                 return;
             }
             if ($uri === '/insales/external/v2/pickup_points') {
-                self::pickupPoints($body, $api, $creds, $termRepo, $senderId, $cargo, $calcCtx, $cors);
+                self::pickupPoints($body, $api, $creds, $termRepo, $senderId, $cargo, $calcCtx, $cors, $settings);
                 return;
             }
             if ($uri === '/insales/external/v2/pickup_point') {
-                self::pickupPoint($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors);
+                self::pickupPoint($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors, $settings);
                 return;
             }
 
@@ -82,6 +82,7 @@ final class ExternalCheckoutHandler
         array $cargo,
         CalculatorContext $calcCtx,
         array $cors,
+        ShopSettings $settings,
     ): void {
         $kladr = InsalesOrderParser::cityKladr($body);
         if ($kladr === null || strlen($kladr) < 10) {
@@ -132,6 +133,7 @@ final class ExternalCheckoutHandler
         array $cargo,
         CalculatorContext $calcCtx,
         array $cors,
+        ShopSettings $settings,
     ): void {
         $kladr = InsalesOrderParser::cityKladr($body);
         if ($kladr === null) {
@@ -146,38 +148,52 @@ final class ExternalCheckoutHandler
             return;
         }
 
+        // Типы доставки из настроек магазина
+        $deliveryTypes = $settings->deliveryTypes ?: ['auto'];
+        $typeNames = [
+            'auto'          => 'ДЛ Авто',
+            'avia'          => 'ДЛ Авиа',
+            'express'       => 'ДЛ Экспресс',
+            'small_package' => 'ДЛ Малогабаритный груз',
+        ];
+        // Индекс типа для кодирования в ID точки
+        $typeIndex = array_flip(['auto', 'avia', 'express', 'small_package']);
+
         $sid = $api->login($creds);
         $out = [];
+
         foreach ($points as $t) {
             $tid = (int) ($t['id'] ?? 0);
-            if ($tid <= 0) {
-                continue;
+            if ($tid <= 0) continue;
+
+            foreach ($deliveryTypes as $dtype) {
+                try {
+                    $calc = $api->calculateToTerminal(
+                        $sid,
+                        $senderId,
+                        $tid,
+                        isset($t['city_kladr']) ? (string) $t['city_kladr'] : $kladr,
+                        $cargo,
+                        $calcCtx,
+                        $creds,
+                        $dtype  // ← тип доставки
+                    );
+                    if ($calc['price'] === null) continue;
+
+                    $point = self::mapPickupPoint($t, (float) $calc['price'], $calc['days']);
+                    // Кодируем тип в ID: terminal_id * 10 + type_index
+                    // Например терминал 53, тип avia (индекс 1) → ID = 531
+                    $point['id']    = $tid * 10 + ($typeIndex[$dtype] ?? 0);
+                    $point['title'] = ($typeNames[$dtype] ?? 'ДЛ') . ' — ' . ($t['name'] ?? 'ПВЗ');
+                    // Сохраняем тип для оформления заказа
+                    $point['fields_values'][] = ['handle' => 'dellin_calc_type', 'value' => $dtype];
+                    $out[] = $point;
+                } catch (\Throwable $ex) {
+                    error_log('DELLIN CALC ' . $dtype . ' terminal ' . $tid . ': ' . $ex->getMessage());
+                }
             }
-            $price = null;
-            $days  = null;
-            try {
-                $calc = $api->calculateToTerminal(
-                    $sid,
-                    $senderId,
-                    $tid,
-                    isset($t['city_kladr']) ? (string) $t['city_kladr'] : $kladr,
-                    $cargo,
-                    $calcCtx,
-                    $creds,
-                );
-                $price = $calc['price'];
-                $days  = $calc['days'];
-            } catch (\Throwable $ex) {
-                error_log('DELLIN CALC ERROR terminal ' . $tid . ': ' . $ex->getMessage());
-                continue;
-            }
-            if ($price === null) {
-                continue;
-            }
-            $out[] = self::mapPickupPoint($t, (float) $price, $days);
-            if (count($out) >= 50) {
-                break;
-            }
+
+            if (count($out) >= 50) break;
         }
 
         Response::json($out, 200, $cors);
@@ -192,6 +208,7 @@ final class ExternalCheckoutHandler
         array $cargo,
         CalculatorContext $calcCtx,
         array $cors,
+        ShopSettings $settings,
     ): void {
         $pointId = InsalesOrderParser::pickupPointId($body);
         if ($pointId === null || $pointId <= 0) {
@@ -199,21 +216,47 @@ final class ExternalCheckoutHandler
             return;
         }
 
+        // Декодируем: ID = terminal_id * 10 + type_index
+        $typeList  = ['auto', 'avia', 'express', 'small_package'];
+        $dtype     = $typeList[$pointId % 10] ?? 'auto';
+        $realTid   = (int) ($pointId / 10);
+
         $kladr = InsalesOrderParser::cityKladr($body);
         $sid   = $api->login($creds);
-        $calc  = $api->calculateToTerminal($sid, $senderId, $pointId, $kladr, $cargo, $calcCtx, $creds);
+        $calc  = $api->calculateToTerminal(
+            $sid,
+            $senderId,
+            $realTid,
+            $kladr,
+            $cargo,
+            $calcCtx,
+            $creds,
+            $dtype
+        );
         if ($calc['price'] === null) {
             self::jsonError(['errors' => ['Расчёт для выбранного ПВЗ недоступен']], 422, $cors);
             return;
         }
 
-        Response::json([self::mapPickupPoint([
-            'id'      => $pointId,
-            'name'    => 'ПВЗ #' . $pointId,
+        $typeNames = [
+            'auto'          => 'ДЛ Авто',
+            'avia'          => 'ДЛ Авиа',
+            'express'       => 'ДЛ Экспресс',
+            'small_package' => 'ДЛ Малогабаритный груз',
+        ];
+        $typeIndex = array_flip($typeList);
+
+        $point = self::mapPickupPoint([
+            'id'      => $realTid,
+            'name'    => ($typeNames[$dtype] ?? 'ДЛ') . ' — ПВЗ #' . $realTid,
             'address' => '',
             'lat'     => 0,
             'lng'     => 0,
-        ], (float) $calc['price'], $calc['days'])], 200, $cors);
+        ], (float) $calc['price'], $calc['days']);
+        $point['id'] = $pointId; // возвращаем закодированный ID
+        $point['fields_values'][] = ['handle' => 'dellin_calc_type', 'value' => $dtype];
+
+        Response::json([$point], 200, $cors);
     }
 
     /** @param array<string, mixed> $t */

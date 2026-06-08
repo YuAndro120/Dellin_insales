@@ -51,7 +51,7 @@ final class CarrierJsonHandler
             $w  = (float) ($_GET['width']  ?? ((float)($dims[1] ?? 20) / 100));
             $h  = (float) ($_GET['height'] ?? ((float)($dims[2] ?? 20) / 100));
             $wt = (float) ($_GET['weight'] ?? ($settings?->defaultWeightKg ?? 1.0));
-            $vol   = round($l * $w * $h, 4);
+            $vol = max(0.01, round($l * $w * $h, 4));
             $kladr = trim((string) ($_GET['kladr'] ?? ($settings?->derivalCityKladr ?? '')));
             $tid   = $settings?->senderTerminalId ?? null;
             $dtype = trim((string) ($_GET['delivery_type'] ?? 'auto'));

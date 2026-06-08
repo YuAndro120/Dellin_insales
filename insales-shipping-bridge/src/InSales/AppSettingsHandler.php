@@ -738,7 +738,7 @@ final class AppSettingsHandler
                                                     'auto'          => 'Автодоставка',
                                                     'avia'          => 'Авиадоставка',
                                                     'express'       => 'Экспресс',
-                                                    'small_package' => 'Мелкий пакет (МГГ)',
+                                                    'small_package' => 'Малогабаритный груз',
                                                 ] as $val => $label
                                             ): ?>
                                                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--ink2)">

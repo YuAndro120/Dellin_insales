@@ -153,6 +153,7 @@ final class CarrierApi
         if ($derivalTerminalId !== null && $derivalTerminalId > 0) {
             $body['derivalTerminalID'] = $derivalTerminalId;
         }
+        file_put_contents('/tmp/conditions_debug.json', json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         return $this->postJson(
             'https://api.dellin.ru/v1/public/request_conditions.json',
             $body

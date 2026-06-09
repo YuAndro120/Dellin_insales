@@ -1481,7 +1481,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .field{margin-bottom:14px}
 .field:last-child{margin-bottom:0}
 .field>label{display:block;font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.03em;text-transform:uppercase;margin-bottom:5px}
-.field input,.field select{width:100%;padding:9px 12px;background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);font-size:13px;color:var(--ink);font-family:var(--sans);transition:border .15s,box-shadow .15s,background .15s;-webkit-appearance:none;outline:none}
+.field input:not([type="checkbox"]),.field select{width:100%;padding:9px 12px;background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);font-size:13px;color:var(--ink);font-family:var(--sans);transition:border .15s,box-shadow .15s,background .15s;-webkit-appearance:none;outline:none}
 .field input:focus,.field select:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
 .field .hint{font-size:11px;color:var(--ink3);margin-top:4px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}

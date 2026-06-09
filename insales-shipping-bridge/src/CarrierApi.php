@@ -109,16 +109,15 @@ final class CarrierApi
         $url = $res['url'] ?? '';
         if ($url === '') return [];
 
-        // Скачиваем CSV
         $csv = $this->http('GET', $url, null);
         $items = [];
-        foreach (explode("\n", $csv) as $i => $line) {
-            if ($i === 0 || trim($line) === '') continue; // пропускаем заголовок
-            // Парсим: "id","uid","name"
-            $parts = str_getcsv($line);
-            $uid  = trim($parts[1] ?? '', '"');
-            $name = trim($parts[2] ?? '', '"');
-            if ($uid === '') continue;
+        $lines = explode("\r\n", $csv);
+        foreach ($lines as $i => $line) {
+            if ($i === 0 || trim($line) === '') continue;
+            $parts = str_getcsv($line, ',', '"');
+            $uid  = trim($parts[1] ?? '');
+            $name = trim($parts[2] ?? '');
+            if ($uid === '' || $name === '') continue;
             $items[$uid] = $name;
         }
         return $items;

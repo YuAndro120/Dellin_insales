@@ -360,7 +360,7 @@ final class CarrierApi
             'freightUID'  => $freightUid,
         ];
         if ($packageUid !== '') {
-            $cargoBlock['packages'] = [['uid' => self::toUuid($packageUid), 'count' => 1]];
+            $cargoBlock['packages'] = [['uid' => $packageUid, 'count' => 1]];
         }
 
         // Блок derival (терминал или адрес)
@@ -738,7 +738,7 @@ final class CarrierApi
                 ],
                 'derival'  => $this->buildDerival($calcCtx, $senderTerminalId),
                 'packages' => ($calcCtx->packageInCalc && $calcCtx->packageUid !== '')
-                    ? [['uid' => self::toUuid($calcCtx->packageUid), 'count' => 1]]
+                    ? [['uid' => $calcCtx->packageUid, 'count' => 1]]
                     : [],
             ],
             'cargo'       => $c,
@@ -792,7 +792,7 @@ final class CarrierApi
                 'arrival'      => $arrival,
                 'derival'      => $this->buildDerival($calcCtx, $senderTerminalId),
                 'packages' => ($calcCtx->packageInCalc && $calcCtx->packageUid !== '')
-                    ? [['uid' => self::toUuid($calcCtx->packageUid), 'count' => 1]]
+                    ? [['uid' => $calcCtx->packageUid, 'count' => 1]]
                     : [],
             ],
             'cargo'       => $c,

@@ -107,7 +107,7 @@ final class ShopSettings
             senderContactPhone: self::nullableString($row['sender_contact_phone'] ?? null),
             senderOpfUid: self::nullableString($row['sender_opf_uid'] ?? null),
             senderOpfName: (string) ($row['sender_opf_name'] ?? ''),
-            packageInCalc: (int) ($row['package_in_calc'] ?? 0) === 1,
+            packageInCalc: !empty($row['package_in_calc']),
             senderJuridicalAddress: self::nullableString($row['sender_juridical_address'] ?? null),
             freightUid: self::nullableString($row['freight_uid'] ?? null),
             freightName: (string) ($row['freight_name'] ?? ''),

@@ -733,7 +733,7 @@ final class AppSettingsHandler
                                 </div>
                                 <div class="card-body sm">
                                     <div class="ir">
-                                        <span class="ir-l">Показывать доставку в checkout</span>
+                                        <span class="ir-l">Показывать доставку в корзине</span>
                                         <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
                                             <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
                                             <span style="font-size:12px;color:var(--ink3)">Включено</span>

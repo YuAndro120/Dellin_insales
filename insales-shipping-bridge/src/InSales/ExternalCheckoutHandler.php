@@ -113,7 +113,10 @@ final class ExternalCheckoutHandler
             'tariff_id'               => 'dellin_courier',
             'shipping_company_handle' => self::COMPANY,
             'title'                   => 'Курьерская доставка Деловых Линий',
-            'description'             => 'Доставка до адреса получателя',
+            'description' => 'Доставка до адреса получателя' .
+                ($calcCtx->packageInCalc && ($settings->packageName ?? '') !== ''
+                    ? ' · упаковка: ' . $settings->packageName
+                    : ''),
             'delivery_interval'       => self::interval($calc['days']),
             'fields_values'           => [
                 ['handle' => 'dellin_delivery_type', 'value' => 'courier'],
@@ -180,7 +183,12 @@ final class ExternalCheckoutHandler
                     );
                     if ($calc['price'] === null) continue;
 
-                    $point = self::mapPickupPoint($t, (float) $calc['price'], $calc['days']);
+                    $point = self::mapPickupPoint(
+                        $t,
+                        (float) $calc['price'],
+                        $calc['days'],
+                        $calcCtx->packageInCalc && $settings->packageName !== '' ? $settings->packageName : ''
+                    );
                     // Кодируем тип в ID: terminal_id * 10 + type_index
                     // Например терминал 53, тип avia (индекс 1) → ID = 531
                     $point['id']    = $tid * 10 + ($typeIndex[$dtype] ?? 0);
@@ -246,13 +254,18 @@ final class ExternalCheckoutHandler
         ];
         $typeIndex = array_flip($typeList);
 
-        $point = self::mapPickupPoint([
-            'id'      => $realTid,
-            'name'    => ($typeNames[$dtype] ?? 'ДЛ') . ' — ПВЗ #' . $realTid,
-            'address' => '',
-            'lat'     => 0,
-            'lng'     => 0,
-        ], (float) $calc['price'], $calc['days']);
+        $point = self::mapPickupPoint(
+            [
+                'id'      => $realTid,
+                'name'    => ($typeNames[$dtype] ?? 'ДЛ') . ' — ПВЗ #' . $realTid,
+                'address' => '',
+                'lat'     => 0,
+                'lng'     => 0,
+            ],
+            (float) $calc['price'],
+            $calc['days'],
+            $calcCtx->packageInCalc && $settings->packageName !== '' ? $settings->packageName : ''
+        );
         $point['id'] = $pointId; // возвращаем закодированный ID
         $point['fields_values'][] = ['handle' => 'dellin_calc_type', 'value' => $dtype];
 
@@ -260,7 +273,7 @@ final class ExternalCheckoutHandler
     }
 
     /** @param array<string, mixed> $t */
-    private static function mapPickupPoint(array $t, float $price, ?int $days): array
+    private static function mapPickupPoint(array $t, float $price, ?int $days, string $packageName = ''): array
     {
         return [
             'id'                      => (int) ($t['id'] ?? 0),
@@ -271,7 +284,10 @@ final class ExternalCheckoutHandler
             'title'                   => (string) ($t['name'] ?? 'Пункт выдачи'),
             'type'                    => 'pvz',
             'address'                 => (string) ($t['address'] ?? ''),
-            'description'             => (string) ($t['city'] ?? ''),
+            'description' => trim(
+                (string) ($t['city'] ?? '') .
+                    ($packageName !== '' ? ' · упаковка: ' . $packageName : '')
+            ),
             'phones'                  => [],
             'delivery_interval'       => self::interval($days),
             'payment_method'          => ['PREPAID'],

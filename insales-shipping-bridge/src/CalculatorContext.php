@@ -16,6 +16,8 @@ final class CalculatorContext
         public readonly ?string $derivalCityKladr,
         public readonly ?string $derivalStreet,
         public readonly ?string $derivalHouse,
+        public readonly string $packageUid,
+        public readonly bool $packageInCalc,
         public readonly ?string $arrivalCityName = null,
     ) {}
 
@@ -30,6 +32,8 @@ final class CalculatorContext
             derivalCityKladr: $s->derivalCityKladr,
             derivalStreet: $s->derivalStreet,
             derivalHouse: $s->derivalHouse,
+            packageUid: $s->packageUid    ?? '',
+            packageInCalc: $s->packageInCalc ?? false,
         );
     }
 
@@ -44,6 +48,8 @@ final class CalculatorContext
             derivalCityKladr: $this->derivalCityKladr,
             derivalStreet: $this->derivalStreet,
             derivalHouse: $this->derivalHouse,
+            packageUid: $this->packageUid,
+            packageInCalc: $this->packageInCalc,
             arrivalCityName: $cityName,
         );
     }

@@ -114,6 +114,7 @@ final class AppSettingsHandler
                     'freight_name' => trim((string) ($_POST['freight_name'] ?? '')),
                     'package_uid'  => trim((string) ($_POST['package_uid']  ?? '')),
                     'package_name' => trim((string) ($_POST['package_name'] ?? '')),
+                    'package_in_calc' => isset($_POST['package_in_calc']),
                     'produce_days_offset'   => (int) ($_POST['produce_days_offset']    ?? 2),
                     'default_stated_value'  => (float) str_replace(',', '.', (string) ($_POST['default_stated_value'] ?? '0')),
                     'default_weight_kg'     => (float) str_replace(',', '.', (string) ($_POST['default_weight_kg']    ?? '1')),
@@ -440,6 +441,7 @@ final class AppSettingsHandler
                                             <input type="hidden" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
                                             <input type="hidden" name="package_uid" value="<?= $h($s->packageUid  ?? '') ?>">
                                             <input type="hidden" name="package_name" value="<?= $h($s->packageName ?? '') ?>">
+                                            <input type="hidden" name="package_in_calc" value="<?= $s->packageInCalc ? '1' : '' ?>">
                                         </div>
                                         <div class="field">
                                             <label>ИНН</label>
@@ -627,6 +629,7 @@ final class AppSettingsHandler
                             <input type="hidden" name="is_enabled" value="<?= $s->isEnabled ? '1' : '' ?>">
                             <input type="hidden" name="package_uid" value="<?= $h($s->packageUid) ?>">
                             <input type="hidden" name="package_name" value="<?= $h($s->packageName) ?>">
+                            <input type="hidden" name="package_in_calc" value="<?= $s->packageInCalc ? '1' : '' ?>">
 
                             <!-- Груз по умолчанию -->
                             <div class="card">
@@ -713,6 +716,13 @@ final class AppSettingsHandler
                                         </div>
                                         <input type="hidden" id="package_uid" name="package_uid" value="<?= $h($s->packageUid) ?>">
                                         <input type="hidden" id="package_name" name="package_name" value="<?= $h($s->packageName) ?>">
+                                        <div class="ir" style="margin-top:10px">
+                                            <span class="ir-l">Учитывать упаковку в расчёте стоимости</span>
+                                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                                                <input type="checkbox" name="package_in_calc" value="1" <?= $s->packageInCalc ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
+                                                <span style="font-size:12px;color:var(--ink3)">Включено</span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

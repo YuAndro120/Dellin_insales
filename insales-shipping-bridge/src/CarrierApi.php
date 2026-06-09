@@ -737,7 +737,9 @@ final class CarrierApi
                     'requirements' => [],
                 ],
                 'derival'  => $this->buildDerival($calcCtx, $senderTerminalId),
-                'packages' => [],
+                'packages' => ($calcCtx->packageInCalc && $calcCtx->packageUid !== '')
+                    ? [['uid' => $calcCtx->packageUid, 'count' => 1]]
+                    : [],
             ],
             'cargo'       => $c,
             'members'     => ['requester' => $requester],
@@ -789,7 +791,9 @@ final class CarrierApi
                 'deliveryType' => ['type' => $deliveryType],
                 'arrival'      => $arrival,
                 'derival'      => $this->buildDerival($calcCtx, $senderTerminalId),
-                'packages'     => [],
+                'packages' => ($calcCtx->packageInCalc && $calcCtx->packageUid !== '')
+                    ? [['uid' => $calcCtx->packageUid, 'count' => 1]]
+                    : [],
             ],
             'cargo'       => $c,
             'members'     => ['requester' => $requester],

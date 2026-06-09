@@ -629,7 +629,6 @@ final class AppSettingsHandler
                             <input type="hidden" name="is_enabled" value="<?= $s->isEnabled ? '1' : '' ?>">
                             <input type="hidden" name="package_uid" value="<?= $h($s->packageUid) ?>">
                             <input type="hidden" name="package_name" value="<?= $h($s->packageName) ?>">
-                            <input type="hidden" name="package_in_calc" value="<?= $s->packageInCalc ? '1' : '' ?>">
 
                             <!-- Груз по умолчанию -->
                             <div class="card">
@@ -716,7 +715,7 @@ final class AppSettingsHandler
                                         </div>
                                         <input type="hidden" id="package_uid" name="package_uid" value="<?= $h($s->packageUid) ?>">
                                         <input type="hidden" id="package_name" name="package_name" value="<?= $h($s->packageName) ?>">
-                                        <div class="ir" style="margin-top:10px">
+                                        <div class="ir">
                                             <span class="ir-l">Учитывать упаковку в расчёте стоимости</span>
                                             <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
                                                 <input type="checkbox" name="package_in_calc" value="1" <?= $s->packageInCalc ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
@@ -874,6 +873,7 @@ final class AppSettingsHandler
                         var lbl = document.getElementById('topbar-page');
                         if (lbl) lbl.textContent = this.dataset.label || '';
                         if (window.innerWidth <= 768) closeSidebar();
+                        sessionStorage.setItem('activeNavPage', this.dataset.page);
                     });
                 });
 
@@ -1363,6 +1363,12 @@ final class AppSettingsHandler
                 }
                 if (pkgSearchWrap && pkgSearchWrap.style.display !== 'none') {
                     loadPackages();
+                }
+                // Восстанавливаем активную страницу после сохранения
+                var savedPage = sessionStorage.getItem('activeNavPage');
+                if (savedPage) {
+                    var savedBtn = document.querySelector('.nav-item[data-page="' + savedPage + '"]');
+                    if (savedBtn) savedBtn.click();
                 }
             })();
             window.setRequesterRole = function(btn, val) {

@@ -154,7 +154,6 @@ final class CarrierApi
             $body['derivalTerminalID'] = $derivalTerminalId;
         }
         $body['arrivalPoint'] = $arrivalKladr ?? '7700000000000000000000000';
-        file_put_contents('/tmp/conditions_debug.json', json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         return $this->postJson(
             'https://api.dellin.ru/v1/public/request_conditions.json',
             $body
@@ -726,7 +725,7 @@ final class CarrierApi
     ): array {
         $c         = $this->normalizeCargo($cargo);
         $requester = $this->buildRequester($calcCtx);
-        return [
+        $body = [
             'sessionID' => $sessionId,
             'appkey'    => $this->resolveAppkey($credentials),
             'delivery'  => [
@@ -750,6 +749,12 @@ final class CarrierApi
                 'info'        => [['param' => 'shipping-bridge', 'value' => 'mvp-1']],
             ],
         ];
+        error_log('[BRIDGE] packages: ' . json_encode([
+            'inCalc' => $calcCtx->packageInCalc,
+            'uid'    => $calcCtx->packageUid,
+            'arr'    => $body['delivery']['packages'],
+        ], JSON_UNESCAPED_UNICODE));
+        return $body;
     }
 
     private function buildCalculatorBodyCityArrival(

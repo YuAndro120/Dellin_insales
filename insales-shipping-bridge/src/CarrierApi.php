@@ -110,7 +110,7 @@ final class CarrierApi
         foreach ($res['data'] ?? $res['packages'] ?? [] as $pkg) {
             $uid = (string) ($pkg['uid'] ?? '');
             if ($uid === '') continue;
-            $items[$uid] = (string) ($pkg['name'] ?? $uid);
+            $items[$uid] = (string) ($pkg['title'] ?? $pkg['name'] ?? $uid);
         }
         return $items;
     }

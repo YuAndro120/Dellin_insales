@@ -441,7 +441,7 @@ final class AppSettingsHandler
                                             <input type="hidden" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
                                             <input type="hidden" name="package_uid" value="<?= $h($s->packageUid  ?? '') ?>">
                                             <input type="hidden" name="package_name" value="<?= $h($s->packageName ?? '') ?>">
-                                            <input type="hidden" name="package_in_calc" value="<?= $s->packageInCalc ? '1' : '' ?>">
+                                            <input type="checkbox" name="package_in_calc" value="1" <?= $s->packageInCalc ? ' checked' : '' ?> style="display:none">
                                         </div>
                                         <div class="field">
                                             <label>ИНН</label>

@@ -103,14 +103,23 @@ final class CarrierApi
      */
     public function getPackagesReference(): array
     {
-        $res = $this->postJson('https://api.dellin.ru/v1/references/packages.json', [
+        $res = $this->postJson('https://api.dellin.ru/v1/public/request_services.json', [
             'appkey' => $this->config->dellinAppkey,
         ]);
+        $url = $res['url'] ?? '';
+        if ($url === '') return [];
+
+        // Скачиваем CSV
+        $csv = $this->http('GET', $url, null);
         $items = [];
-        foreach ($res['data'] ?? $res['packages'] ?? [] as $pkg) {
-            $uid = (string) ($pkg['uid'] ?? '');
+        foreach (explode("\n", $csv) as $i => $line) {
+            if ($i === 0 || trim($line) === '') continue; // пропускаем заголовок
+            // Парсим: "id","uid","name"
+            $parts = str_getcsv($line);
+            $uid  = trim($parts[1] ?? '', '"');
+            $name = trim($parts[2] ?? '', '"');
             if ($uid === '') continue;
-            $items[$uid] = (string) ($pkg['title'] ?? $pkg['name'] ?? $uid);
+            $items[$uid] = $name;
         }
         return $items;
     }
@@ -737,7 +746,7 @@ final class CarrierApi
                 ],
                 'derival'  => $this->buildDerival($calcCtx, $senderTerminalId),
                 'packages' => ($calcCtx->packageInCalc && $calcCtx->packageUid !== '')
-                    ? [['uid' => self::toUuid($calcCtx->packageUid), 'count' => 1]]
+                    ? [['uid' => $calcCtx->packageUid, 'count' => 1]]
                     : [],
             ],
             'cargo'       => $c,
@@ -797,7 +806,7 @@ final class CarrierApi
                 'arrival'      => $arrival,
                 'derival'      => $this->buildDerival($calcCtx, $senderTerminalId),
                 'packages' => ($calcCtx->packageInCalc && $calcCtx->packageUid !== '')
-                    ? [['uid' => self::toUuid($calcCtx->packageUid), 'count' => 1]]
+                    ? [['uid' => $calcCtx->packageUid, 'count' => 1]]
                     : [],
             ],
             'cargo'       => $c,

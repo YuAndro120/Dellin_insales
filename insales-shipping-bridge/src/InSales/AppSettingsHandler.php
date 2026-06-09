@@ -1351,6 +1351,9 @@ final class AppSettingsHandler
                         pkgSearchWrap.style.display = 'none';
                     });
                 }
+                if (pkgSearchWrap && pkgSearchWrap.style.display !== 'none') {
+                    loadPackages();
+                }
             })();
             window.setRequesterRole = function(btn, val) {
                 btn.parentNode.querySelectorAll('.seg-btn').forEach(function(b) {

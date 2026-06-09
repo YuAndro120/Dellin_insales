@@ -1008,7 +1008,7 @@ final class CarrierApi
         return $out;
     }
 
-    private static function toUuid(string $uid): string
+    public static function toUuid(string $uid): string
     {
         if (str_contains($uid, '-')) return $uid;
         $h = strtolower(ltrim($uid, '0x'));

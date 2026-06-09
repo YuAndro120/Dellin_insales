@@ -112,7 +112,7 @@ final class AppSettingsHandler
                     'sender_counteragent_id' => (int) ($_POST['sender_counteragent_id'] ?? 0) ?: null,
                     'freight_uid'           => trim((string) ($_POST['freight_uid']    ?? '')) ?: null,
                     'freight_name' => trim((string) ($_POST['freight_name'] ?? '')),
-                    'package_uid'  => trim((string) ($_POST['package_uid']  ?? '')),
+                    'package_uid'  => \ShippingBridge\CarrierApi::toUuid(trim((string) ($_POST['package_uid'] ?? ''))),
                     'package_name' => trim((string) ($_POST['package_name'] ?? '')),
                     'package_in_calc' => isset($_POST['package_in_calc']),
                     'produce_days_offset'   => (int) ($_POST['produce_days_offset']    ?? 2),

@@ -360,7 +360,7 @@ final class CarrierApi
             'freightUID'  => $freightUid,
         ];
         if ($packageUid !== '') {
-            $cargoBlock['packages'] = [['uid' => $packageUid, 'count' => 1]];
+            $cargoBlock['packages'] = [['uid' => self::toUuid($packageUid), 'count' => 1]];
         }
 
         // Блок derival (терминал или адрес)

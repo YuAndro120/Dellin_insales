@@ -195,7 +195,14 @@ final class CarrierApi
         $statedValue      = max(1.0, (float) ($order['stated_value'] ?? 1000.0));
         $receiverName     = (string) ($order['receiver_name'] ?? 'Получатель');
         $receiverPhone    = preg_replace('/\D/', '', (string) ($order['receiver_phone'] ?? ''));
-
+        // Если покупатель выбрал ПВЗ — игнорируем адрес, используем терминал
+        $dellinDeliveryType = (string) ($order['dellin_delivery_type'] ?? '');
+        $dellinTerminalId   = (string) ($order['dellin_terminal_id'] ?? '');
+        if ($dellinDeliveryType === 'pickup') {
+            $arrivalStreet = '';
+            $arrivalHouse  = '';
+            $arrivalFlat   = '';
+        }
         // Резолвим КЛАДР улицы
         $streetKladr = null;
         if ($arrivalStreet !== '') {
@@ -231,13 +238,21 @@ final class CarrierApi
                 ]),
             ];
         } else {
-            $cityKladrForTerminal = $arrivalCityKladr !== ''
-                ? str_pad(substr($arrivalCityKladr, 0, 13), 25, '0')
-                : '';
-            $arrivalBlock = [
-                'variant' => 'terminal',
-                'city'    => $cityKladrForTerminal,
-            ];
+            $realTerminalId = $dellinTerminalId !== '' ? (int) ((int) $dellinTerminalId / 10) : 0;
+            if ($realTerminalId > 0) {
+                $arrivalBlock = [
+                    'variant'    => 'terminal',
+                    'terminalID' => $realTerminalId,
+                ];
+            } else {
+                $cityKladrForTerminal = $arrivalCityKladr !== ''
+                    ? str_pad(substr($arrivalCityKladr, 0, 13), 25, '0')
+                    : '';
+                $arrivalBlock = [
+                    'variant' => 'terminal',
+                    'city'    => $cityKladrForTerminal,
+                ];
+            }
         }
 
         // Интервал доставки
@@ -324,32 +339,8 @@ final class CarrierApi
         $dimW = isset($dimParts[1]) && $dimParts[1] > 0 ? round($dimParts[1] / 100, 2) : 0.20;
         $dimH = isset($dimParts[2]) && $dimParts[2] > 0 ? round($dimParts[2] / 100, 2) : 0.20;
 
-        // Упаковка — проверяем доступность и совместимость
+        // Упаковка из настроек (UID из request_services.csv принимается ДЛ API напрямую)
         $packageUid = $settings->packageUid ?? '';
-        if ($packageUid !== '') {
-            try {
-                $vol        = round($dimL * $dimW * $dimH, 4);
-                $conditions = $this->getRequestConditions(
-                    $weight,
-                    $vol,
-                    $dimL,
-                    $dimW,
-                    $dimH,
-                    1,
-                    $settings->derivalCityKladr,
-                    $settings->senderTerminalId,
-                    $deliveryType
-                );
-                $availableUids = array_column($conditions['packages'] ?? [], 'uid');
-                if (!in_array($packageUid, $availableUids, true)) {
-                    error_log('DELLIN: package ' . $packageUid . ' not available for route, skipping');
-                    $packageUid = '';
-                }
-            } catch (\Throwable $ex) {
-                error_log('DELLIN package check error: ' . $ex->getMessage());
-                $packageUid = '';
-            }
-        }
 
         // Блок cargo
         $cargoBlock = [

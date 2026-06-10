@@ -221,12 +221,20 @@ final class OrderSubmitHandler
         // Интервал доставки из кастомного поля
         $deliveryInterval = null;
         $deliveryCalcType = 'auto';
+        $deliveryType = '';
+        $terminalId = '';
         foreach ($raw['fields_values'] ?? [] as $fv) {
             if (($fv['handle'] ?? '') === 'delivery_interval') {
                 $deliveryInterval = (string) ($fv['value'] ?? '');
             }
             if (($fv['handle'] ?? '') === 'dellin_calc_type') {
                 $deliveryCalcType = (string) ($fv['value'] ?? 'auto');
+            }
+            if (($fv['handle'] ?? '') === 'dellin_delivery_type') {
+                $deliveryType = (string) ($fv['value'] ?? '');
+            }
+            if (($fv['handle'] ?? '') === 'dellin_terminal_id') {
+                $terminalId = (string) ($fv['value'] ?? '');
             }
         }
         return [
@@ -245,6 +253,8 @@ final class OrderSubmitHandler
             'stated_value'       => round($statedValue, 2),
             'delivery_interval'  => $deliveryInterval,
             'delivery_calc_type' => $deliveryCalcType,
+            'dellin_delivery_type'  => $deliveryType,
+            'dellin_terminal_id'    => $terminalId,
             'receiver_type'             => (string) ($client['type'] ?? 'Client::Person'),
             'receiver_inn'              => (string) ($client['inn'] ?? ''),
             'receiver_kpp'              => (string) ($client['kpp'] ?? ''),

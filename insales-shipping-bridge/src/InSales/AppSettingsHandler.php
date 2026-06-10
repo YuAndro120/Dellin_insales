@@ -95,6 +95,7 @@ final class AppSettingsHandler
                 if (in_array($senderType, ['ip', 'company'], true) && $senderOpfUid === '') {
                     throw new \RuntimeException('Выберите ОПФ из справочника Деловых Линий.');
                 }
+                error_log('[BRIDGE] POST delivery_types: ' . json_encode($_POST['delivery_types'] ?? 'нет', JSON_UNESCAPED_UNICODE));
                 $types = array_filter(
                     (array) ($_POST['delivery_types'] ?? ['auto']),
                     static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small_package'], true)

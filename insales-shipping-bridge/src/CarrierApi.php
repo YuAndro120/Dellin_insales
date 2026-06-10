@@ -359,9 +359,6 @@ final class CarrierApi
             ],
             'freightUID'  => $freightUid,
         ];
-        if ($packageUid !== '') {
-            $cargoBlock['packages'] = [['uid' => $packageUid, 'count' => 1]];
-        }
 
         // Блок derival (терминал или адрес)
         $derivalBlock = $this->buildDerivalForOrder($settings, $produceDate);
@@ -374,6 +371,7 @@ final class CarrierApi
                 'deliveryType' => ['type' => $deliveryType],
                 'derival'      => $derivalBlock,
                 'arrival'      => $arrivalBlock,
+                'packages'     => $packageUid !== '' ? [['uid' => $packageUid, 'count' => 1]] : [],
             ],
             'members' => [
                 'requester' => [
@@ -399,9 +397,8 @@ final class CarrierApi
                 'primaryPayer' => 'sender',
             ],
         ];
-        file_put_contents('/tmp/order_response.json', json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         $res = $this->postJson(self::URL_ORDER, $body);
-
+        file_put_contents('/tmp/order_response.json', json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         if (!empty($res['errors'])) {
             throw new \RuntimeException('Dellin order error: ' . json_encode($res['errors'], JSON_UNESCAPED_UNICODE));
         }
@@ -985,11 +982,11 @@ final class CarrierApi
     }
 
     private function postJson(string $url, ?array $body): array
-{
-    $json = $this->http('POST', $url, $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE));
-    file_put_contents('/tmp/last_response.json', $json);
-    return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-}
+    {
+        $json = $this->http('POST', $url, $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE));
+        file_put_contents('/tmp/last_response.json', $json);
+        return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+    }
 
     private function http(string $method, string $url, ?string $jsonBody): string
     {

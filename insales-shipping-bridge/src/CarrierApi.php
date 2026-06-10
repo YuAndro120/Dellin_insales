@@ -186,7 +186,6 @@ final class CarrierApi
         string $deliveryType = 'auto',
     ): array {
         $appkey = $this->resolveAppkey($credentials);
-
         $arrivalCityKladr = str_pad((string) ($order['arrival_city_kladr'] ?? ''), 25, '0');
         $arrivalStreet    = (string) ($order['arrival_street'] ?? '');
         $arrivalHouse     = (string) ($order['arrival_house'] ?? '');
@@ -203,6 +202,7 @@ final class CarrierApi
             $arrivalHouse  = '';
             $arrivalFlat   = '';
         }
+        error_log('[BRIDGE] createOrder: street=' . $arrivalStreet . ' house=' . $arrivalHouse . ' deliveryType=' . $dellinDeliveryType . ' terminalId=' . $dellinTerminalId);
         // Резолвим КЛАДР улицы
         $streetKladr = null;
         if ($arrivalStreet !== '') {

@@ -397,6 +397,7 @@ final class CarrierApi
                 'primaryPayer' => 'sender',
             ],
         ];
+        file_put_contents('/tmp/order_body.json', json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         $res = $this->postJson(self::URL_ORDER, $body);
         file_put_contents('/tmp/order_response.json', json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         if (!empty($res['errors'])) {

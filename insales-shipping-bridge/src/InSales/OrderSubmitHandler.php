@@ -217,7 +217,6 @@ final class OrderSubmitHandler
             $qty = (int) ($line['quantity'] ?? 1);
             $weight += (float) ($line['weight'] ?? 0) * $qty;
             $statedValue += (float) ($line['total-price'] ?? $line['total_price'] ?? 0);
-            // Берём габариты первого товара у которого они заполнены
             if ($maxDimsRaw === '' && trim((string) ($line['dimensions'] ?? '')) !== '') {
                 $maxDimsRaw = trim((string) $line['dimensions']);
             }
@@ -225,11 +224,10 @@ final class OrderSubmitHandler
         if ($weight <= 0) {
             $weight = 1.0;
         }
+
         // Интервал доставки из кастомного поля
         $deliveryInterval = null;
         $deliveryCalcType = 'auto';
-        $deliveryType = '';
-        $terminalId = '';
         foreach ($raw['fields_values'] ?? [] as $fv) {
             if (($fv['handle'] ?? '') === 'delivery_interval') {
                 $deliveryInterval = (string) ($fv['value'] ?? '');
@@ -237,35 +235,44 @@ final class OrderSubmitHandler
             if (($fv['handle'] ?? '') === 'dellin_calc_type') {
                 $deliveryCalcType = (string) ($fv['value'] ?? 'auto');
             }
-            if (($fv['handle'] ?? '') === 'dellin_delivery_type') {
-                $deliveryType = (string) ($fv['value'] ?? '');
-            }
-            if (($fv['handle'] ?? '') === 'dellin_terminal_id') {
-                $terminalId = (string) ($fv['value'] ?? '');
-            }
         }
+
+        // Тип доставки из delivery_info (inSales сохраняет данные выбранного ПВЗ)
+        $deliveryInfo = $raw['delivery_info'] ?? [];
+        $outlet = $deliveryInfo['outlet'] ?? [];
+        $outletType = (string) ($outlet['type'] ?? '');
+        $outletExternalId = (string) ($outlet['external_id'] ?? '');
+        $shippingHandle = (string) ($deliveryInfo['shipping_company_handle'] ?? '');
+
+        $deliveryType = '';
+        $terminalId = '';
+        if ($shippingHandle === 'dellin' && $outletType === 'pvz') {
+            $deliveryType = 'pickup';
+            $terminalId = $outletExternalId;
+        }
+
         return [
-            'insales_shop_id'    => $insalesId,
-            'insales_order_id'   => $insalesOrderId,
-            'insales_order_number' => (string) ($raw['number'] ?? $insalesOrderId),
-            'receiver_name'      => $receiverName,
-            'receiver_phone'     => (string) ($client['phone'] ?? ''),
-            'receiver_email'     => (string) ($client['email'] ?? ''),
-            'arrival_city_kladr' => (string) ($location['kladr_code'] ?? ''),
-            'arrival_city_name'  => (string) ($location['city'] ?? $address['city'] ?? ''),
-            'arrival_street'     => (string) ($location['street'] ?? ''),
-            'arrival_house'      => (string) ($location['house'] ?? ''),
-            'arrival_flat'       => (string) ($location['flat'] ?? $location['apartment'] ?? ''),
-            'weight'             => round($weight, 3),
-            'stated_value'       => round($statedValue, 2),
-            'dimensions_cm' => $maxDimsRaw,
-            'delivery_interval'  => $deliveryInterval,
-            'delivery_calc_type' => $deliveryCalcType,
-            'dellin_delivery_type'  => $deliveryType,
-            'dellin_terminal_id'    => $terminalId,
-            'receiver_type'             => (string) ($client['type'] ?? 'Client::Person'),
-            'receiver_inn'              => (string) ($client['inn'] ?? ''),
-            'receiver_kpp'              => (string) ($client['kpp'] ?? ''),
+            'insales_shop_id'            => $insalesId,
+            'insales_order_id'           => $insalesOrderId,
+            'insales_order_number'       => (string) ($raw['number'] ?? $insalesOrderId),
+            'receiver_name'              => $receiverName,
+            'receiver_phone'             => (string) ($client['phone'] ?? ''),
+            'receiver_email'             => (string) ($client['email'] ?? ''),
+            'arrival_city_kladr'         => (string) ($location['kladr_code'] ?? ''),
+            'arrival_city_name'          => (string) ($location['city'] ?? $address['city'] ?? ''),
+            'arrival_street'             => (string) ($location['street'] ?? ''),
+            'arrival_house'              => (string) ($location['house'] ?? ''),
+            'arrival_flat'               => (string) ($location['flat'] ?? $location['apartment'] ?? ''),
+            'weight'                     => round($weight, 3),
+            'stated_value'               => round($statedValue, 2),
+            'dimensions_cm'              => $maxDimsRaw,
+            'delivery_interval'          => $deliveryInterval,
+            'delivery_calc_type'         => $deliveryCalcType,
+            'dellin_delivery_type'       => $deliveryType,
+            'dellin_terminal_id'         => $terminalId,
+            'receiver_type'              => (string) ($client['type'] ?? 'Client::Person'),
+            'receiver_inn'               => (string) ($client['inn'] ?? ''),
+            'receiver_kpp'               => (string) ($client['kpp'] ?? ''),
             'receiver_juridical_address' => (string) ($client['juridical_address'] ?? ''),
         ];
     }

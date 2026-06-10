@@ -210,10 +210,15 @@ final class OrderSubmitHandler
 
         $weight = 0.0;
         $statedValue = 0.0;
+        $maxDimsRaw = '';
         foreach ($raw['order-lines'] ?? $raw['order_lines'] ?? [] as $line) {
             $qty = (int) ($line['quantity'] ?? 1);
             $weight += (float) ($line['weight'] ?? 0) * $qty;
             $statedValue += (float) ($line['total-price'] ?? $line['total_price'] ?? 0);
+            // Берём габариты первого товара у которого они заполнены
+            if ($maxDimsRaw === '' && trim((string) ($line['dimensions'] ?? '')) !== '') {
+                $maxDimsRaw = trim((string) $line['dimensions']);
+            }
         }
         if ($weight <= 0) {
             $weight = 1.0;
@@ -251,6 +256,7 @@ final class OrderSubmitHandler
             'arrival_flat'       => (string) ($location['flat'] ?? $location['apartment'] ?? ''),
             'weight'             => round($weight, 3),
             'stated_value'       => round($statedValue, 2),
+            'dimensions_cm' => $maxDimsRaw,
             'delivery_interval'  => $deliveryInterval,
             'delivery_calc_type' => $deliveryCalcType,
             'dellin_delivery_type'  => $deliveryType,

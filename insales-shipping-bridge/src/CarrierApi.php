@@ -333,7 +333,9 @@ final class CarrierApi
         }
 
         // Габариты
-        $dims     = $settings->defaultDimensionsCm;
+        $dims = ($order['dimensions_cm'] ?? '') !== ''
+            ? $order['dimensions_cm']
+            : $settings->defaultDimensionsCm;
         $dimParts = array_map('floatval', explode('x', strtolower($dims)));
         $dimL = isset($dimParts[0]) && $dimParts[0] > 0 ? round($dimParts[0] / 100, 2) : 0.30;
         $dimW = isset($dimParts[1]) && $dimParts[1] > 0 ? round($dimParts[1] / 100, 2) : 0.20;

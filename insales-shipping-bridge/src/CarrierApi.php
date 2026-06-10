@@ -985,10 +985,11 @@ final class CarrierApi
     }
 
     private function postJson(string $url, ?array $body): array
-    {
-        $json = $this->http('POST', $url, $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE));
-        return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-    }
+{
+    $json = $this->http('POST', $url, $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE));
+    file_put_contents('/tmp/last_response.json', $json);
+    return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+}
 
     private function http(string $method, string $url, ?string $jsonBody): string
     {

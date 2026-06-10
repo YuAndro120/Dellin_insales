@@ -254,7 +254,7 @@ final class CarrierApi
                 ];
             }
         }
-
+        error_log('[BRIDGE] arrivalBlock: ' . json_encode($arrivalBlock, JSON_UNESCAPED_UNICODE));
         // Интервал доставки
         $deliveryInterval = (string) ($order['delivery_interval'] ?? '');
         if ($deliveryInterval !== '' && ($arrivalBlock['variant'] ?? '') === 'address') {

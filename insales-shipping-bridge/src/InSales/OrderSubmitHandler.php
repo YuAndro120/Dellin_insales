@@ -156,7 +156,9 @@ final class OrderSubmitHandler
 
         // Парсим данные получателя и адрес
         $order = self::parseInsalesOrder($insalesId, $insalesOrderId, $insalesOrder);
-
+        error_log('[BRIDGE] order fields_values: ' . json_encode($insalesOrder['fields_values'] ?? [], JSON_UNESCAPED_UNICODE));
+        error_log('[BRIDGE] parsed delivery_type: ' . ($order['dellin_delivery_type'] ?? 'пусто'));
+        error_log('[BRIDGE] parsed terminal_id: ' . ($order['dellin_terminal_id'] ?? 'пусто'));
         // Credentials Dellin
         $creds = $shops->findCarrierCredentials($insalesId, $config->bridgeSecret);
         if ($creds === null) {

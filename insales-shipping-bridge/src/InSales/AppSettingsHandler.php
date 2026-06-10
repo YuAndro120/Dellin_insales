@@ -442,6 +442,9 @@ final class AppSettingsHandler
                                             <input type="hidden" name="package_uid" value="<?= $h($s->packageUid  ?? '') ?>">
                                             <input type="hidden" name="package_name" value="<?= $h($s->packageName ?? '') ?>">
                                             <input type="checkbox" name="package_in_calc" value="1" <?= $s->packageInCalc ? ' checked' : '' ?> style="display:none">
+                                            <?php foreach ($s->deliveryTypes as $dt): ?>
+                                                <input type="hidden" name="delivery_types[]" value="<?= $h($dt) ?>">
+                                            <?php endforeach; ?>
                                         </div>
                                         <div class="field">
                                             <label>ИНН</label>

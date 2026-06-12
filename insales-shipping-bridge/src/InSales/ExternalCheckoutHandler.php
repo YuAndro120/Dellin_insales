@@ -311,9 +311,9 @@ final class ExternalCheckoutHandler
         }
         $total = $days + $produceDaysOffset;
         return [
-            'min_days'    => $total,
-            'max_days'    => $total,
-            'description' => $total . ' дн.',
+            'description' => 'Срок уточняется',
+            'min_days'    => 0,
+            'max_days'    => 0,
         ];
     }
 

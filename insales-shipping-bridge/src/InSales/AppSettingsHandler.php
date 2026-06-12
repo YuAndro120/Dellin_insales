@@ -647,7 +647,7 @@ final class AppSettingsHandler
                         <form method="post" action="/insales/app">
                             <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                             <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
-                            <input type="hidden" name="derival_variant" value="terminal">
+                            <input type="hidden" name="derival_variant" value="<?= $h($s->derivalVariant ?? 'terminal') ?>">
                             <input type="hidden" name="sender_terminal_id" value="<?= $h($tid) ?>">
                             <input type="hidden" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
                             <input type="hidden" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>">

@@ -73,7 +73,7 @@ final class ExternalCheckoutHandler
         }
     }
 
-    /** Курьер / до города (один тариф). */
+    /** Курьер **/
     private static function courier(
         array $body,
         CarrierApi $api,
@@ -89,41 +89,66 @@ final class ExternalCheckoutHandler
             self::jsonError(['errors' => ['Укажите населённый пункт с КЛАДР в адресе доставки']], 422, $cors);
             return;
         }
-
         $street = InsalesOrderParser::street($body);
         $house  = InsalesOrderParser::house($body);
-
         if ($street === null || $street === '' || $house === null || $house === '') {
             self::jsonError(['errors' => ['Для курьерской доставки укажите улицу и номер дома']], 422, $cors);
             return;
         }
 
-        $sid  = $api->loginWithPat($creds);
-        $calc = $api->calculateToCity($sid, $senderId, $kladr, $street, $house, $cargo, $calcCtx, $creds);
-        if ($calc['price'] === null) {
-            $msg = is_array($calc['errors'] ?? null)
-                ? json_encode($calc['errors'], JSON_UNESCAPED_UNICODE)
-                : 'Не удалось рассчитать доставку';
-            self::jsonError(['errors' => [$msg]], 422, $cors);
+        $deliveryTypes = $settings->deliveryTypes ?: ['auto'];
+        $typeNames = [
+            'auto'    => 'ДЛ Авто',
+            'avia'    => 'ДЛ Авиа',
+            'express' => 'ДЛ Экспресс',
+            'small'   => 'ДЛ Малогабаритный груз',
+        ];
+
+        $sid = $api->loginWithPat($creds);
+        $out = [];
+
+        foreach ($deliveryTypes as $dtype) {
+            try {
+                $calc = $api->calculateToCity(
+                    $sid,
+                    $senderId,
+                    $kladr,
+                    $street,
+                    $house,
+                    $cargo,
+                    $calcCtx,
+                    $creds,
+                    $dtype
+                );
+                if ($calc['price'] === null) continue;
+
+                $out[] = [
+                    'price'                   => (float) $calc['price'],
+                    'tariff_id'               => 'dellin_courier_' . $dtype,
+                    'shipping_company_handle' => self::COMPANY,
+                    'title'                   => ($typeNames[$dtype] ?? 'ДЛ') . ' — курьерская доставка',
+                    'description'             => $calcCtx->packageInCalc && ($settings->packageName ?? '') !== ''
+                        ? 'упаковка: ' . $settings->packageName
+                        : '',
+                    'delivery_interval'       => self::interval($calc['days'], $calcCtx->produceDaysOffset),
+                    'fields_values'           => [
+                        ['handle' => 'dellin_delivery_type', 'value' => 'courier'],
+                        ['handle' => 'dellin_calc_type',     'value' => $dtype],
+                    ],
+                    'errors'   => [],
+                    'warnings' => [],
+                ];
+            } catch (\Throwable $ex) {
+                error_log('DELLIN CALC courier ' . $dtype . ': ' . $ex->getMessage());
+            }
+        }
+
+        if ($out === []) {
+            self::jsonError(['errors' => ['Не удалось рассчитать доставку']], 422, $cors);
             return;
         }
 
-        Response::json([[
-            'price'                   => (float) $calc['price'],
-            'tariff_id'               => 'dellin_courier',
-            'shipping_company_handle' => self::COMPANY,
-            'title'                   => 'Курьерская доставка Деловых Линий',
-            'description' => 'Доставка до адреса получателя' .
-                ($calcCtx->packageInCalc && ($settings->packageName ?? '') !== ''
-                    ? ' · упаковка: ' . $settings->packageName
-                    : ''),
-            'delivery_interval' => self::interval($calc['days'], $calcCtx->produceDaysOffset),
-            'fields_values'           => [
-                ['handle' => 'dellin_delivery_type', 'value' => 'courier'],
-            ],
-            'errors'   => [],
-            'warnings' => [],
-        ]], 200, $cors);
+        Response::json($out, 200, $cors);
     }
 
     /** Список ПВЗ для карты checkout. */

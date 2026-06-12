@@ -142,7 +142,7 @@ final class CarrierApi
             'auto'          => 1,
             'avia'          => 2,
             'express'       => 6,
-            'small_package' => 7,
+            'small' => 7,
         ];
         $body = [
             'appkey'       => $this->config->dellinAppkey,

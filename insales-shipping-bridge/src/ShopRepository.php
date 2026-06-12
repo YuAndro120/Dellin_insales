@@ -218,7 +218,7 @@ SQL;
                 is_array($data['delivery_types'] ?? ['auto'])
                     ? ($data['delivery_types'] ?? ['auto'])
                     : explode(',', (string) ($data['delivery_types'] ?? 'auto')),
-                static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small_package'], true)
+                static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small'], true)
             )) ?: 'auto',
         ]);
         $this->assertActiveShop($insalesId);

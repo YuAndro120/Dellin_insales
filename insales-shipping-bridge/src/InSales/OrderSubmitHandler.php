@@ -172,7 +172,7 @@ final class OrderSubmitHandler
             $sid    = $api->loginWithPat($creds);
             $deliveryType = in_array(
                 $order['delivery_calc_type'] ?? 'auto',
-                ['auto', 'avia', 'express', 'small_package'],
+                ['auto', 'avia', 'express', 'small'],
                 true
             ) ? $order['delivery_calc_type'] : 'auto';
 

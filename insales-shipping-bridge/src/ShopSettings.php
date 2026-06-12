@@ -120,7 +120,7 @@ final class ShopSettings
             isEnabled: (int) ($row['is_enabled'] ?? 1) === 1,
             deliveryTypes: array_filter(
                 explode(',', (string) ($row['delivery_types'] ?? 'auto')),
-                static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small_package'], true)
+                static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small'], true)
             ),
             deliveryPayer: in_array($row['delivery_payer'] ?? 'sender', ['sender', 'receiver'], true) ? (string) $row['delivery_payer'] : 'sender',
             requesterRole: in_array($row['requester_role'] ?? 'sender', ['sender', 'receiver', 'payer'], true) ? (string)$row['requester_role'] : 'sender',

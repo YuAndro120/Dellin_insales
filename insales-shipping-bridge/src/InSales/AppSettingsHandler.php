@@ -98,7 +98,7 @@ final class AppSettingsHandler
                 error_log('[BRIDGE] POST delivery_types: ' . json_encode($_POST['delivery_types'] ?? 'нет', JSON_UNESCAPED_UNICODE));
                 $types = array_filter(
                     (array) ($_POST['delivery_types'] ?? ['auto']),
-                    static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small_package'], true)
+                    static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small'], true)
                 );
                 error_log('[BRIDGE] types after filter: ' . json_encode(array_values($types), JSON_UNESCAPED_UNICODE));
                 error_log('[BRIDGE] implode result: ' . (implode(',', $types) ?: 'auto'));
@@ -753,7 +753,7 @@ final class AppSettingsHandler
                                                     'auto'          => 'Автодоставка',
                                                     'avia'          => 'Авиадоставка',
                                                     'express'       => 'Экспресс',
-                                                    'small_package' => 'Малогабаритный груз',
+                                                    'small' => 'Малогабаритный груз',
                                                 ] as $val => $label
                                             ): ?>
                                                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--ink2)">

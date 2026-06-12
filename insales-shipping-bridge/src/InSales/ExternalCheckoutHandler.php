@@ -117,7 +117,7 @@ final class ExternalCheckoutHandler
                 ($calcCtx->packageInCalc && ($settings->packageName ?? '') !== ''
                     ? ' · упаковка: ' . $settings->packageName
                     : ''),
-            'delivery_interval'       => self::interval($calc['days']),
+            'delivery_interval' => self::interval($calc['days'], $calcCtx->produceDaysOffset),
             'fields_values'           => [
                 ['handle' => 'dellin_delivery_type', 'value' => 'courier'],
             ],
@@ -157,10 +157,10 @@ final class ExternalCheckoutHandler
             'auto'          => 'ДЛ Авто',
             'avia'          => 'ДЛ Авиа',
             'express'       => 'ДЛ Экспресс',
-            'small_package' => 'ДЛ Малогабаритный груз',
+            'small' => 'ДЛ Малогабаритный груз',
         ];
         // Индекс типа для кодирования в ID точки
-        $typeIndex = array_flip(['auto', 'avia', 'express', 'small_package']);
+        $typeIndex = array_flip(['auto', 'avia', 'express', 'small']);
 
         $sid = $api->login($creds);
         $out = [];
@@ -187,7 +187,8 @@ final class ExternalCheckoutHandler
                         $t,
                         (float) $calc['price'],
                         $calc['days'],
-                        $calcCtx->packageInCalc && $settings->packageName !== '' ? $settings->packageName : ''
+                        $calcCtx->packageInCalc && $settings->packageName !== '' ? $settings->packageName : '',
+                        $calcCtx->produceDaysOffset
                     );
                     // Кодируем тип в ID: terminal_id * 10 + type_index
                     // Например терминал 53, тип avia (индекс 1) → ID = 531
@@ -225,7 +226,7 @@ final class ExternalCheckoutHandler
         }
 
         // Декодируем: ID = terminal_id * 10 + type_index
-        $typeList  = ['auto', 'avia', 'express', 'small_package'];
+        $typeList  = ['auto', 'avia', 'express', 'small'];
         $dtype     = $typeList[$pointId % 10] ?? 'auto';
         $realTid   = (int) ($pointId / 10);
 
@@ -250,7 +251,7 @@ final class ExternalCheckoutHandler
             'auto'          => 'ДЛ Авто',
             'avia'          => 'ДЛ Авиа',
             'express'       => 'ДЛ Экспресс',
-            'small_package' => 'ДЛ Малогабаритный груз',
+            'small' => 'ДЛ Малогабаритный груз',
         ];
         $typeIndex = array_flip($typeList);
 
@@ -264,7 +265,8 @@ final class ExternalCheckoutHandler
             ],
             (float) $calc['price'],
             $calc['days'],
-            $calcCtx->packageInCalc && $settings->packageName !== '' ? $settings->packageName : ''
+            $calcCtx->packageInCalc && $settings->packageName !== '' ? $settings->packageName : '',
+            $calcCtx->produceDaysOffset
         );
         $point['id'] = $pointId; // возвращаем закодированный ID
         $point['fields_values'][] = ['handle' => 'dellin_calc_type', 'value' => $dtype];
@@ -273,7 +275,7 @@ final class ExternalCheckoutHandler
     }
 
     /** @param array<string, mixed> $t */
-    private static function mapPickupPoint(array $t, float $price, ?int $days, string $packageName = ''): array
+    private static function mapPickupPoint(array $t, float $price, ?int $days, string $packageName = '', int $produceDaysOffset = 0): array
     {
         return [
             'id'                      => (int) ($t['id'] ?? 0),
@@ -289,7 +291,7 @@ final class ExternalCheckoutHandler
                     ($packageName !== '' ? ' · упаковка: ' . $packageName : '')
             ),
             'phones'                  => [],
-            'delivery_interval'       => self::interval($days),
+            'delivery_interval' => self::interval($days, $produceDaysOffset),
             'payment_method'          => ['PREPAID'],
             'fields_values'           => [
                 ['handle' => 'dellin_terminal_id', 'value' => (string) ($t['id'] ?? '')],
@@ -299,16 +301,16 @@ final class ExternalCheckoutHandler
     }
 
     /** @return array{description:string,min_days?:int,max_days?:int} */
-    private static function interval(?int $days): array
+    private static function interval(?int $days, int $produceDaysOffset = 0): array
     {
         if ($days === null || $days <= 0) {
             return ['description' => 'Срок уточняется'];
         }
-
+        $total = $days + $produceDaysOffset;
         return [
-            'min_days'    => $days,
-            'max_days'    => $days + 2,
-            'description' => 'от ' . $days . ' дн.',
+            'min_days'    => $total,
+            'max_days'    => $total,
+            'description' => $total . ' дн.',
         ];
     }
 

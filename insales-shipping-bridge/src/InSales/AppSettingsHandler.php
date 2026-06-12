@@ -1411,6 +1411,45 @@ final class AppSettingsHandler
                     var savedBtn = document.querySelector('.nav-item[data-page="' + savedPage + '"]');
                     if (savedBtn) savedBtn.click();
                 }
+                // ── Derival city autocomplete ──
+                var derivalCityInput = document.getElementById('derivalCitySearch');
+                var derivalCityKladr = document.getElementById('derival_city_kladr_addr');
+                var derivalCitySugg = document.getElementById('derivalCitySuggestions');
+                var derivalTimer;
+                if (derivalCityInput) {
+                    derivalCityInput.addEventListener('input', function() {
+                        clearTimeout(derivalTimer);
+                        var q = derivalCityInput.value.trim();
+                        if (derivalCitySugg) derivalCitySugg.style.display = 'none';
+                        if (q.length < 2) return;
+                        derivalTimer = setTimeout(function() {
+                            fetchJ(apiBase + encodeURIComponent(q)).then(function(j) {
+                                if (!j.ok || !derivalCitySugg) return;
+                                derivalCitySugg.innerHTML = '';
+                                (j.cities || []).slice(0, 12).forEach(function(c) {
+                                    var code = c.code || c.kladr || '';
+                                    if (!code) return;
+                                    var li = document.createElement('li');
+                                    li.textContent = c.name || c.searchString || code;
+                                    li.addEventListener('click', function() {
+                                        derivalCityInput.value = li.textContent;
+                                        derivalCitySugg.style.display = 'none';
+                                        if (derivalCityKladr) derivalCityKladr.value = code;
+                                        // Сохраняем название города
+                                        var nameField = document.getElementById('derival_city_name_hidden');
+                                        if (nameField) nameField.value = li.textContent;
+                                    });
+                                    derivalCitySugg.appendChild(li);
+                                });
+                                derivalCitySugg.style.display = derivalCitySugg.children.length ? 'block' : 'none';
+                            });
+                        }, 350);
+                    });
+                    document.addEventListener('click', function(e) {
+                        if (derivalCitySugg && !derivalCityInput.contains(e.target) && !derivalCitySugg.contains(e.target))
+                            derivalCitySugg.style.display = 'none';
+                    });
+                }
             })();
             window.setRequesterRole = function(btn, val) {
                 btn.parentNode.querySelectorAll('.seg-btn').forEach(function(b) {
@@ -1429,45 +1468,6 @@ final class AppSettingsHandler
                 document.getElementById('derivalTerminalBlock').style.display = val === 'terminal' ? '' : 'none';
                 document.getElementById('derivalAddressBlock').style.display = val === 'address' ? '' : 'none';
             };
-            // ── Derival city autocomplete ──
-            var derivalCityInput = document.getElementById('derivalCitySearch');
-            var derivalCityKladr = document.getElementById('derival_city_kladr_addr');
-            var derivalCitySugg = document.getElementById('derivalCitySuggestions');
-            var derivalTimer;
-            if (derivalCityInput) {
-                derivalCityInput.addEventListener('input', function() {
-                    clearTimeout(derivalTimer);
-                    var q = derivalCityInput.value.trim();
-                    if (derivalCitySugg) derivalCitySugg.style.display = 'none';
-                    if (q.length < 2) return;
-                    derivalTimer = setTimeout(function() {
-                        fetchJ(apiBase + encodeURIComponent(q)).then(function(j) {
-                            if (!j.ok || !derivalCitySugg) return;
-                            derivalCitySugg.innerHTML = '';
-                            (j.cities || []).slice(0, 12).forEach(function(c) {
-                                var code = c.code || c.kladr || '';
-                                if (!code) return;
-                                var li = document.createElement('li');
-                                li.textContent = c.name || c.searchString || code;
-                                li.addEventListener('click', function() {
-                                    derivalCityInput.value = li.textContent;
-                                    derivalCitySugg.style.display = 'none';
-                                    if (derivalCityKladr) derivalCityKladr.value = code;
-                                    // Сохраняем название города
-                                    var nameField = document.getElementById('derival_city_name_hidden');
-                                    if (nameField) nameField.value = li.textContent;
-                                });
-                                derivalCitySugg.appendChild(li);
-                            });
-                            derivalCitySugg.style.display = derivalCitySugg.children.length ? 'block' : 'none';
-                        });
-                    }, 350);
-                });
-                document.addEventListener('click', function(e) {
-                    if (derivalCitySugg && !derivalCityInput.contains(e.target) && !derivalCitySugg.contains(e.target))
-                        derivalCitySugg.style.display = 'none';
-                });
-            }
         </script>
 <?php
         echo '</body></html>';

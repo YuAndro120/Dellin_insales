@@ -445,6 +445,7 @@ final class AppSettingsHandler
                                             <input type="hidden" name="package_uid" value="<?= $h($s->packageUid  ?? '') ?>">
                                             <input type="hidden" name="package_name" value="<?= $h($s->packageName ?? '') ?>">
                                             <input type="checkbox" name="package_in_calc" value="1" <?= $s->packageInCalc ? ' checked' : '' ?> style="display:none">
+                                            <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
                                             <?php foreach ($s->deliveryTypes as $dt): ?>
                                                 <input type="hidden" name="delivery_types[]" value="<?= $h($dt) ?>">
                                             <?php endforeach; ?>
@@ -530,7 +531,7 @@ final class AppSettingsHandler
                                 <div class="card-body sm">
                                     <div class="ir">
                                         <span class="ir-l">Вариант отгрузки</span>
-                                        <div class="seg" id="derivalVariantSeg">
+                                        <div class="seg" id="derivalVariantSeg" style="margin-bottom:0">
                                             <button type="button" class="seg-btn<?= $s->derivalVariant === 'terminal' ? ' on' : '' ?>" onclick="setDerivalVariant(this,'terminal')">От терминала</button>
                                             <button type="button" class="seg-btn<?= $s->derivalVariant === 'address' ? ' on' : '' ?>" onclick="setDerivalVariant(this,'address')">От адреса</button>
                                         </div>
@@ -607,6 +608,8 @@ final class AppSettingsHandler
                                             <label>Город</label>
                                             <input type="text" id="derivalCitySearch" autocomplete="off" placeholder="Начните вводить город…">
                                             <input type="hidden" id="derival_city_kladr_addr" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
+                                            <input type="hidden" id="derival_city_name_hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
+                                            <ul id="derivalCitySuggestions" class="suggestions"></ul>
                                         </div>
                                         <div class="g2">
                                             <div class="field">
@@ -666,6 +669,7 @@ final class AppSettingsHandler
                             <input type="hidden" name="is_enabled" value="<?= $s->isEnabled ? '1' : '' ?>">
                             <input type="hidden" name="package_uid" value="<?= $h($s->packageUid) ?>">
                             <input type="hidden" name="package_name" value="<?= $h($s->packageName) ?>">
+                            <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
 
                             <!-- Груз по умолчанию -->
                             <div class="card">
@@ -1425,6 +1429,45 @@ final class AppSettingsHandler
                 document.getElementById('derivalTerminalBlock').style.display = val === 'terminal' ? '' : 'none';
                 document.getElementById('derivalAddressBlock').style.display = val === 'address' ? '' : 'none';
             };
+            // ── Derival city autocomplete ──
+            var derivalCityInput = document.getElementById('derivalCitySearch');
+            var derivalCityKladr = document.getElementById('derival_city_kladr_addr');
+            var derivalCitySugg = document.getElementById('derivalCitySuggestions');
+            var derivalTimer;
+            if (derivalCityInput) {
+                derivalCityInput.addEventListener('input', function() {
+                    clearTimeout(derivalTimer);
+                    var q = derivalCityInput.value.trim();
+                    if (derivalCitySugg) derivalCitySugg.style.display = 'none';
+                    if (q.length < 2) return;
+                    derivalTimer = setTimeout(function() {
+                        fetchJ(apiBase + encodeURIComponent(q)).then(function(j) {
+                            if (!j.ok || !derivalCitySugg) return;
+                            derivalCitySugg.innerHTML = '';
+                            (j.cities || []).slice(0, 12).forEach(function(c) {
+                                var code = c.code || c.kladr || '';
+                                if (!code) return;
+                                var li = document.createElement('li');
+                                li.textContent = c.name || c.searchString || code;
+                                li.addEventListener('click', function() {
+                                    derivalCityInput.value = li.textContent;
+                                    derivalCitySugg.style.display = 'none';
+                                    if (derivalCityKladr) derivalCityKladr.value = code;
+                                    // Сохраняем название города
+                                    var nameField = document.getElementById('derival_city_name_hidden');
+                                    if (nameField) nameField.value = li.textContent;
+                                });
+                                derivalCitySugg.appendChild(li);
+                            });
+                            derivalCitySugg.style.display = derivalCitySugg.children.length ? 'block' : 'none';
+                        });
+                    }, 350);
+                });
+                document.addEventListener('click', function(e) {
+                    if (derivalCitySugg && !derivalCityInput.contains(e.target) && !derivalCitySugg.contains(e.target))
+                        derivalCitySugg.style.display = 'none';
+                });
+            }
         </script>
 <?php
         echo '</body></html>';

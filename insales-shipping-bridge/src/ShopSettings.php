@@ -48,6 +48,7 @@ final class ShopSettings
         public readonly array $deliveryTypes,
         public readonly string $deliveryPayer,
         public readonly string $requesterRole,
+        public readonly ?string $derivalCityName,
     ) {}
 
     public function isDerivalTerminal(): bool
@@ -116,7 +117,8 @@ final class ShopSettings
             produceDaysOffset: $offset,
             defaultStatedValue: (float) ($row['default_stated_value'] ?? 0),
             defaultWeightKg: max(0.01, (float) ($row['default_weight_kg'] ?? 1)),
-            defaultDimensionsCm: self::normalizeDimensions((string) ($row['default_dimensions_cm'] ?? '20x20x20')),
+            defaultDimensionsCm: self::normalizeDimensions((string) ($row['default_dimensions_cm'] ?? '20x20x20')), 
+            derivalCityName: self::nullableString($row['derival_city_name'] ?? null), 
             isEnabled: (int) ($row['is_enabled'] ?? 1) === 1,
             deliveryTypes: array_filter(
                 explode(',', (string) ($row['delivery_types'] ?? 'auto')),

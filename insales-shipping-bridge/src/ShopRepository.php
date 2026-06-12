@@ -8,7 +8,7 @@ use PDO;
 
 final class ShopRepository
 {
-    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_juridical_address, sender_opf_name, freight_name, delivery_payer, requester_role, package_uid, package_name, delivery_types, package_in_calc';
+    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_juridical_address, sender_opf_name, freight_name, delivery_payer, requester_role, package_uid, package_name, delivery_types, package_in_calc, derival_city_name';
 
     public function __construct(private readonly PDO $pdo) {}
 
@@ -178,6 +178,7 @@ SQL;
               is_enabled            = :enabled,
               delivery_types = :delivery_types,
               delivery_payer = :delivery_payer,
+              derival_city_name = :derival_city_name,
               requester_role = :requester_role
              WHERE insales_id = :iid AND uninstalled_at IS NULL'
         );
@@ -214,6 +215,7 @@ SQL;
             ':iid'                 => $insalesId,
             ':delivery_payer' => in_array($data['delivery_payer'] ?? 'sender', ['sender', 'receiver'], true) ? $data['delivery_payer'] : 'sender',
             ':requester_role' => in_array($data['requester_role'] ?? 'sender', ['sender', 'receiver', 'payer'], true) ? $data['requester_role'] : 'sender',
+            ':derival_city_name' => trim((string) ($_POST['derival_city_name'] ?? '')) ?: null,
             ':delivery_types' => implode(',', array_filter(
                 is_array($data['delivery_types'] ?? ['auto'])
                     ? ($data['delivery_types'] ?? ['auto'])

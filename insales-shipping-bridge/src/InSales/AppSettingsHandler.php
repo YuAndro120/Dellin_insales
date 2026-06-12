@@ -100,6 +100,8 @@ final class AppSettingsHandler
                     (array) ($_POST['delivery_types'] ?? ['auto']),
                     static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small_package'], true)
                 );
+                error_log('[BRIDGE] types after filter: ' . json_encode(array_values($types), JSON_UNESCAPED_UNICODE));
+                error_log('[BRIDGE] implode result: ' . (implode(',', $types) ?: 'auto'));
                 $variant = (string) ($_POST['derival_variant'] ?? ShopSettings::DERIVAL_TERMINAL);
                 file_put_contents('/tmp/post_debug.json', json_encode($_POST, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
                 $shops->saveDeliverySettings($settings->insalesId, [

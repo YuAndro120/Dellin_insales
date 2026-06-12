@@ -748,11 +748,6 @@ final class CarrierApi
                 'info'        => [['param' => 'shipping-bridge', 'value' => 'mvp-1']],
             ],
         ];
-        error_log('[BRIDGE] packages: ' . json_encode([
-            'inCalc' => $calcCtx->packageInCalc,
-            'uid'    => $calcCtx->packageUid,
-            'arr'    => $body['delivery']['packages'],
-        ], JSON_UNESCAPED_UNICODE));
         return $body;
     }
 

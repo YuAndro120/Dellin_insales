@@ -188,7 +188,8 @@ final class ExternalCheckoutHandler
                         (float) $calc['price'],
                         $calc['days'],
                         $calcCtx->packageInCalc && $settings->packageName !== '' ? $settings->packageName : '',
-                        $calcCtx->produceDaysOffset
+                        $calcCtx->produceDaysOffset,
+                        $typeNames[$dtype] ?? ''
                     );
                     // Кодируем тип в ID: terminal_id * 10 + type_index
                     // Например терминал 53, тип avia (индекс 1) → ID = 531
@@ -266,7 +267,8 @@ final class ExternalCheckoutHandler
             (float) $calc['price'],
             $calc['days'],
             $calcCtx->packageInCalc && $settings->packageName !== '' ? $settings->packageName : '',
-            $calcCtx->produceDaysOffset
+            $calcCtx->produceDaysOffset,
+            $typeNames[$dtype] ?? ''
         );
         $point['id'] = $pointId; // возвращаем закодированный ID
         $point['fields_values'][] = ['handle' => 'dellin_calc_type', 'value' => $dtype];
@@ -275,7 +277,7 @@ final class ExternalCheckoutHandler
     }
 
     /** @param array<string, mixed> $t */
-    private static function mapPickupPoint(array $t, float $price, ?int $days, string $packageName = '', int $produceDaysOffset = 0): array
+    private static function mapPickupPoint(array $t, float $price, ?int $days, string $packageName = '', int $produceDaysOffset = 0, string $typeLabel = ''): array
     {
         return [
             'id'                      => (int) ($t['id'] ?? 0),
@@ -286,10 +288,11 @@ final class ExternalCheckoutHandler
             'title'                   => (string) ($t['name'] ?? 'Пункт выдачи'),
             'type'                    => 'pvz',
             'address'                 => (string) ($t['address'] ?? ''),
-            'description' => trim(
-                (string) ($t['city'] ?? '') .
-                    ($packageName !== '' ? ' · упаковка: ' . $packageName : '')
-            ),
+            'description' => trim(implode(' · ', array_filter([
+                $typeLabel,
+                $packageName !== '' ? 'упаковка: ' . $packageName : '',
+                $typeLabel === '' && $packageName === '' ? (string) ($t['city'] ?? '') : '',
+            ]))),
             'phones'                  => [],
             'delivery_interval' => self::interval($days, $produceDaysOffset),
             'payment_method'          => ['PREPAID'],

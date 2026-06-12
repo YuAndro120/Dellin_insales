@@ -215,7 +215,9 @@ SQL;
             ':delivery_payer' => in_array($data['delivery_payer'] ?? 'sender', ['sender', 'receiver'], true) ? $data['delivery_payer'] : 'sender',
             ':requester_role' => in_array($data['requester_role'] ?? 'sender', ['sender', 'receiver', 'payer'], true) ? $data['requester_role'] : 'sender',
             ':delivery_types' => implode(',', array_filter(
-                (array) ($data['delivery_types'] ?? ['auto']),
+                is_array($data['delivery_types'] ?? ['auto'])
+                    ? ($data['delivery_types'] ?? ['auto'])
+                    : explode(',', (string) ($data['delivery_types'] ?? 'auto')),
                 static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small_package'], true)
             )) ?: 'auto',
         ]);

@@ -641,7 +641,7 @@ final class AppSettingsHandler
                                                     <div>
                                                         <div class="term-name">Адрес забора груза</div>
                                                         <div class="term-addr" id="derivalCardAddr">
-                                                            <?= $h(trim((($s->derivalCityName ?? '') . ', ул. ' . ($s->derivalStreet ?? '') . ', д. ' . ($s->derivalHouse ?? '')), ', ')) ?>
+                                                            <?= $h(trim((($s->derivalCityName ?? '') . ', ' . ($s->derivalStreet ?? '') . ', д. ' . ($s->derivalHouse ?? '')), ', ')) ?>
                                                         </div>
                                                     </div>
                                                     <button type="button" id="derivalAddrEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">

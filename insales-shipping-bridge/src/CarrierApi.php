@@ -20,6 +20,8 @@ final class CarrierApi
     private const URL_TERMINALS_MANIFEST = 'https://api.dellin.ru/v3/public/terminals.json';
     private const URL_ORDER = 'https://api.dellin.ru/v2/request.json';
     private const URL_FREIGHT_SEARCH = 'https://api.dellin.ru/v1/public/freight_types/search.json';
+    private const URL_ADDRESS_DATES = 'https://api.dellin.ru/v2/request/address/dates.json';
+    private const URL_ADDRESS_TIME_INTERVAL = 'https://api.dellin.ru/v2/request/address/time_interval.json';
     private const COUNTRY_NAMES = [
         '0x8f51001438c4d49511dbd774581edb7a' => 'Россия',
         '0x8f51001438c4d49511dbd774581edb7b' => 'Украина',
@@ -342,7 +344,7 @@ final class CarrierApi
         $dimH = isset($dimParts[2]) && $dimParts[2] > 0 ? round($dimParts[2] / 100, 2) : 0.20;
 
         // Упаковка из настроек (UID из request_services.csv принимается ДЛ API напрямую)
-        $packageUid = $settings->packageUid ?? '';
+        $packageUid = ($settings->packageInCalc ?? false) ? ($settings->packageUid ?? '') : '';
 
         // Блок cargo
         $cargoBlock = [
@@ -413,7 +415,90 @@ final class CarrierApi
 
         return ['request_id' => $requestId, 'barcode' => $barcode];
     }
- 
+    /**
+     * Получить доступные даты забора груза от адреса отправителя.
+     * @return list<string> массив дат в формате Y-m-d
+     */
+    public function getAddressDates(
+        string $sessionId,
+        \ShippingBridge\ShopSettings $settings,
+        string $deliveryType = 'auto',
+        ?CarrierCredentials $credentials = null,
+    ): array {
+        $cityKladr = $settings->derivalCityKladr ?? '';
+        $cityName  = $settings->derivalCityName  ?? '';
+        $street    = $settings->derivalStreet    ?? '';
+        $house     = $settings->derivalHouse     ?? '';
+        if ($cityKladr === '' || $street === '' || $house === '') {
+            throw new \RuntimeException('Адрес забора груза не заполнен в настройках.');
+        }
+        $search = implode(', ', array_filter([$cityName, $street, $house]));
+
+        $body = [
+            'appkey'    => $this->resolveAppkey($credentials),
+            'sessionID' => $sessionId,
+            'delivery'  => [
+                'deliveryType' => ['type' => $deliveryType],
+                'derival'      => [
+                    'address' => ['search' => $search],
+                ],
+            ],
+            'cargo' => [
+                'quantity'    => 1,
+                'weight'      => 1.0,
+                'height'      => 0.2,
+                'width'       => 0.2,
+                'length'      => 0.2,
+                'totalVolume' => 0.008,
+                'totalWeight' => 1.0,
+            ],
+        ];
+
+        $res = $this->postJson(self::URL_ADDRESS_DATES, $body);
+        if (!empty($res['errors'])) {
+            throw new \RuntimeException('Dellin dates error: ' . json_encode($res['errors'], JSON_UNESCAPED_UNICODE));
+        }
+        return $res['data']['dates'] ?? [];
+    }
+
+    /**
+     * Получить допустимый интервал времени приезда экспедитора на дату забора.
+     * @return array{interval_from:string,interval_to:string,default_min_same_day_period:int,min_same_day_period:int,min_period:int,same_day:bool}
+     */
+    public function getAddressTimeInterval(
+        string $sessionId,
+        \ShippingBridge\ShopSettings $settings,
+        string $produceDate,
+        string $deliveryType = 'auto',
+        ?CarrierCredentials $credentials = null,
+    ): array {
+        $cityKladr = $settings->derivalCityKladr ?? '';
+        $cityName  = $settings->derivalCityName  ?? '';
+        $street    = $settings->derivalStreet    ?? '';
+        $house     = $settings->derivalHouse     ?? '';
+        if ($cityKladr === '' || $street === '' || $house === '') {
+            throw new \RuntimeException('Адрес забора груза не заполнен в настройках.');
+        }
+        $search = implode(', ', array_filter([$cityName, $street, $house]));
+
+        $body = [
+            'appkey'    => $this->resolveAppkey($credentials),
+            'sessionID' => $sessionId,
+            'delivery'  => [
+                'deliveryType' => ['type' => $deliveryType],
+                'derival'      => [
+                    'produceDate' => $produceDate,
+                    'address'     => ['search' => $search],
+                ],
+            ],
+        ];
+
+        $res = $this->postJson(self::URL_ADDRESS_TIME_INTERVAL, $body);
+        if (!empty($res['errors'])) {
+            throw new \RuntimeException('Dellin time interval error: ' . json_encode($res['errors'], JSON_UNESCAPED_UNICODE));
+        }
+        return $res['data'] ?? [];
+    }
     // ─────────────────────────────────────────────────────────────
     // Расчёт стоимости
     // ─────────────────────────────────────────────────────────────

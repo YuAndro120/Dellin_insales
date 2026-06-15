@@ -255,6 +255,7 @@ final class OrderSubmitHandler
         }
         // Тип расчёта доставки из tariff_id (inSales не сохраняет dellin_calc_type)
         $tariffId = (string) ($deliveryInfo['tariff_id'] ?? '');
+        error_log('[BRIDGE] tariff_id: ' . $tariffId . ' | deliveryCalcType before: ' . $deliveryCalcType);
         if ($deliveryCalcType === 'auto' && str_starts_with($tariffId, 'dellin_courier_')) {
             $extractedType = substr($tariffId, strlen('dellin_courier_'));
             if (in_array($extractedType, ['auto', 'avia', 'express', 'small'], true)) {

@@ -64,7 +64,60 @@ final class CarrierJsonHandler
             Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
         }
     }
+    public static function derivalDates(Config $config, ShopRepository $shops): void
+    {
+        $cors  = self::cors($config);
+        $creds = self::resolveCredentials($shops, $config);
+        if ($creds === null) return;
 
+        $insalesId = trim((string) ($_GET['insales_id'] ?? ''));
+        $settings  = $shops->findSettingsByInsalesId($insalesId, $config);
+        if ($settings === null) {
+            Response::json(['ok' => false, 'error' => 'Магазин не найден'], 404, $cors);
+            return;
+        }
+
+        $deliveryType = trim((string) ($_GET['delivery_type'] ?? 'auto'));
+
+        try {
+            $api  = new CarrierApi($config);
+            $sid  = $api->loginWithPat($creds);
+            $dates = $api->getAddressDates($sid, $settings, $deliveryType, $creds);
+            Response::json(['ok' => true, 'dates' => $dates], 200, $cors);
+        } catch (\Throwable $e) {
+            Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
+        }
+    }
+
+    public static function derivalTimeInterval(Config $config, ShopRepository $shops): void
+    {
+        $cors  = self::cors($config);
+        $creds = self::resolveCredentials($shops, $config);
+        if ($creds === null) return;
+
+        $insalesId = trim((string) ($_GET['insales_id'] ?? ''));
+        $settings  = $shops->findSettingsByInsalesId($insalesId, $config);
+        if ($settings === null) {
+            Response::json(['ok' => false, 'error' => 'Магазин не найден'], 404, $cors);
+            return;
+        }
+
+        $produceDate  = trim((string) ($_GET['date'] ?? ''));
+        $deliveryType = trim((string) ($_GET['delivery_type'] ?? 'auto'));
+        if ($produceDate === '') {
+            Response::json(['ok' => false, 'error' => 'Параметр date обязателен'], 422, $cors);
+            return;
+        }
+
+        try {
+            $api      = new CarrierApi($config);
+            $sid      = $api->loginWithPat($creds);
+            $interval = $api->getAddressTimeInterval($sid, $settings, $produceDate, $deliveryType, $creds);
+            Response::json(['ok' => true, 'interval' => $interval], 200, $cors);
+        } catch (\Throwable $e) {
+            Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
+        }
+    }
     public static function counteragents(Config $config, ShopRepository $shops): void
     {
         $creds = self::resolveCredentials($shops, $config);

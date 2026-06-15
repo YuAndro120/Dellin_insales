@@ -193,6 +193,14 @@ if (str_starts_with($uri, '/insales/')) {
             OrderSubmitHandler::handle($config, $shops);
             exit;
         }
+        if ($uri === '/insales/derival/dates' && $method === 'GET') {
+            CarrierJsonHandler::derivalDates($config, $shops);
+            exit;
+        }
+        if ($uri === '/insales/derival/time_interval' && $method === 'GET') {
+            CarrierJsonHandler::derivalTimeInterval($config, $shops);
+            exit;
+        }
         if ($uri === '/insales/packages' && $method === 'GET') {
             CarrierJsonHandler::packages($config, $shops);
             exit;

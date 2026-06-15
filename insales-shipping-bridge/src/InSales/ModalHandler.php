@@ -10,32 +10,32 @@ use ShippingBridge\Http\Response;
 
 final class ModalHandler
 {
-    public static function handle(Config $config, ShopRepository $shops): void
-    {
-        $insalesId = trim((string) ($_GET['insales_id'] ?? ''));
-        $orderId   = trim((string) ($_GET['order_id'] ?? ''));
+  public static function handle(Config $config, ShopRepository $shops): void
+  {
+    $insalesId = trim((string) ($_GET['insales_id'] ?? ''));
+    $orderId   = trim((string) ($_GET['order_id'] ?? ''));
 
-        if ($insalesId === '' || $orderId === '') {
-            http_response_code(400);
-            echo 'Bad request';
-            return;
-        }
-
-        header('Content-Type: text/html; charset=utf-8');
-        header('Access-Control-Allow-Origin: *');
-
-        $bridgeUrl = rtrim($config->publicBridgeUrl, '/');
-
-        echo self::renderHtml($bridgeUrl, $insalesId, $orderId);
+    if ($insalesId === '' || $orderId === '') {
+      http_response_code(400);
+      echo 'Bad request';
+      return;
     }
 
-    private static function renderHtml(string $bridgeUrl, string $insalesId, string $orderId): string
-    {
-        $b = htmlspecialchars($bridgeUrl, ENT_QUOTES);
-        $i = htmlspecialchars($insalesId, ENT_QUOTES);
-        $o = htmlspecialchars($orderId, ENT_QUOTES);
+    header('Content-Type: text/html; charset=utf-8');
+    header('Access-Control-Allow-Origin: *');
 
-        return <<<HTML
+    $bridgeUrl = rtrim($config->publicBridgeUrl, '/');
+
+    echo self::renderHtml($bridgeUrl, $insalesId, $orderId);
+  }
+
+  private static function renderHtml(string $bridgeUrl, string $insalesId, string $orderId): string
+  {
+    $b = htmlspecialchars($bridgeUrl, ENT_QUOTES);
+    $i = htmlspecialchars($insalesId, ENT_QUOTES);
+    $o = htmlspecialchars($orderId, ENT_QUOTES);
+
+    return <<<HTML
 <style>
 #dl-overlay{
   position:fixed;inset:0;z-index:99999;
@@ -194,6 +194,54 @@ function close(){
   }
   window.__dlSelPkg=selPkg;
 
+  function loadDerivalDates(){
+    var sel=document.getElementById('dl-iDerivalDate');
+    if(!sel)return;
+    fetch(B+'/insales/derival/dates?insales_id='+I,{headers:{Accept:'application/json'}})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        if(!j.ok||!j.dates||!j.dates.length){
+          sel.innerHTML='<option value="">Нет доступных дат</option>';
+          return;
+        }
+        sel.innerHTML='';
+        j.dates.slice(0,14).forEach(function(d){
+          var opt=document.createElement('option');
+          opt.value=d;
+          opt.textContent=new Date(d).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',weekday:'short'});
+          sel.appendChild(opt);
+        });
+        loadDerivalTimeInterval(sel.value);
+      })
+      .catch(function(){sel.innerHTML='<option value="">Ошибка загрузки</option>';});
+  }
+
+  function loadDerivalTimeInterval(date){
+    var timeSel=document.getElementById('dl-iDerivalTime');
+    if(!timeSel)return;
+    if(!date){timeSel.innerHTML='<option value="">— выберите дату —</option>';return;}
+    timeSel.innerHTML='<option value="">Загрузка…</option>';
+    fetch(B+'/insales/derival/time_interval?insales_id='+I+'&date='+date,{headers:{Accept:'application/json'}})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        if(!j.ok||!j.interval){timeSel.innerHTML='<option value="">Недоступно</option>';return;}
+        var from=j.interval.interval_from||'09:00:00';
+        var to=j.interval.interval_to||'18:00:00';
+        var fromH=parseInt(from.split(':')[0],10);
+        var toH=parseInt(to.split(':')[0],10);
+        timeSel.innerHTML='';
+        for(var h=fromH;h<toH;h+=2){
+          var startH=h, endH=Math.min(h+2,toH);
+          var opt=document.createElement('option');
+          opt.value=String(startH).padStart(2,'0')+':00-'+String(endH).padStart(2,'0')+':00';
+          opt.textContent=opt.value;
+          timeSel.appendChild(opt);
+        }
+        if(timeSel.children.length===0){timeSel.innerHTML='<option value="">Недоступно</option>';}
+      })
+      .catch(function(){timeSel.innerHTML='<option value="">Ошибка</option>';});
+  }
+
   function renderBody(d){
     var s=d.sender,r=d.receiver,c=d.cargo,del=d.delivery;
     var addr=[r.city,r.street,r.house?'д. '+r.house:'',r.flat?'кв. '+r.flat:''].filter(Boolean).join(', ')||'Терминал (ПВЗ)';
@@ -216,6 +264,14 @@ function close(){
     html+='<div class="dl-f"><label>Дата отгрузки</label><div class="dl-fval mono">'+esc(del.produce_date)+'</div></div>';
     if(del.interval){html+='<div class="dl-f"><label>Интервал</label><div style="padding-top:4px"><span class="dl-bdg dl-bdg-grn">'+esc(del.interval)+'</span></div></div>';}
     html+='</div></div>';
+
+    if(del.derival_variant==='address'){
+      html+='<div class="dl-sec"><div class="dl-sec-hdr"><div class="dl-sec-dot"></div><div class="dl-sec-ttl">Забор груза от адреса</div><div class="dl-sec-line"></div></div>';
+      html+='<div class="dl-g2">';
+      html+='<div class="dl-fe"><label>Дата забора</label><select id="dl-iDerivalDate"><option value="">Загрузка…</option></select></div>';
+      html+='<div class="dl-fe"><label>Время приезда</label><select id="dl-iDerivalTime"><option value="">— выберите дату —</option></select></div>';
+      html+='</div></div>';
+    }
 
     html+='<div class="dl-sec"><div class="dl-sec-hdr"><div class="dl-sec-dot"></div><div class="dl-sec-ttl">Груз</div><div class="dl-sec-line"></div></div>';
     html+='<div class="dl-g2">';
@@ -251,6 +307,16 @@ function close(){
       var el=document.getElementById(id);
       if(el)el.addEventListener('input',calcVol);
     });
+
+    if(del.derival_variant==='address'){
+      loadDerivalDates();
+      var derivalDateSel=document.getElementById('dl-iDerivalDate');
+      if(derivalDateSel){
+        derivalDateSel.addEventListener('change',function(){
+          loadDerivalTimeInterval(this.value);
+        });
+      }
+    }
   }
 function sendResize(){
   var h=document.getElementById('dl-modal').scrollHeight+20;
@@ -267,6 +333,8 @@ function sendResize(){
   document.getElementById('dl-btn-go').addEventListener('click',function(){
     var btn=this;
     btn.disabled=true;btn.textContent='Оформляем…';
+    var derivalDateEl=document.getElementById('dl-iDerivalDate');
+    var derivalTimeEl=document.getElementById('dl-iDerivalTime');
     var body={
       insales_id:I,insales_order_id:O,
       weight:parseFloat(document.getElementById('dl-iW').value)||undefined,
@@ -276,6 +344,8 @@ function sendResize(){
       height:parseFloat(document.getElementById('dl-iH').value)||undefined,
       package_uid:pkgUids[pkgSelected]||null,
       primary_payer:document.getElementById('dl-iPayer').value,
+      derival_date: derivalDateEl ? (derivalDateEl.value||undefined) : undefined,
+      derival_time: derivalTimeEl ? (derivalTimeEl.value||undefined) : undefined,
     };
     fetchJ(B+'/insales/orders/submit',body)
       .then(function(d){
@@ -300,5 +370,5 @@ if(d.ok){
 })();
 </script>
 HTML;
-    }
+  }
 }

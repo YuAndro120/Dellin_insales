@@ -363,7 +363,12 @@ final class CarrierApi
         ];
 
         // Блок derival (терминал или адрес)
-        $derivalBlock = $this->buildDerivalForOrder($settings, $produceDate);
+        $derivalBlock = $this->buildDerivalForOrder(
+            $settings,
+            $produceDate,
+            (string) ($order['derival_date'] ?? ''),
+            (string) ($order['derival_time'] ?? '')
+        );
 
         $body = [
             'appkey'    => $appkey,
@@ -768,10 +773,12 @@ final class CarrierApi
     private function buildDerivalForOrder(
         \ShippingBridge\ShopSettings $settings,
         string $produceDate,
+        string $derivalDate = '',
+        string $derivalTime = '',
     ): array {
         if ($settings->isDerivalTerminal()) {
             return [
-                'produceDate'  => $produceDate,
+                'produceDate'  => $derivalDate !== '' ? $derivalDate : $produceDate,
                 'variant'      => 'terminal',
                 'terminalID'   => (string) $settings->senderTerminalId,
                 'requirements' => [],
@@ -787,13 +794,25 @@ final class CarrierApi
             );
         }
         $search = implode(', ', array_filter([$cityName, $street, $house]));
-        return [
-            'produceDate'  => $produceDate,
+
+        $derival = [
+            'produceDate'  => $derivalDate !== '' ? $derivalDate : $produceDate,
             'variant'      => 'address',
             'address'      => ['search' => $search],
-            'time'         => ['worktimeStart' => '09:00', 'worktimeEnd' => '17:00'],
             'requirements' => [],
         ];
+
+        if ($derivalTime !== '' && str_contains($derivalTime, '-')) {
+            [$timeFrom, $timeTo] = explode('-', $derivalTime, 2);
+            $derival['time'] = [
+                'worktimeStart' => trim($timeFrom),
+                'worktimeEnd'   => trim($timeTo),
+            ];
+        } else {
+            $derival['time'] = ['worktimeStart' => '09:00', 'worktimeEnd' => '17:00'];
+        }
+
+        return $derival;
     }
 
     private function buildCalculatorBody(

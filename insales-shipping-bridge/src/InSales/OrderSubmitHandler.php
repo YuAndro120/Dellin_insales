@@ -89,10 +89,11 @@ final class OrderSubmitHandler
                 'freight_uid'  => $settings->freightUid ?? '',
             ],
             'delivery' => [
-                'interval'      => $order['delivery_interval'] ?? null,
-                'produce_date'  => (new \DateTimeImmutable())
+                'interval'        => $order['delivery_interval'] ?? null,
+                'produce_date'    => (new \DateTimeImmutable())
                     ->modify('+' . $settings->produceDaysOffset . ' days')
                     ->format('d.m.Y'),
+                'derival_variant' => $settings->derivalVariant,
             ],
         ], 200, $cors);
     }
@@ -156,6 +157,8 @@ final class OrderSubmitHandler
 
         // Парсим данные получателя и адрес
         $order = self::parseInsalesOrder($insalesId, $insalesOrderId, $insalesOrder);
+        $order['derival_date'] = trim((string) ($body['derival_date'] ?? ''));
+        $order['derival_time'] = trim((string) ($body['derival_time'] ?? ''));
         error_log('[BRIDGE] order fields_values: ' . json_encode($insalesOrder['fields_values'] ?? [], JSON_UNESCAPED_UNICODE));
         error_log('[BRIDGE] parsed delivery_type: ' . ($order['dellin_delivery_type'] ?? 'пусто'));
         error_log('[BRIDGE] parsed terminal_id: ' . ($order['dellin_terminal_id'] ?? 'пусто'));

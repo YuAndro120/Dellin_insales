@@ -103,6 +103,7 @@ final class AppSettingsHandler
                 error_log('[BRIDGE] types after filter: ' . json_encode(array_values($types), JSON_UNESCAPED_UNICODE));
                 error_log('[BRIDGE] implode result: ' . (implode(',', $types) ?: 'auto'));
                 $variant = (string) ($_POST['derival_variant'] ?? ShopSettings::DERIVAL_TERMINAL);
+                error_log('[BRIDGE] derival_variant POST: ' . ($_POST['derival_variant'] ?? 'нет'));
                 file_put_contents('/tmp/post_debug.json', json_encode($_POST, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
                 $shops->saveDeliverySettings($settings->insalesId, [
                     'derival_variant'       => $variant,

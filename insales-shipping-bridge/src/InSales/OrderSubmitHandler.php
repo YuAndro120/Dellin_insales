@@ -253,7 +253,24 @@ final class OrderSubmitHandler
             $deliveryType = 'pickup';
             $terminalId = $outletExternalId;
         }
-
+        // Тип расчёта доставки из tariff_id (inSales не сохраняет dellin_calc_type)
+        $tariffId = (string) ($deliveryInfo['tariff_id'] ?? '');
+        if ($deliveryCalcType === 'auto' && str_starts_with($tariffId, 'dellin_courier_')) {
+            $extractedType = substr($tariffId, strlen('dellin_courier_'));
+            if (in_array($extractedType, ['auto', 'avia', 'express', 'small'], true)) {
+                $deliveryCalcType = $extractedType;
+            }
+        }
+        if ($deliveryCalcType === 'auto' && $outletType === 'pvz') {
+            // Для ПВЗ тип закодирован в dellin_calc_type через fields_values при выборе;
+            // если не пришёл, попробуем извлечь из tariff_id ПВЗ (если используется тот же формат)
+            if (str_starts_with($tariffId, 'dellin_')) {
+                $maybeType = substr($tariffId, strlen('dellin_'));
+                if (in_array($maybeType, ['auto', 'avia', 'express', 'small'], true)) {
+                    $deliveryCalcType = $maybeType;
+                }
+            }
+        }
         return [
             'insales_shop_id'            => $insalesId,
             'insales_order_id'           => $insalesOrderId,

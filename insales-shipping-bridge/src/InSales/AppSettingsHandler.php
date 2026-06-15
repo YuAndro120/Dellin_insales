@@ -532,9 +532,9 @@ final class AppSettingsHandler
                                 <div class="card-body sm">
                                     <div class="ir">
                                         <span class="ir-l">Вариант отгрузки</span>
-                                        <div class="seg" id="derivalVariantSeg" style="margin-bottom:0">
-                                            <button type="button" class="seg-btn<?= $s->derivalVariant === 'terminal' ? ' on' : '' ?>" onclick="setDerivalVariant(this,'terminal')">От терминала</button>
-                                            <button type="button" class="seg-btn<?= $s->derivalVariant === 'address' ? ' on' : '' ?>" onclick="setDerivalVariant(this,'address')">От адреса</button>
+                                        <div class="seg" id="derivalVariantSeg" style="margin-bottom:0;white-space:nowrap">
+                                            <button type="button" class="seg-btn<?= $s->derivalVariant === 'terminal' ? ' on' : '' ?>" onclick="setDerivalVariant(this,'terminal')" style="white-space:nowrap;padding:7px 6px">От терминала</button>
+                                            <button type="button" class="seg-btn<?= $s->derivalVariant === 'address' ? ' on' : '' ?>" onclick="setDerivalVariant(this,'address')" style="white-space:nowrap;padding:7px 6px">От адреса</button>
                                         </div>
                                     </div>
                                 </div>

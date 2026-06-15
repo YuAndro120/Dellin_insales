@@ -134,11 +134,15 @@ function loadDerivalTimeInterval(date) {
       if (!j.ok || !j.interval) { timeSel.innerHTML = '<option value="">Недоступно</option>'; return; }
       var from = j.interval.interval_from || '09:00:00';
       var to = j.interval.interval_to || '18:00:00';
+      var period = j.interval.min_period || 4;
+      if (period < 1) period = 4;
       var fromH = parseInt(from.split(':')[0], 10);
       var toH = parseInt(to.split(':')[0], 10);
+      // Если конец интервала 23:59 — округляем вверх до 24
+      if (to.startsWith('23:59')) toH = 24;
       timeSel.innerHTML = '';
-      for (var h = fromH; h < toH; h += 2) {
-        var startH = h, endH = Math.min(h + 2, toH);
+      for (var h = fromH; h + period <= toH; h += period) {
+        var startH = h, endH = h + period;
         var opt = document.createElement('option');
         opt.value = String(startH).padStart(2, '0') + ':00-' + String(endH).padStart(2, '0') + ':00';
         opt.textContent = opt.value;

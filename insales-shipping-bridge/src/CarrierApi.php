@@ -463,7 +463,22 @@ final class CarrierApi
         if (!empty($res['errors'])) {
             throw new \RuntimeException('Dellin dates error: ' . json_encode($res['errors'], JSON_UNESCAPED_UNICODE));
         }
-        return $res['data']['dates'] ?? [];
+        $dates = $res['data']['dates'] ?? [];
+
+        // Проверяем доступность дня в день (метод dates не всегда включает сегодня)
+        $today = (new \DateTimeImmutable('today'))->format('Y-m-d');
+        if (!in_array($today, $dates, true)) {
+            try {
+                $interval = $this->getAddressTimeInterval($sessionId, $settings, $today, $deliveryType, $credentials);
+                if (!empty($interval['same_day'])) {
+                    array_unshift($dates, $today);
+                }
+            } catch (\Throwable) {
+                // игнорируем ошибку проверки сегодняшней даты
+            }
+        }
+
+        return $dates;
     }
 
     /**

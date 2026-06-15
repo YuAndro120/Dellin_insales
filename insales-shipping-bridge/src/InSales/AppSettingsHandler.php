@@ -604,37 +604,67 @@ final class AppSettingsHandler
 
                                 <!-- Блок адреса забора -->
                                 <div id="derivalAddressBlock" <?= $s->derivalVariant !== 'address' ? ' style="display:none"' : '' ?>>
-                                    <div class="card-body">
-                                        <div class="field">
-                                            <label>Город</label>
-                                            <input type="text" id="derivalCitySearch" autocomplete="off" placeholder="Начните вводить город…">
-                                            <input type="hidden" id="derival_city_kladr_addr" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
-                                            <input type="hidden" id="derival_city_name_hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
-                                            <ul id="derivalCitySuggestions" class="suggestions"></ul>
-                                        </div>
-                                        <div class="g2">
+                                    <?php $hasDerivalAddr = ($s->derivalStreet ?? '') !== '' && ($s->derivalHouse ?? '') !== ''; ?>
+                                    <!-- Поиск/ввод (показывается если адрес не заполнен или нажата "Изменить") -->
+                                    <div id="derivalAddressSearch" <?= $hasDerivalAddr ? ' style="display:none"' : '' ?>>
+                                        <div class="card-body">
                                             <div class="field">
-                                                <label>Улица</label>
-                                                <input type="text" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>" placeholder="Ленина">
+                                                <label>Город</label>
+                                                <input type="text" id="derivalCitySearch" autocomplete="off" placeholder="Начните вводить город…" value="<?= $h($s->derivalCityName ?? '') ?>">
+                                                <input type="hidden" id="derival_city_kladr_addr" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
+                                                <input type="hidden" id="derival_city_name_hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
+                                                <ul id="derivalCitySuggestions" class="suggestions"></ul>
                                             </div>
-                                            <div class="field">
-                                                <label>Дом</label>
-                                                <input type="text" name="derival_house" value="<?= $h($s->derivalHouse ?? '') ?>" placeholder="5">
+                                            <div class="g2">
+                                                <div class="field">
+                                                    <label>Улица</label>
+                                                    <input type="text" id="derival_street_input" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>" placeholder="Ленина">
+                                                </div>
+                                                <div class="field">
+                                                    <label>Дом</label>
+                                                    <input type="text" id="derival_house_input" name="derival_house" value="<?= $h($s->derivalHouse ?? '') ?>" placeholder="5">
+                                                </div>
+                                            </div>
+                                            <?php if ($hasDerivalAddr): ?>
+                                                <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">
+                                                    <button type="button" id="derivalAddrCancelBtn" class="btn-g">Отмена</button>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+
+                                    <!-- Карточка адреса забора -->
+                                    <div id="derivalAddressCard" <?= !$hasDerivalAddr ? ' style="display:none"' : '' ?>>
+                                        <div class="card-body">
+                                            <div class="term-saved">
+                                                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+                                                    <div>
+                                                        <div class="term-name">Адрес забора груза</div>
+                                                        <div class="term-addr" id="derivalCardAddr">
+                                                            <?= $h(trim((($s->derivalCityName ?? '') . ', ул. ' . ($s->derivalStreet ?? '') . ', д. ' . ($s->derivalHouse ?? '')), ', ')) ?>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" id="derivalAddrEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
+                                                            <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                        </svg>
+                                                        Изменить
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <?php if (count($counteragents) === 0 && $counteragentUid !== ''): ?>
-                                <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
-                            <?php endif; ?>
-                            <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
+                                <?php if (count($counteragents) === 0 && $counteragentUid !== ''): ?>
+                                    <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
+                                <?php endif; ?>
+                                <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
 
-                            <div class="btn-row">
-                                <button type="submit" class="btn-p">Сохранить изменения</button>
-                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
-                            </div>
+                                <div class="btn-row">
+                                    <button type="submit" class="btn-p">Сохранить изменения</button>
+                                    <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
+                                </div>
                         </form>
                     </div><!-- /page-sender -->
 
@@ -1469,6 +1499,24 @@ final class AppSettingsHandler
                 document.getElementById('derivalTerminalBlock').style.display = val === 'terminal' ? '' : 'none';
                 document.getElementById('derivalAddressBlock').style.display = val === 'address' ? '' : 'none';
             };
+            // ── Derival address card / edit ──
+            var derivalAddrEditBtn = document.getElementById('derivalAddrEditBtn');
+            var derivalAddrCancelBtn = document.getElementById('derivalAddrCancelBtn');
+            var derivalAddressSearch = document.getElementById('derivalAddressSearch');
+            var derivalAddressCard = document.getElementById('derivalAddressCard');
+
+            if (derivalAddrEditBtn) {
+                derivalAddrEditBtn.addEventListener('click', function() {
+                    derivalAddressCard.style.display = 'none';
+                    derivalAddressSearch.style.display = '';
+                });
+            }
+            if (derivalAddrCancelBtn) {
+                derivalAddrCancelBtn.addEventListener('click', function() {
+                    derivalAddressSearch.style.display = 'none';
+                    derivalAddressCard.style.display = '';
+                });
+            }
         </script>
 <?php
         echo '</body></html>';

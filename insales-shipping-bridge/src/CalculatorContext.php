@@ -19,6 +19,7 @@ final class CalculatorContext
         public readonly string $packageUid,
         public readonly bool $packageInCalc,
         public readonly ?string $arrivalCityName = null,
+        public readonly ?string $derivalCityName = null,
     ) {}
 
     public static function fromShopSettings(ShopSettings $s): self
@@ -34,6 +35,7 @@ final class CalculatorContext
             derivalHouse: $s->derivalHouse,
             packageUid: $s->packageUid    ?? '',
             packageInCalc: $s->packageInCalc ?? false,
+            derivalCityName: $s->derivalCityName,
         );
     }
 
@@ -51,6 +53,7 @@ final class CalculatorContext
             packageUid: $this->packageUid,
             packageInCalc: $this->packageInCalc,
             arrivalCityName: $cityName,
+            derivalCityName: $this->derivalCityName,
         );
     }
 }

@@ -693,6 +693,7 @@ final class CarrierApi
             ];
         }
         $cityKladr = $settings->derivalCityKladr ?? '';
+        $cityName  = $settings->derivalCityName  ?? '';
         $street    = $settings->derivalStreet    ?? '';
         $house     = $settings->derivalHouse     ?? '';
         if ($cityKladr === '' || $street === '' || $house === '') {
@@ -700,14 +701,12 @@ final class CarrierApi
                 'Заполните адрес забора груза в настройках приложения (город, улица, дом).'
             );
         }
+        $search = implode(', ', array_filter([$cityName, $street, $house]));
         return [
             'produceDate'  => $produceDate,
             'variant'      => 'address',
-            'address'      => [
-                'city'   => ['code' => $cityKladr],
-                'street' => $street,
-                'house'  => $house,
-            ],
+            'address'      => ['search' => $search],
+            'time'         => ['worktimeStart' => '09:00', 'worktimeEnd' => '17:00'],
             'requirements' => [],
         ];
     }
@@ -816,10 +815,13 @@ final class CarrierApi
             if (strlen($city) < 10 || $street === '' || $house === '') {
                 throw new \InvalidArgumentException('Адрес забора груза не заполнен');
             }
+            $cityName = $calcCtx->derivalCityName ?? '';
+            $search = implode(', ', array_filter([$cityName, $street, $house]));
             return [
                 'variant'      => 'address',
-                'address'      => ['city' => ['code' => $city], 'street' => $street, 'house' => $house],
+                'address'      => ['search' => $search],
                 'produceDate'  => $produce,
+                'time'         => ['worktimeStart' => '09:00', 'worktimeEnd' => '18:00'],
                 'requirements' => [],
             ];
         }

@@ -655,16 +655,17 @@ final class AppSettingsHandler
                                         </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                <?php if (count($counteragents) === 0 && $counteragentUid !== ''): ?>
-                                    <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
-                                <?php endif; ?>
-                                <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
+                            <?php if (count($counteragents) === 0 && $counteragentUid !== ''): ?>
+                                <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
+                            <?php endif; ?>
+                            <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
 
-                                <div class="btn-row">
-                                    <button type="submit" class="btn-p">Сохранить изменения</button>
-                                    <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
-                                </div>
+                            <div class="btn-row">
+                                <button type="submit" class="btn-p">Сохранить изменения</button>
+                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
+                            </div>
                         </form>
                     </div><!-- /page-sender -->
 

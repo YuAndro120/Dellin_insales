@@ -15,11 +15,12 @@ final class ShopRepository
     public function upsertOnInstall(string $insalesId, string $shopHost, string $apiPasswordMd5): void
     {
         $sql = <<<'SQL'
-INSERT INTO insales_shops (insales_id, shop_host, api_password, installed_at, uninstalled_at)
-VALUES (:iid, :host, :pass, CURRENT_TIMESTAMP, NULL)
+INSERT INTO insales_shops (insales_id, shop_host, api_password, app_access_token, installed_at, uninstalled_at)
+VALUES (:iid, :host, :pass, :token, CURRENT_TIMESTAMP, NULL)
 ON DUPLICATE KEY UPDATE
   shop_host = VALUES(shop_host),
   api_password = VALUES(api_password),
+  app_access_token = COALESCE(insales_shops.app_access_token, VALUES(app_access_token)),
   installed_at = CURRENT_TIMESTAMP,
   uninstalled_at = NULL
 SQL;
@@ -28,6 +29,7 @@ SQL;
             ':iid' => $insalesId,
             ':host' => $shopHost,
             ':pass' => $apiPasswordMd5,
+            ':token' => bin2hex(random_bytes(24)),
         ]);
     }
 
@@ -317,6 +319,19 @@ SQL;
             'barcode'    => $barcode,
             'id'         => $id,
         ]);
+    }
+
+    public function findAccessToken(string $insalesId): ?string
+    {
+        $row = $this->fetchRow(
+            'SELECT app_access_token FROM insales_shops WHERE insales_id = :iid AND uninstalled_at IS NULL LIMIT 1',
+            [':iid' => $insalesId]
+        );
+        if ($row === null) {
+            return null;
+        }
+        $token = trim((string) ($row['app_access_token'] ?? ''));
+        return $token !== '' ? $token : null;
     }
 
     /** @param array<string, scalar|null> $params */

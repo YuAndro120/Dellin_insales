@@ -18,7 +18,7 @@ final class ManualInstallHandler
     public static function handle(Config $config, ShopRepository $shops, string $method): void
     {
         header('Content-Type: text/html; charset=utf-8');
-        $h = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+        $h = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 
         if ($config->insalesAppSecret === null || $config->insalesAppSecret === '') {
             http_response_code(500);
@@ -76,7 +76,7 @@ final class ManualInstallHandler
         echo '<form method="post">';
         echo '<input type="hidden" name="secret" value="' . $h($secret) . '">';
         echo '<label>shop (хост магазина)</label>';
-        echo '<input name="shop" required placeholder="myshop-ddy891.myinsales.ru" value="myshop-ddy891.myinsales.ru">';
+        echo '<input name="shop" required placeholder="myshop-ddy891.myinsales.ru">';
         echo '<label>insales_id (account_id магазина)</label>';
         echo '<input name="insales_id" required placeholder="число из account.json">';
         echo '<p class="hint">Как узнать id: войдите в админку магазина и откройте<br>';

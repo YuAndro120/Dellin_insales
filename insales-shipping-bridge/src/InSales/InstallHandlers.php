@@ -57,7 +57,7 @@ final class InstallHandlers
 
     http_response_code(200);
     echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Установка</title></head><body>';
-    $q = http_build_query(['shop' => $shop, 'insales_id' => $insalesId]);
+    $q = http_build_query(['shop' => $shop, 'insales_id' => $insalesId, 'atk' => $shops->findAccessToken($insalesId) ?? '']);
     echo '<p>Приложение установлено. Магазин: ' . htmlspecialchars($shop, ENT_QUOTES, 'UTF-8') . '</p>';
     echo '<p><a href="/insales/app?' . htmlspecialchars($q, ENT_QUOTES, 'UTF-8') . '">Перейти к настройкам (терминал отгрузки)</a></p>';
     echo '</body></html>';

@@ -72,12 +72,16 @@ final class AppSettingsHandler
         if ($method === 'POST' && isset($_POST['save_dellin_auth'])) {
             $error = self::handleDellinAuth($shops, $config, $settings);
             if ($error === null) {
-                $q = http_build_query(['shop' => $settings->shopHost, 'insales_id' => $settings->insalesId]);
+                $q = http_build_query([
+                    'shop' => $settings->shopHost,
+                    'insales_id' => $settings->insalesId,
+                    'atk' => $shops->findAccessToken($settings->insalesId) ?? '',
+                ]);
                 header('Location: /insales/app?' . $q, true, 302);
                 exit;
             }
         } elseif (!$settings->hasDellinAuth) {
-            self::renderAuthPage($settings, $error);
+            self::renderAuthPage($settings, $error, $shops->findAccessToken($settings->insalesId) ?? '');
             return;
         } elseif ($method === 'POST' && isset($_POST['update_pat'])) {
             $error = self::handleDellinAuth($shops, $config, $settings);
@@ -162,7 +166,16 @@ final class AppSettingsHandler
         [$counteragents, $counteragentsError] = self::loadCounteragents($shops, $config, $settings);
 
         http_response_code(200);
-        self::renderSettingsPage($settings, $config, $saved, $deliveryCreated, $error, $counteragents, $counteragentsError);
+        self::renderSettingsPage(
+            $settings,
+            $config,
+            $saved,
+            $deliveryCreated,
+            $error,
+            $counteragents,
+            $counteragentsError,
+            $shops->findAccessToken($settings->insalesId) ?? ''
+        );
     }
  
     // ──────────────────────────────────────────────────────────────────────────
@@ -221,7 +234,7 @@ final class AppSettingsHandler
     // Render: Auth page (first time)
     // ──────────────────────────────────────────────────────────────────────────
 
-    private static function renderAuthPage(ShopSettings $s, ?string $error): void
+    private static function renderAuthPage(ShopSettings $s, ?string $error, string $accessToken = ''): void
     {
         $h = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
         self::renderHtmlHead('Подключение — Деловые Линии');
@@ -247,6 +260,7 @@ final class AppSettingsHandler
                 <form method="post" action="/insales/app">
                     <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                     <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
+                    <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
                     <input type="hidden" name="save_dellin_auth" value="1">
                     <div class="field">
                         <label>Персональный токен (PAT)</label>
@@ -277,6 +291,7 @@ final class AppSettingsHandler
         ?string $error,
         array $counteragents,
         ?string $counteragentsError,
+        string $accessToken = '',
     ): void {
         $h   = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
         $tid = $s->senderTerminalId !== null && $s->senderTerminalId > 0 ? (string) $s->senderTerminalId : '';
@@ -383,6 +398,7 @@ final class AppSettingsHandler
                         <form method="post" action="/insales/app" id="settingsForm">
                             <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                             <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
+                            <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
 
                             <!-- Организация -->
                             <div class="card">
@@ -677,7 +693,7 @@ final class AppSettingsHandler
 
                             <div class="btn-row">
                                 <button type="submit" class="btn-p">Сохранить изменения</button>
-                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
+                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>&atk=<?= $h($accessToken) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
                             </div>
                         </form>
                     </div><!-- /page-sender -->
@@ -692,6 +708,7 @@ final class AppSettingsHandler
                         <form method="post" action="/insales/app">
                             <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                             <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
+                            <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
                             <input type="hidden" name="derival_variant" value="<?= $h($s->derivalVariant ?? 'terminal') ?>">
                             <input type="hidden" name="sender_terminal_id" value="<?= $h($tid) ?>">
                             <input type="hidden" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
@@ -902,6 +919,7 @@ final class AppSettingsHandler
                                 <form method="post" action="/insales/app">
                                     <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                                     <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
+                                    <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
                                     <input type="hidden" name="update_pat" value="1">
                                     <div class="field">
                                         <label>PAT-токен</label>

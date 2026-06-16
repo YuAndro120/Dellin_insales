@@ -50,10 +50,11 @@ final class OrdersHandler
         $orders = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         $q = http_build_query(['shop' => $settings->shopHost, 'insales_id' => $settings->insalesId]);
+        $qWithToken = http_build_query(['shop' => $settings->shopHost, 'insales_id' => $settings->insalesId, 'atk' => $shops->findAccessToken($settings->insalesId) ?? '']);
 
         self::renderHead('Заказы — Деловые Линии');
         echo '<h1>Заказы</h1>';
-        echo '<p><a href="/insales/app?' . htmlspecialchars($q, ENT_QUOTES, 'UTF-8') . '">← Настройки</a></p>';
+        echo '<p><a href="/insales/app?' . htmlspecialchars($qWithToken, ENT_QUOTES, 'UTF-8') . '">← Настройки</a></p>';
 
         if ($orders === []) {
             echo '<p style="color:#666">Заказов пока нет. Они появятся после оформления покупателем доставки через Деловые Линии.</p>';

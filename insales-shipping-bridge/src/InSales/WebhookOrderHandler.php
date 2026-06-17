@@ -25,19 +25,31 @@ final class WebhookOrderHandler
             return;
         }
 
-        // inSales передаёт shop в заголовке X-Insales-Shop-Id или в самом payload
-        $shopHost = $_SERVER['HTTP_X_INSALES_SHOP'] ?? null;
-        if ($shopHost === null) {
-            // fallback — ищем по insales_id из payload
-            $insalesId = (string) ($payload['account_id'] ?? '');
-            $shopRow = $insalesId !== '' ? $shops->findApiAuthByInsalesId($insalesId) : null;
+        // Если в URL передан секрет вебхука — определяем магазин строго по нему
+        // (приоритетный, защищённый путь). Старые регистрации без ?wsk= идут по
+        // прежней (менее строгой) логике ниже — обратная совместимость.
+        $wsk = trim((string) ($_GET['wsk'] ?? ''));
+        if ($wsk !== '') {
+            $shopRow = $shops->findActiveByWebhookSecret($wsk);
+            if ($shopRow === null) {
+                Response::json(['ok' => false, 'error' => 'Invalid webhook secret'], 403);
+                return;
+            }
         } else {
-            $shopRow = $shops->findActiveByHost((string) $shopHost);
-        }
+            // inSales передаёт shop в заголовке X-Insales-Shop-Id или в самом payload
+            $shopHost = $_SERVER['HTTP_X_INSALES_SHOP'] ?? null;
+            if ($shopHost === null) {
+                // fallback — ищем по insales_id из payload
+                $insalesId = (string) ($payload['account_id'] ?? '');
+                $shopRow = $insalesId !== '' ? $shops->findApiAuthByInsalesId($insalesId) : null;
+            } else {
+                $shopRow = $shops->findActiveByHost((string) $shopHost);
+            }
 
-        if ($shopRow === null) {
-            Response::json(['ok' => false, 'error' => 'Shop not found'], 404);
-            return;
+            if ($shopRow === null) {
+                Response::json(['ok' => false, 'error' => 'Shop not found'], 404);
+                return;
+            }
         }
 
         $insalesShopId = $shopRow['insales_id'];

@@ -15,12 +15,13 @@ final class ShopRepository
     public function upsertOnInstall(string $insalesId, string $shopHost, string $apiPasswordMd5): void
     {
         $sql = <<<'SQL'
-INSERT INTO insales_shops (insales_id, shop_host, api_password, app_access_token, installed_at, uninstalled_at)
-VALUES (:iid, :host, :pass, :token, CURRENT_TIMESTAMP, NULL)
+INSERT INTO insales_shops (insales_id, shop_host, api_password, app_access_token, webhook_secret, installed_at, uninstalled_at)
+VALUES (:iid, :host, :pass, :token, :wsk, CURRENT_TIMESTAMP, NULL)
 ON DUPLICATE KEY UPDATE
   shop_host = VALUES(shop_host),
   api_password = VALUES(api_password),
   app_access_token = COALESCE(insales_shops.app_access_token, VALUES(app_access_token)),
+  webhook_secret = COALESCE(insales_shops.webhook_secret, VALUES(webhook_secret)),
   installed_at = CURRENT_TIMESTAMP,
   uninstalled_at = NULL
 SQL;
@@ -30,6 +31,7 @@ SQL;
             ':host' => $shopHost,
             ':pass' => $apiPasswordMd5,
             ':token' => bin2hex(random_bytes(24)),
+            ':wsk' => bin2hex(random_bytes(24)),
         ]);
     }
 
@@ -332,6 +334,27 @@ SQL;
         }
         $token = trim((string) ($row['app_access_token'] ?? ''));
         return $token !== '' ? $token : null;
+    }
+
+    public function findWebhookSecret(string $insalesId): ?string
+    {
+        $row = $this->fetchRow(
+            'SELECT webhook_secret FROM insales_shops WHERE insales_id = :iid AND uninstalled_at IS NULL LIMIT 1',
+            [':iid' => $insalesId]
+        );
+        if ($row === null) {
+            return null;
+        }
+        $secret = trim((string) ($row['webhook_secret'] ?? ''));
+        return $secret !== '' ? $secret : null;
+    }
+
+    public function findActiveByWebhookSecret(string $secret): ?array
+    {
+        return $this->fetchRow(
+            'SELECT insales_id, shop_host FROM insales_shops WHERE webhook_secret = :wsk AND uninstalled_at IS NULL LIMIT 1',
+            [':wsk' => $secret]
+        );
     }
 
     /** @param array<string, scalar|null> $params */

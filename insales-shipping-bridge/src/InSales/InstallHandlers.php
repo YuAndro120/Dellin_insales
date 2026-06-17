@@ -34,7 +34,9 @@ final class InstallHandlers
     $client = new InSalesClient();
 
     // Регистрируем webhook на создание и обновление заказов
-    $webhookUrl = rtrim($config->publicBridgeUrl, '/') . '/insales/webhook/orders';
+    $webhookSecret = $shops->findWebhookSecret($insalesId) ?? '';
+    $webhookUrl = rtrim($config->publicBridgeUrl, '/') . '/insales/webhook/orders'
+      . ($webhookSecret !== '' ? '?wsk=' . $webhookSecret : '');
     foreach (['orders/create', 'orders/update'] as $topic) {
       try {
         $client->registerWebhook($shop, $config->insalesAppId ?? '', $apiPassword, $topic, $webhookUrl);

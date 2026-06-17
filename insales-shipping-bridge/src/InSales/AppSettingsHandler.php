@@ -350,6 +350,7 @@ final class AppSettingsHandler
                     <button class="nav-item active" data-page="sender" data-label="Отправитель"><span class="nav-ico">👤</span>Отправитель</button>
                     <button class="nav-item" data-page="shipping" data-label="Доставка"><span class="nav-ico">📦</span>Доставка</button>
                     <button class="nav-item" data-page="connection" data-label="Подключение"><span class="nav-ico">🔌</span>Подключение<span class="nav-badge">✓</span></button>
+                    <button class="nav-item" data-page="support" data-label="Поддержка"><span class="nav-ico">💬</span>Поддержка</button>
                 </nav>
                 <div class="sbar-footer">
                     <div class="sbar-ver">inSales Bridge</div>
@@ -934,6 +935,56 @@ final class AppSettingsHandler
                         </div>
                     </div>
 
+                    <!-- ══ ПОДДЕРЖКА ══ -->
+                    <div class="page" id="page-support">
+                        <div class="pg-hdr">
+                            <div class="pg-title">Поддержка</div>
+                            <div class="pg-sub">Если что-то работает не так — напишите нам</div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-hdr">
+                                <div>
+                                    <div class="card-title">Связаться с нами</div>
+                                    <div class="card-sub">Отвечаем в течение 1 рабочего дня</div>
+                                </div>
+                            </div>
+                            <div class="card-body sm">
+                                <div class="ir">
+                                    <span class="ir-l">Email поддержки</span>
+                                    <a href="mailto:g120255908@gmail.com" class="ir-v" style="text-decoration:none;color:var(--amber)">g120255908@gmail.com</a>
+                                </div>
+                                <div class="ir">
+                                    <span class="ir-l">Что указать в письме</span>
+                                    <span class="ir-v" style="font-family:var(--sans);font-weight:400;text-align:right;max-width:60%">домен магазина, номер заказа, скриншот ошибки</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-hdr">
+                                <div class="card-title">Частые вопросы</div>
+                            </div>
+                            <div class="card-body">
+                                <div class="field">
+                                    <label>Заказ не передаётся в Деловые Линии</label>
+                                    <div class="hint" style="margin-top:2px">Проверьте, что в разделе «Подключение» указан действующий PAT-токен, а в разделе «Отправитель» заполнен ИНН (для ИП и юрлиц) и выбрана ОПФ из справочника ДЛ.</div>
+                                </div>
+                                <div class="field">
+                                    <label>Не отображается нужный тип доставки в корзине</label>
+                                    <div class="hint" style="margin-top:2px">Включите нужные типы доставки в разделе «Доставка» → «Типы доставки в корзине», и убедитесь что переключатель «Показывать доставку в корзине» активен.</div>
+                                </div>
+                                <div class="field">
+                                    <label>Ошибка при расчёте малогабаритного груза (МГГ)</label>
+                                    <div class="hint" style="margin-top:2px">МГГ имеет ограничение по габаритам — не более 0.54 × 0.39 × 0.39 м. Проверьте габариты товара в inSales.</div>
+                                </div>
+                                <div class="field" style="margin-bottom:0">
+                                    <label>Как изменить адрес забора груза</label>
+                                    <div class="hint" style="margin-top:2px">В разделе «Способ отгрузки» переключите вариант на «От адреса» и укажите город, улицу и дом — оттуда будет приезжать экспедитор.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div><!-- /content -->
             </main>
         </div><!-- /app -->

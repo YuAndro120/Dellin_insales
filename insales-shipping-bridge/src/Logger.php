@@ -10,6 +10,10 @@ namespace ShippingBridge;
  *
  * Лог-файл: /var/log/bridge/YYYY-MM-DD.log
  * Формат строки: [HH:MM:SS] [LEVEL] shop=<insales_id> order=<id|-> event=<name> <key=value ...>
+ *
+ * Ошибки (error()) дополнительно пишутся в таблицу admin_alerts той же БД
+ * для отображения в админ-панели. Если запись в БД не удалась — это не
+ * должно ронять основной запрос пользователя (тихий catch).
  */
 final class Logger
 {
@@ -23,6 +27,7 @@ final class Logger
     public static function error(string $shopId, ?string $orderId, string $event, array $context = []): void
     {
         self::write('ERROR', $shopId, $orderId, $event, $context);
+        self::recordAlert('error', $shopId, $orderId, $event, $context);
     }
 
     /**
@@ -87,6 +92,62 @@ final class Logger
         }
     }
 
+    private static function recordAlert(string $level, string $shopId, ?string $orderId, string $event, array $context): void
+    {
+        try {
+            $pdo = self::pdo();
+            if ($pdo === null) {
+                return;
+            }
+            $message = $event;
+            if (isset($context['errors'])) {
+                $errors = $context['errors'];
+                $message = is_array($errors) ? json_encode($errors, JSON_UNESCAPED_UNICODE) : (string) $errors;
+            } elseif (isset($context['error'])) {
+                $message = (string) $context['error'];
+            }
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO admin_alerts (level, event, shop_id, order_id, message, context)
+                 VALUES (:level, :event, :shop_id, :order_id, :message, :context)'
+            );
+            $stmt->execute([
+                ':level' => $level,
+                ':event' => $event,
+                ':shop_id' => $shopId !== '' ? $shopId : null,
+                ':order_id' => ($orderId !== null && $orderId !== '') ? $orderId : null,
+                ':message' => mb_substr($message, 0, 2000),
+                ':context' => json_encode($context, JSON_UNESCAPED_UNICODE),
+            ]);
+        } catch (\Throwable) {
+            // Сбой записи алерта не должен ронять основной запрос.
+        }
+    }
+
+    private static ?\PDO $alertPdo = null;
+    private static bool $alertPdoFailed = false;
+
+    private static function pdo(): ?\PDO
+    {
+        if (self::$alertPdo instanceof \PDO) {
+            return self::$alertPdo;
+        }
+        if (self::$alertPdoFailed) {
+            return null;
+        }
+
+        try {
+            // Переиспользуем то же соединение/учётные данные, что и основное
+            // приложение (Db::pdo требует Config, но конфиг уже инициализирован
+            // глобально через getenv() к моменту вызова Logger).
+            self::$alertPdo = Db::pdo(Config::fromEnvForInsales());
+            return self::$alertPdo;
+        } catch (\Throwable) {
+            self::$alertPdoFailed = true;
+            return null;
+        }
+    }
+
     private static function formatLine(string $level, string $shopId, ?string $orderId, string $event, array $context): string
     {
         $time = date('H:i:s');
@@ -106,7 +167,6 @@ final class Logger
 
     private static function escapeValue(string $value): string
     {
-        // Заменяем переносы строк и оборачиваем в кавычки, если есть пробелы.
         $value = str_replace(["\r", "\n"], ' ', $value);
         if (str_contains($value, ' ')) {
             return '"' . str_replace('"', '\\"', $value) . '"';

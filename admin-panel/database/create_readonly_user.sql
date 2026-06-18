@@ -16,8 +16,3 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON insales_bridge.admin_alerts TO 'bridge_a
 GRANT SELECT, INSERT, UPDATE, DELETE ON insales_bridge.admin_login_attempts TO 'bridge_admin_ro'@'localhost';
 
 FLUSH PRIVILEGES;
-
--- ШАГ 2. После применения схемы (schema.sql), создать первого админа.
--- Хэш пароля сгенерировать через: php -r "echo password_hash('ВАШ_ПАРОЛЬ', PASSWORD_BCRYPT);"
--- Затем:
--- INSERT INTO admin_users (email, password_hash) VALUES ('you@example.com', '$2y$...вставить хэш...');

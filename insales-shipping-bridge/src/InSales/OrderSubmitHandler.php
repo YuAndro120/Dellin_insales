@@ -122,8 +122,18 @@ final class OrderSubmitHandler
             return;
         }
 
-        // Проверяем не оформлен ли уже
+        // Проверка тарифа: отправка заявки в ДЛ доступна только на тарифах
+        // "Полный" и выше — на тарифе "Калькулятор" доступен только preview().
         $pdo = Db::pdo($config);
+        $subscriptions = new \ShippingBridge\SubscriptionRepository($pdo);
+        if (!$subscriptions->hasAtLeast($insalesId, \ShippingBridge\SubscriptionRepository::PLAN_FULL)) {
+            Response::json([
+                'ok' => false,
+                'error' => 'Оформление заявки в Деловые Линии доступно на тарифе "Полный" и выше. Расчёт стоимости доступен на вашем текущем тарифе.',
+                'upgrade_required' => true,
+            ], 402, $cors);
+            return;
+        }
         $existing = $shops->findOrderByInsalesId($insalesId, $insalesOrderId);
         if ($existing !== null && $existing['dellin_request_id'] !== null) {
             Response::json([

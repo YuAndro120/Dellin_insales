@@ -31,6 +31,9 @@ final class InstallHandlers
     $apiPassword = InSalesApiPassword::compute($token, $config->insalesAppSecret);
     $shops->upsertOnInstall($insalesId, $shop, $apiPassword);
 
+    $subscriptions = new \ShippingBridge\SubscriptionRepository(\ShippingBridge\Db::pdo($config));
+    $subscriptions->ensureTrialSubscription($insalesId);
+
     $client = new InSalesClient();
 
     // Регистрируем webhook на создание и обновление заказов

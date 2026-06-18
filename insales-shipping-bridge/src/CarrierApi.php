@@ -404,10 +404,21 @@ final class CarrierApi
                 'primaryPayer' => 'sender',
             ],
         ];
-        file_put_contents('/tmp/order_body.json', json_encode($body, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        $orderIdForLog = (string) ($order['insales_order_id'] ?? '');
+        \ShippingBridge\Logger::info($settings->insalesId, $orderIdForLog, 'order.create.request', [
+            'delivery_type' => $deliveryType,
+            'weight' => $weight,
+            'stated_value' => $statedValue,
+            'receiver_phone' => \ShippingBridge\Logger::maskPhone($receiverPhone ?? ''),
+            'arrival_city_kladr' => trim($arrivalCityKladr, '0') !== '' ? $arrivalCityKladr : '',
+        ]);
+
         $res = $this->postJson(self::URL_ORDER, $body);
-        file_put_contents('/tmp/order_response.json', json_encode($res, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+
         if (!empty($res['errors'])) {
+            \ShippingBridge\Logger::error($settings->insalesId, $orderIdForLog, 'order.create.error', [
+                'errors' => $res['errors'],
+            ]);
             throw new \RuntimeException('Dellin order error: ' . json_encode($res['errors'], JSON_UNESCAPED_UNICODE));
         }
 
@@ -415,8 +426,16 @@ final class CarrierApi
         $barcode   = (string) ($res['data']['barcode'] ?? '');
 
         if ($requestId === 0) {
+            \ShippingBridge\Logger::error($settings->insalesId, $orderIdForLog, 'order.create.no_request_id', [
+                'response' => $res,
+            ]);
             throw new \RuntimeException('Dellin не вернул requestID: ' . json_encode($res, JSON_UNESCAPED_UNICODE));
         }
+
+        \ShippingBridge\Logger::info($settings->insalesId, $orderIdForLog, 'order.create.success', [
+            'request_id' => $requestId,
+            'barcode' => $barcode,
+        ]);
 
         return ['request_id' => $requestId, 'barcode' => $barcode];
     }
@@ -1087,7 +1106,6 @@ final class CarrierApi
     private function postJson(string $url, ?array $body): array
     {
         $json = $this->http('POST', $url, $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE));
-        file_put_contents('/tmp/last_response.json', $json);
         return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
     }
 

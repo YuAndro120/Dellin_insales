@@ -117,11 +117,15 @@ final class AppSettingsHandler
                     (array) ($_POST['delivery_types'] ?? ['auto']),
                     static fn(string $t): bool => in_array($t, ['auto', 'avia', 'express', 'small'], true)
                 );
-                error_log('[BRIDGE] types after filter: ' . json_encode(array_values($types), JSON_UNESCAPED_UNICODE));
-                error_log('[BRIDGE] implode result: ' . (implode(',', $types) ?: 'auto'));
                 $variant = (string) ($_POST['derival_variant'] ?? ShopSettings::DERIVAL_TERMINAL);
-                error_log('[BRIDGE] derival_variant POST: ' . ($_POST['derival_variant'] ?? 'нет'));
-                file_put_contents('/tmp/post_debug.json', json_encode($_POST, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                \ShippingBridge\Logger::info($settings->insalesId, null, 'settings.save', [
+                    'derival_variant' => $variant,
+                    'delivery_types' => implode(',', $types) ?: 'auto',
+                    'sender_type' => trim((string) ($_POST['sender_type'] ?? 'person')),
+                    'has_inn' => trim((string) ($_POST['sender_inn'] ?? '')) !== '' ? 'yes' : 'no',
+                    'sender_phone' => \ShippingBridge\Logger::maskPhone((string) ($_POST['sender_contact_phone'] ?? '')),
+                    'requester_email' => \ShippingBridge\Logger::maskEmail(trim((string) ($_POST['requester_email'] ?? ''))),
+                ]);
                 $shops->saveDeliverySettings($settings->insalesId, [
                     'derival_variant'       => $variant,
                     'sender_terminal_id'    => (int) ($_POST['sender_terminal_id']    ?? 0),

@@ -102,7 +102,14 @@ final class BillingPage
 
         $acquiring = new TbankAcquiring($config->tbankTerminalKey, $config->tbankTerminalPassword);
 
-        $initExtra = [];
+        $accessToken = trim((string) ($_POST['atk'] ?? ''));
+        $returnQuery = http_build_query(['shop' => $shopHost, 'insales_id' => $insalesId, 'atk' => $accessToken]);
+        $publicUrl = rtrim($config->publicBridgeUrl, '/');
+
+        $initExtra = [
+            'SuccessURL' => $publicUrl . '/insales/billing?' . $returnQuery . '&paid=1',
+            'FailURL' => $publicUrl . '/insales/billing?' . $returnQuery . '&paid=0',
+        ];
         if ($wantsRecurrent) {
             // Плательщик добровольно согласился на автопродление (чекбокс на форме) —
             // сохраняем карту для последующих автосписаний по RebillId.
@@ -147,6 +154,7 @@ final class BillingPage
         $sub = $subscriptions->findByInsalesId($insalesId);
         $currentPlan = $sub['plan'] ?? null;
         $currentStatus = $sub['status'] ?? null;
+        $paidParam = $_GET['paid'] ?? null;
 
         http_response_code(200);
         header('Content-Type: text/html; charset=utf-8');
@@ -173,6 +181,11 @@ final class BillingPage
         echo '<h1>Тариф</h1>';
         echo '<div class="sub">Магазин: ' . $h($shopHost) . '</div>';
 
+        if ($paidParam === '1') {
+            echo '<div class="status-banner" style="background:#e8f9ee;border-color:#b8e8c8">✓ Оплата прошла успешно. Тариф обновлён.</div>';
+        } elseif ($paidParam === '0') {
+            echo '<div class="status-banner" style="background:#fdeaea;border-color:#f4b8b8">Оплата не прошла. Попробуйте ещё раз или выберите другой способ.</div>';
+        }
         if ($currentStatus === 'trial' && isset($sub['trial_ends_at'])) {
             $daysLeft = max(0, (int) ceil((strtotime((string) $sub['trial_ends_at']) - time()) / 86400));
             echo '<div class="status-banner">Пробный период активен: осталось ' . $daysLeft . ' дн. (полный доступ на время триала)</div>';

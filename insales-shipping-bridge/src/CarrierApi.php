@@ -556,6 +556,78 @@ final class CarrierApi
         return $this->parseCalculatorResponse($res);
     }
 
+    /**
+     * Параллельный расчёт стоимости до нескольких терминалов одновременно
+     * (через curl_multi) — на порядок быстрее последовательных вызовов
+     * при большом списке ПВЗ. Поддерживает date-fallback: если для части
+     * терминалов исходная дата недоступна (ошибка 180012), делает второй
+     * параллельный проход только по ним со сдвинутой датой, и так далее
+     * до $maxExtraDays.
+     *
+     * @param list<int> $terminalIds
+     * @return array<int, array{price:float|null,days:int|null,metadata:array,raw?:array,errors?:mixed}|null>
+     *         ключ — terminalID, значение — результат расчёта или null при полном провале (после всех попыток)
+     */
+    public function calculateToTerminalsBatch(
+        string $sessionId,
+        int $senderTerminalId,
+        array $terminalIds,
+        ?string $arrivalCityKladr,
+        array $cargo,
+        CalculatorContext $calcCtx,
+        ?CarrierCredentials $credentials = null,
+        string $deliveryType = 'auto',
+        int $maxExtraDays = 5,
+    ): array {
+        $results = [];
+        $pending = array_values(array_unique($terminalIds));
+
+        for ($extra = 0; $extra <= $maxExtraDays && $pending !== []; $extra++) {
+            $ctx = $extra === 0 ? $calcCtx : $calcCtx->withProduceDaysOffset($calcCtx->produceDaysOffset + $extra);
+
+            $bodies = [];
+            foreach ($pending as $tid) {
+                $bodies[$tid] = $this->buildCalculatorBody(
+                    $sessionId,
+                    $senderTerminalId,
+                    $tid,
+                    $arrivalCityKladr,
+                    $cargo,
+                    $ctx,
+                    $credentials,
+                    $deliveryType,
+                );
+            }
+
+            $rawResponses = $this->postJsonMulti(self::URL_CALC, $bodies);
+
+            $stillPending = [];
+            foreach ($pending as $tid) {
+                $raw = $rawResponses[$tid] ?? null;
+                if ($raw === null) {
+                    // Сетевая ошибка/таймаут на этот конкретный запрос — не повторяем по дате,
+                    // это не "дата недоступна", а сбой сети.
+                    continue;
+                }
+                $parsed = $this->parseCalculatorResponse($raw);
+                $errorsJson = isset($parsed['errors']) ? json_encode($parsed['errors'], JSON_UNESCAPED_UNICODE) : '';
+                if ($parsed['price'] === null && str_contains($errorsJson, '180012')) {
+                    $stillPending[] = $tid;
+                    continue;
+                }
+                $results[$tid] = $parsed;
+            }
+            $pending = $stillPending;
+        }
+
+        // Терминалы, для которых так и не нашлось доступной даты за все попытки.
+        foreach ($pending as $tid) {
+            $results[$tid] = null;
+        }
+
+        return $results;
+    }
+
     public function calculateToCity(
         string $sessionId,
         int $senderTerminalId,
@@ -1109,6 +1181,73 @@ final class CarrierApi
         return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * Параллельно отправляет несколько POST JSON-запросов на один URL
+     * через curl_multi. Запросы с ошибкой сети/таймаутом или невалидным
+     * JSON в ответе пропускаются (значение null в результате), не валят
+     * остальные параллельные запросы.
+     *
+     * @param array<int|string, array<string,mixed>> $bodiesByKey
+     * @return array<int|string, array<string,mixed>|null>
+     */
+    private function postJsonMulti(string $url, array $bodiesByKey): array
+    {
+        if ($bodiesByKey === []) {
+            return [];
+        }
+
+        $multiHandle = curl_multi_init();
+        $handles = [];
+
+        foreach ($bodiesByKey as $key => $body) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_HTTPHEADER => ['Accept: application/json', 'Content-Type: application/json; charset=utf-8'],
+                CURLOPT_POSTFIELDS => json_encode($body, JSON_UNESCAPED_UNICODE),
+                CURLOPT_TIMEOUT => 20,
+                CURLOPT_CONNECTTIMEOUT => 5,
+            ]);
+            curl_multi_add_handle($multiHandle, $ch);
+            $handles[$key] = $ch;
+        }
+
+        $running = null;
+        do {
+            $status = curl_multi_exec($multiHandle, $running);
+            if ($running > 0) {
+                curl_multi_select($multiHandle, 1.0);
+            }
+        } while ($running > 0 && $status === CURLM_OK);
+
+        $results = [];
+        foreach ($handles as $key => $ch) {
+            $body = curl_multi_getcontent($ch);
+            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+
+            if ($body === null || $body === '' || $error !== '') {
+                $results[$key] = null;
+            } elseif ($httpCode >= 400) {
+                // ДЛ возвращает структурированные ошибки даже на 4xx — пробуем распарсить,
+                // чтобы calculateToTerminalsBatch мог отличить "180012" от прочих сбоев.
+                $decoded = json_decode($body, true);
+                $results[$key] = is_array($decoded) ? $decoded : null;
+            } else {
+                $decoded = json_decode($body, true);
+                $results[$key] = is_array($decoded) ? $decoded : null;
+            }
+
+            curl_multi_remove_handle($multiHandle, $ch);
+            curl_close($ch);
+        }
+
+        curl_multi_close($multiHandle);
+
+        return $results;
+    }
+
     private function http(string $method, string $url, ?string $jsonBody): string
     {
         $ch = curl_init($url);
@@ -1119,7 +1258,8 @@ final class CarrierApi
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CUSTOMREQUEST  => $method,
             CURLOPT_HTTPHEADER     => $headers,
-            CURLOPT_TIMEOUT        => 120,
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_CONNECTTIMEOUT => 5,
         ];
         if ($method === 'POST' && $jsonBody !== null) $opts[CURLOPT_POSTFIELDS] = $jsonBody;
         if ($method === 'GET') $opts[CURLOPT_HTTPGET] = true;

@@ -9,6 +9,8 @@ use ShippingBridge\CarrierApi;
 use ShippingBridge\CarrierCredentials;
 use ShippingBridge\CargoFromInsalesOrder;
 use ShippingBridge\Config;
+use ShippingBridge\Db;
+use ShippingBridge\DellinSessionCache;
 use ShippingBridge\Http\Response;
 use ShippingBridge\ShopDeliveryContext;
 use ShippingBridge\ShopRepository;
@@ -47,6 +49,7 @@ final class ExternalCheckoutHandler
             $creds = self::carrierCredentials($shops, $config, $settings);
             $api = new CarrierApi($config);
             $termRepo = new TerminalRepository($config, $api, $creds);
+            $sessionCache = new DellinSessionCache(Db::pdo($config));
             $lines = InsalesOrderParser::orderLines($body);
             if ($lines === []) {
                 self::jsonError(['errors' => ['Нет позиций в заказе']], 422, $cors);
@@ -55,15 +58,15 @@ final class ExternalCheckoutHandler
             $cargo = CargoFromInsalesOrder::aggregate($lines, $settings);
 
             if ($uri === '/insales/external/v2/courier') {
-                self::courier($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors, $settings);
+                self::courier($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors, $settings, $sessionCache);
                 return;
             }
             if ($uri === '/insales/external/v2/pickup_points') {
-                self::pickupPoints($body, $api, $creds, $termRepo, $senderId, $cargo, $calcCtx, $cors, $settings);
+                self::pickupPoints($body, $api, $creds, $termRepo, $senderId, $cargo, $calcCtx, $cors, $settings, $sessionCache);
                 return;
             }
             if ($uri === '/insales/external/v2/pickup_point') {
-                self::pickupPoint($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors, $settings);
+                self::pickupPoint($body, $api, $creds, $senderId, $cargo, $calcCtx, $cors, $settings, $sessionCache);
                 return;
             }
 
@@ -83,6 +86,7 @@ final class ExternalCheckoutHandler
         CalculatorContext $calcCtx,
         array $cors,
         ShopSettings $settings,
+        DellinSessionCache $sessionCache,
     ): void {
         $kladr = InsalesOrderParser::cityKladr($body);
         if ($kladr === null || strlen($kladr) < 10) {
@@ -104,7 +108,7 @@ final class ExternalCheckoutHandler
             'small'   => 'ДЛ Малогабаритный груз',
         ];
 
-        $sid = $api->loginWithPat($creds);
+        $sid = self::loginCached($api, $creds, $sessionCache, $settings->insalesId);
         $out = [];
 
         foreach ($deliveryTypes as $dtype) {
@@ -170,6 +174,7 @@ final class ExternalCheckoutHandler
         CalculatorContext $calcCtx,
         array $cors,
         ShopSettings $settings,
+        DellinSessionCache $sessionCache,
     ): void {
         $kladr = InsalesOrderParser::cityKladr($body);
         if ($kladr === null) {
@@ -195,58 +200,69 @@ final class ExternalCheckoutHandler
         // Индекс типа для кодирования в ID точки
         $typeIndex = array_flip(['auto', 'avia', 'express', 'small']);
 
-        $sid = $api->login($creds);
+        $sid = self::loginCached($api, $creds, $sessionCache, $settings->insalesId);
         $out = [];
 
+        /** @var array<int, array<string,mixed>> $pointsByTid */
+        $pointsByTid = [];
+        $terminalIds = [];
         foreach ($points as $t) {
             $tid = (int) ($t['id'] ?? 0);
             if ($tid <= 0) continue;
+            $pointsByTid[$tid] = $t;
+            $terminalIds[] = $tid;
+        }
 
-            foreach ($deliveryTypes as $dtype) {
-                try {
-                    $calc = self::calculateWithDateFallback(
-                        static fn(CalculatorContext $ctx) => $api->calculateToTerminal(
-                            $sid,
-                            $senderId,
-                            $tid,
-                            isset($t['city_kladr']) ? (string) $t['city_kladr'] : $kladr,
-                            $cargo,
-                            $ctx,
-                            $creds,
-                            $dtype
-                        ),
-                        $calcCtx,
-                        $settings->insalesId,
-                        'pickup_points',
-                        $dtype,
-                    );
-                    if ($calc === null || $calc['price'] === null) continue;
-
-                    $point = self::mapPickupPoint(
-                        $t,
-                        (float) $calc['price'],
-                        $calc['days'],
-                        $calcCtx->packageInCalc && $settings->packageName !== '' ? $settings->packageName : '',
-                        $calcCtx->produceDaysOffset,
-                        $typeNames[$dtype] ?? ''
-                    );
-                    // Кодируем тип в ID: terminal_id * 10 + type_index
-                    // Например терминал 53, тип avia (индекс 1) → ID = 531
-                    $point['id']    = $tid * 10 + ($typeIndex[$dtype] ?? 0);
-                    $point['title'] = ($typeNames[$dtype] ?? 'ДЛ') . ' — ' . ($t['name'] ?? 'ПВЗ');
-                    // Сохраняем тип для оформления заказа
-                    $point['fields_values'][] = ['handle' => 'dellin_calc_type', 'value' => $dtype];
-                    $out[] = $point;
-                } catch (\Throwable $ex) {
-                    \ShippingBridge\Logger::error($settings->insalesId, null, 'calc.pickup_point.error', [
-                        'delivery_type' => $dtype,
-                        'terminal_id' => $tid,
-                        'error' => $ex->getMessage(),
-                    ]);
-                }
+        // Один параллельный батч-запрос на каждый тип доставки — вместо
+        // последовательного вызова на каждую пару (терминал × тип).
+        foreach ($deliveryTypes as $dtype) {
+            try {
+                $calcResults = $api->calculateToTerminalsBatch(
+                    $sid,
+                    $senderId,
+                    $terminalIds,
+                    $kladr,
+                    $cargo,
+                    $calcCtx,
+                    $creds,
+                    $dtype,
+                );
+            } catch (\Throwable $ex) {
+                \ShippingBridge\Logger::error($settings->insalesId, null, 'calc.pickup_points_batch.error', [
+                    'delivery_type' => $dtype,
+                    'error' => $ex->getMessage(),
+                ]);
+                continue;
             }
 
-            if (count($out) >= 50) break;
+            foreach ($terminalIds as $tid) {
+                $calc = $calcResults[$tid] ?? null;
+                if ($calc === null || $calc['price'] === null) {
+                    if ($calc === null) {
+                        \ShippingBridge\Logger::error($settings->insalesId, null, 'calc.pickup_point.date_unavailable', [
+                            'delivery_type' => $dtype,
+                            'terminal_id' => $tid,
+                        ]);
+                    }
+                    continue;
+                }
+
+                $t = $pointsByTid[$tid];
+                $point = self::mapPickupPoint(
+                    $t,
+                    (float) $calc['price'],
+                    $calc['days'],
+                    $calcCtx->packageInCalc && $settings->packageName !== '' ? $settings->packageName : '',
+                    $calcCtx->produceDaysOffset,
+                    $typeNames[$dtype] ?? ''
+                );
+                $point['id']    = $tid * 10 + ($typeIndex[$dtype] ?? 0);
+                $point['title'] = ($typeNames[$dtype] ?? 'ДЛ') . ' — ' . ($t['name'] ?? 'ПВЗ');
+                $point['fields_values'][] = ['handle' => 'dellin_calc_type', 'value' => $dtype];
+                $out[] = $point;
+
+                if (count($out) >= 50) break 2;
+            }
         }
 
         Response::json($out, 200, $cors);
@@ -262,6 +278,7 @@ final class ExternalCheckoutHandler
         CalculatorContext $calcCtx,
         array $cors,
         ShopSettings $settings,
+        DellinSessionCache $sessionCache,
     ): void {
         $pointId = InsalesOrderParser::pickupPointId($body);
         if ($pointId === null || $pointId <= 0) {
@@ -275,7 +292,7 @@ final class ExternalCheckoutHandler
         $realTid   = (int) ($pointId / 10);
 
         $kladr = InsalesOrderParser::cityKladr($body);
-        $sid   = $api->login($creds);
+        $sid   = self::loginCached($api, $creds, $sessionCache, $settings->insalesId);
         $calc  = self::calculateWithDateFallback(
             static fn(CalculatorContext $ctx) => $api->calculateToTerminal(
                 $sid,
@@ -323,6 +340,27 @@ final class ExternalCheckoutHandler
         $point['fields_values'][] = ['handle' => 'dellin_calc_type', 'value' => $dtype];
 
         Response::json([$point], 200, $cors);
+    }
+
+    /**
+     * Возвращает закэшированный sessionID ДЛ для магазина, если он есть
+     * и не истёк, иначе логинится заново и сохраняет результат в кэш.
+     * Сессия ДЛ живёт 30 дней — это убирает лишний HTTP round-trip
+     * к API ДЛ почти на каждом запросе расчёта.
+     */
+    private static function loginCached(
+        CarrierApi $api,
+        CarrierCredentials $creds,
+        DellinSessionCache $sessionCache,
+        string $insalesId,
+    ): string {
+        $cached = $sessionCache->get($insalesId);
+        if ($cached !== null) {
+            return $cached;
+        }
+        $sid = $api->loginWithPat($creds);
+        $sessionCache->store($insalesId, $sid);
+        return $sid;
     }
 
     /**

@@ -68,7 +68,8 @@ final class BillingPage
         $subscriptions = new SubscriptionRepository($pdo);
 
         if ($method === 'POST' && isset($_POST['select_plan'])) {
-            self::handlePlanSelection($config, $subscriptions, $insalesId, $shopHost, (string) $_POST['select_plan']);
+            $wantsRecurrent = isset($_POST['recurrent']) && $_POST['recurrent'] === '1';
+            self::handlePlanSelection($config, $subscriptions, $insalesId, $shopHost, (string) $_POST['select_plan'], $wantsRecurrent);
             return;
         }
 
@@ -81,6 +82,7 @@ final class BillingPage
         string $insalesId,
         string $shopHost,
         string $plan,
+        bool $wantsRecurrent,
     ): void {
         if (!isset(self::PLANS[$plan])) {
             http_response_code(400);
@@ -100,16 +102,20 @@ final class BillingPage
 
         $acquiring = new TbankAcquiring($config->tbankTerminalKey, $config->tbankTerminalPassword);
 
+        $initExtra = [];
+        if ($wantsRecurrent) {
+            // Плательщик добровольно согласился на автопродление (чекбокс на форме) —
+            // сохраняем карту для последующих автосписаний по RebillId.
+            $initExtra['Recurrent'] = 'Y';
+            $initExtra['CustomerKey'] = $insalesId;
+        }
+
         try {
             $result = $acquiring->init(
                 $orderId,
                 $amountKopecks,
                 'Подписка "' . $planInfo['label'] . '" — ' . $shopHost,
-                [
-                    // Рекуррентные платежи: сохраняем карту для последующих автосписаний.
-                    'Recurrent' => 'Y',
-                    'CustomerKey' => $insalesId,
-                ],
+                $initExtra,
             );
         } catch (\Throwable $e) {
             http_response_code(502);

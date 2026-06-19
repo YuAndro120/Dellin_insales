@@ -68,7 +68,8 @@ final class BillingPage
         $subscriptions = new SubscriptionRepository($pdo);
 
         if ($method === 'POST' && isset($_POST['select_plan'])) {
-            self::handlePlanSelection($config, $subscriptions, $insalesId, $shopHost, (string) $_POST['select_plan']);
+            $wantsRecurrent = isset($_POST['recurrent']) && $_POST['recurrent'] === '1';
+            self::handlePlanSelection($config, $subscriptions, $insalesId, $shopHost, (string) $_POST['select_plan'], $wantsRecurrent);
             return;
         }
 

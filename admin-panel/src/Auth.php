@@ -90,11 +90,14 @@ final class Auth
         return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
     }
 
+    private const SESSION_LIFETIME_SECONDS = 30 * 24 * 60 * 60; // 30 дней
+
     private static function ensureSession(): void
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
+            ini_set('session.gc_maxlifetime', (string) self::SESSION_LIFETIME_SECONDS);
             session_set_cookie_params([
-                'lifetime' => 0,
+                'lifetime' => self::SESSION_LIFETIME_SECONDS,
                 'path' => '/',
                 'secure' => true,
                 'httponly' => true,

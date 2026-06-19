@@ -43,6 +43,17 @@ if ($uri === '/health' || $uri === '/v1/health') {
     exit;
 }
 
+$landingFiles = ['/', '/offer.html', '/refund.html', '/privacy.html'];
+if (in_array($uri, $landingFiles, true) && $method === 'GET') {
+    $file = $uri === '/' ? '/index.html' : $uri;
+    $path = __DIR__ . $file;
+    if (is_file($path)) {
+        header('Content-Type: text/html; charset=utf-8');
+        readfile($path);
+        exit;
+    }
+}
+
 $externalCheckoutUris = [
     '/insales/external/v2/courier',
     '/insales/external/v2/pickup_points',

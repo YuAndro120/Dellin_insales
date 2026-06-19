@@ -173,12 +173,16 @@ if (str_starts_with($uri, '/insales/')) {
             WebhookOrderHandler::handle($config, $shops);
             exit;
         }
-        if (str_starts_with($uri, '/insales/orders/edit') && ($method === 'GET' || $method === 'POST')) {
-            OrdersHandler::handleEdit($config, $shops, $method);
+        if ($uri === '/insales/billing' && ($method === 'GET' || $method === 'POST')) {
+            \ShippingBridge\InSales\BillingPage::handle($config, $shops, $method);
             exit;
         }
-        if ($uri === '/insales/modal' && $method === 'GET') {
-            \ShippingBridge\InSales\ModalHandler::handle($config, $shops);
+        if ($uri === '/insales/billing/webhook' && $method === 'POST') {
+            \ShippingBridge\InSales\BillingWebhookHandler::handle($config);
+            exit;
+        }
+        if (str_starts_with($uri, '/insales/orders/edit') && ($method === 'GET' || $method === 'POST')) {
+            OrdersHandler::handleEdit($config, $shops, $method);
             exit;
         }
         if ($uri === '/insales/orders/preview' && $method === 'POST') {

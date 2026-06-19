@@ -356,6 +356,9 @@ final class AppSettingsHandler
                     <button class="nav-item" data-page="connection" data-label="Подключение"><span class="nav-ico">🔌</span>Подключение<span class="nav-badge">✓</span></button>
                     <button class="nav-item" data-page="support" data-label="Поддержка"><span class="nav-ico">💬</span>Поддержка</button>
                 </nav>
+                <div style="padding:0 12px;margin-top:8px">
+                    <a href="/insales/billing?shop=<?= $shopQ ?>&insales_id=<?= $iidQ ?>&atk=<?= $h($accessToken) ?>" style="display:block;text-align:center;padding:9px 12px;background:var(--amber);color:#1a1714;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">Тариф</a>
+                </div>
                 <div class="sbar-footer">
                     <div class="sbar-ver">inSales Bridge</div>
                 </div>

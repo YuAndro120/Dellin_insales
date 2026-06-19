@@ -323,6 +323,24 @@ SQL;
         ]);
     }
 
+    public function findWidgetId(string $insalesId): ?int
+    {
+        $row = $this->fetchRow(
+            'SELECT widget_id FROM insales_shops WHERE insales_id = :iid AND uninstalled_at IS NULL LIMIT 1',
+            [':iid' => $insalesId]
+        );
+        if ($row === null || $row['widget_id'] === null) {
+            return null;
+        }
+        return (int) $row['widget_id'];
+    }
+
+    public function saveWidgetId(string $insalesId, int $widgetId): void
+    {
+        $stmt = $this->pdo->prepare('UPDATE insales_shops SET widget_id = :wid WHERE insales_id = :iid');
+        $stmt->execute([':wid' => $widgetId, ':iid' => $insalesId]);
+    }
+
     public function findAccessToken(string $insalesId): ?string
     {
         $row = $this->fetchRow(

@@ -125,6 +125,26 @@ final class InSalesClient
         return $this->requestJson('POST', $shopHost, $applicationLogin, $apiPasswordMd5, $path, $payload);
     }
 
+    /** @param array<string, mixed> $payload */
+    public function putJson(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        string $path,
+        array $payload,
+    ): array {
+        return $this->requestJson('PUT', $shopHost, $applicationLogin, $apiPasswordMd5, $path, $payload);
+    }
+
+    public function deleteJson(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        string $path,
+    ): array {
+        return $this->requestJson('DELETE', $shopHost, $applicationLogin, $apiPasswordMd5, $path, null);
+    }
+
     /**
      * @param array<string, mixed>|null $payload
      * @return array<string, mixed>
@@ -222,7 +242,9 @@ final class InSalesClient
         ]);
     }
     /**
-     * Регистрация виджета в карточке заказа inSales.
+     * Регистрация нового виджета в карточке заказа inSales.
+     * Возвращает id созданного виджета (нужно сохранить, чтобы в будущем
+     * обновлять этот же виджет через updateWidget(), а не плодить дубликаты).
      */
     public function registerWidget(
         string $shopHost,
@@ -230,13 +252,71 @@ final class InSalesClient
         string $apiPasswordMd5,
         string $code,
         int $height = 120,
-    ): void {
-        $this->postJson($shopHost, $applicationLogin, $apiPasswordMd5, '/admin/application_widgets.json', [
+    ): int {
+        $res = $this->postJson($shopHost, $applicationLogin, $apiPasswordMd5, '/admin/application_widgets.json', [
             'application_widget' => [
                 'code'   => $code,
                 'height' => $height,
             ],
         ]);
+        return (int) ($res['id'] ?? 0);
+    }
+
+    /**
+     * Обновляет существующий виджет вместо создания нового — используется,
+     * когда widget_id уже известен (сохранён при предыдущей установке).
+     */
+    public function updateWidget(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        int $widgetId,
+        string $code,
+        int $height = 120,
+    ): void {
+        $this->putJson($shopHost, $applicationLogin, $apiPasswordMd5, "/admin/application_widgets/{$widgetId}.json", [
+            'application_widget' => [
+                'code'   => $code,
+                'height' => $height,
+            ],
+        ]);
+    }
+
+    /**
+     * Список всех виджетов приложения в магазине — используется для
+     * одноразовой чистки дубликатов, накопившихся до перехода на
+     * update-or-create логику.
+     * @return list<array{id:int,code:string,height:int,created_at:string}>
+     */
+    public function listWidgets(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+    ): array {
+        $res = $this->getJsonPath($shopHost, $applicationLogin, $apiPasswordMd5, '/admin/application_widgets.json');
+        $items = is_array($res) && array_is_list($res) ? $res : ($res['application_widgets'] ?? []);
+        $out = [];
+        foreach ((array) $items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $out[] = [
+                'id' => (int) ($item['id'] ?? 0),
+                'code' => (string) ($item['code'] ?? ''),
+                'height' => (int) ($item['height'] ?? 0),
+                'created_at' => (string) ($item['created_at'] ?? ''),
+            ];
+        }
+        return $out;
+    }
+
+    public function deleteWidget(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        int $widgetId,
+    ): void {
+        $this->deleteJson($shopHost, $applicationLogin, $apiPasswordMd5, "/admin/application_widgets/{$widgetId}.json");
     }
 
     /**

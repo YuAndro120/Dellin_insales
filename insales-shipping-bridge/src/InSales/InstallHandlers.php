@@ -48,16 +48,24 @@ final class InstallHandlers
       }
     }
 
-    // Регистрируем виджет в карточке заказа
+    // Регистрируем виджет в карточке заказа: обновляем существующий,
+    // если он уже был создан ранее (widget_id сохранён), иначе создаём
+    // новый и запоминаем его id — это предотвращает накопление
+    // дубликатов виджета при каждой переустановке приложения.
     try {
-      $client->registerWidget(
-        $shop,
-        $config->insalesAppId ?? '',
-        $apiPassword,
-        self::buildWidgetCode($config->publicBridgeUrl, $insalesId),
-      );
+      $widgetCode = self::buildWidgetCode($config->publicBridgeUrl, $insalesId);
+      $existingWidgetId = $shops->findWidgetId($insalesId);
+
+      if ($existingWidgetId !== null) {
+        $client->updateWidget($shop, $config->insalesAppId ?? '', $apiPassword, $existingWidgetId, $widgetCode);
+      } else {
+        $newWidgetId = $client->registerWidget($shop, $config->insalesAppId ?? '', $apiPassword, $widgetCode);
+        if ($newWidgetId > 0) {
+          $shops->saveWidgetId($insalesId, $newWidgetId);
+        }
+      }
     } catch (\Throwable) {
-      // Не блокируем установку если виджет уже существует
+      // Не блокируем установку при сбое регистрации/обновления виджета
     }
 
     http_response_code(200);

@@ -50,6 +50,8 @@ final class Auth
         session_regenerate_id(true);
         $_SESSION['admin_user_id'] = (int) $user['id'];
         $_SESSION['admin_user_email'] = (string) $user['email'];
+        session_write_close();
+        session_start(); // переоткрываем, чтобы остальной код запроса видел $_SESSION как обычно
 
         $upd = $pdo->prepare('UPDATE admin_users SET last_login_at = CURRENT_TIMESTAMP WHERE id = :id');
         $upd->execute([':id' => $user['id']]);

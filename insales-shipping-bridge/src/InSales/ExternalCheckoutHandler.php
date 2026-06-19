@@ -139,10 +139,12 @@ final class ExternalCheckoutHandler
                     'warnings' => [],
                 ];
             } catch (\Throwable $ex) {
-                error_log('DELLIN CALC courier ' . $dtype . ': ' . $ex->getMessage());
+                \ShippingBridge\Logger::error($settings->insalesId, null, 'calc.courier.error', [
+                    'delivery_type' => $dtype,
+                    'error' => $ex->getMessage(),
+                ]);
             }
         }
-
         if ($out === []) {
             self::jsonError(['errors' => ['Не удалось рассчитать доставку']], 422, $cors);
             return;
@@ -224,7 +226,11 @@ final class ExternalCheckoutHandler
                     $point['fields_values'][] = ['handle' => 'dellin_calc_type', 'value' => $dtype];
                     $out[] = $point;
                 } catch (\Throwable $ex) {
-                    error_log('DELLIN CALC ' . $dtype . ' terminal ' . $tid . ': ' . $ex->getMessage());
+                    \ShippingBridge\Logger::error($settings->insalesId, null, 'calc.pickup_point.error', [
+                        'delivery_type' => $dtype,
+                        'terminal_id' => $tid,
+                        'error' => $ex->getMessage(),
+                    ]);
                 }
             }
 

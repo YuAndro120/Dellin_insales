@@ -109,18 +109,24 @@ final class ExternalCheckoutHandler
 
         foreach ($deliveryTypes as $dtype) {
             try {
-                $calc = $api->calculateToCity(
-                    $sid,
-                    $senderId,
-                    $kladr,
-                    $street,
-                    $house,
-                    $cargo,
+                $calc = self::calculateWithDateFallback(
+                    static fn(CalculatorContext $ctx) => $api->calculateToCity(
+                        $sid,
+                        $senderId,
+                        $kladr,
+                        $street,
+                        $house,
+                        $cargo,
+                        $ctx,
+                        $creds,
+                        $dtype
+                    ),
                     $calcCtx,
-                    $creds,
-                    $dtype
+                    $settings->insalesId,
+                    'courier',
+                    $dtype,
                 );
-                if ($calc['price'] === null) continue;
+                if ($calc === null || $calc['price'] === null) continue;
 
                 $out[] = [
                     'price'                   => (float) $calc['price'],
@@ -198,17 +204,23 @@ final class ExternalCheckoutHandler
 
             foreach ($deliveryTypes as $dtype) {
                 try {
-                    $calc = $api->calculateToTerminal(
-                        $sid,
-                        $senderId,
-                        $tid,
-                        isset($t['city_kladr']) ? (string) $t['city_kladr'] : $kladr,
-                        $cargo,
+                    $calc = self::calculateWithDateFallback(
+                        static fn(CalculatorContext $ctx) => $api->calculateToTerminal(
+                            $sid,
+                            $senderId,
+                            $tid,
+                            isset($t['city_kladr']) ? (string) $t['city_kladr'] : $kladr,
+                            $cargo,
+                            $ctx,
+                            $creds,
+                            $dtype
+                        ),
                         $calcCtx,
-                        $creds,
-                        $dtype  // ← тип доставки
+                        $settings->insalesId,
+                        'pickup_points',
+                        $dtype,
                     );
-                    if ($calc['price'] === null) continue;
+                    if ($calc === null || $calc['price'] === null) continue;
 
                     $point = self::mapPickupPoint(
                         $t,
@@ -264,17 +276,23 @@ final class ExternalCheckoutHandler
 
         $kladr = InsalesOrderParser::cityKladr($body);
         $sid   = $api->login($creds);
-        $calc  = $api->calculateToTerminal(
-            $sid,
-            $senderId,
-            $realTid,
-            $kladr,
-            $cargo,
+        $calc  = self::calculateWithDateFallback(
+            static fn(CalculatorContext $ctx) => $api->calculateToTerminal(
+                $sid,
+                $senderId,
+                $realTid,
+                $kladr,
+                $cargo,
+                $ctx,
+                $creds,
+                $dtype
+            ),
             $calcCtx,
-            $creds,
-            $dtype
+            $settings->insalesId,
+            'pickup_point_single',
+            $dtype,
         );
-        if ($calc['price'] === null) {
+        if ($calc === null || $calc['price'] === null) {
             self::jsonError(['errors' => ['Расчёт для выбранного ПВЗ недоступен']], 422, $cors);
             return;
         }
@@ -305,6 +323,50 @@ final class ExternalCheckoutHandler
         $point['fields_values'][] = ['handle' => 'dellin_calc_type', 'value' => $dtype];
 
         Response::json([$point], 200, $cors);
+    }
+
+    /**
+     * Пробует расчёт с дефолтным сдвигом даты отгрузки, и при ошибке
+     * "180012 Выбранная дата недоступна" повторяет с увеличивающимся
+     * сдвигом (+1, +2, +3, +4 дня), пока терминал/направление не примет
+     * дату — терминалы могут быть закрыты на выбранную дату (выходной,
+     * технический перерыв), и без этого покупатель видел бы ошибку расчёта.
+     *
+     * @param callable(CalculatorContext): array $calcFn
+     * @return array{price:?float,days:?int,metadata?:array,raw?:array}|null
+     */
+    private static function calculateWithDateFallback(
+        callable $calcFn,
+        CalculatorContext $calcCtx,
+        string $insalesId,
+        string $context,
+        string $deliveryType,
+    ): ?array {
+        $maxExtraDays = 5;
+        $lastError = null;
+
+        for ($extra = 0; $extra <= $maxExtraDays; $extra++) {
+            $ctx = $extra === 0 ? $calcCtx : $calcCtx->withProduceDaysOffset($calcCtx->produceDaysOffset + $extra);
+            try {
+                return $calcFn($ctx);
+            } catch (\Throwable $ex) {
+                $lastError = $ex;
+                if (!str_contains($ex->getMessage(), '180012')) {
+                    // Не "дата недоступна" — нет смысла пробовать другие даты, пробрасываем сразу.
+                    throw $ex;
+                }
+                // Иначе пробуем следующий день.
+            }
+        }
+
+        \ShippingBridge\Logger::error($insalesId, null, 'calc.date_fallback.exhausted', [
+            'context' => $context,
+            'delivery_type' => $deliveryType,
+            'tried_days' => $maxExtraDays + 1,
+            'last_error' => $lastError?->getMessage(),
+        ]);
+
+        return null;
     }
 
     /** @param array<string, mixed> $t */

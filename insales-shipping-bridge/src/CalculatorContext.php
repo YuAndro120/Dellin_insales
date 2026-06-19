@@ -56,4 +56,22 @@ final class CalculatorContext
             derivalCityName: $this->derivalCityName,
         );
     }
+
+    public function withProduceDaysOffset(int $offset): self
+    {
+        return new self(
+            requesterEmail: $this->requesterEmail,
+            counteragentUid: $this->counteragentUid,
+            requesterRole: $this->requesterRole,
+            produceDaysOffset: $offset,
+            derivalVariant: $this->derivalVariant,
+            derivalCityKladr: $this->derivalCityKladr,
+            derivalStreet: $this->derivalStreet,
+            derivalHouse: $this->derivalHouse,
+            packageUid: $this->packageUid,
+            packageInCalc: $this->packageInCalc,
+            arrivalCityName: $this->arrivalCityName,
+            derivalCityName: $this->derivalCityName,
+        );
+    }
 }

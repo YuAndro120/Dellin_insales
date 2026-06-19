@@ -169,6 +169,10 @@ final class AppSettingsHandler
 
         [$counteragents, $counteragentsError] = self::loadCounteragents($shops, $config, $settings);
 
+        $subscriptionPdo = \ShippingBridge\Db::pdo($config);
+        $subscriptionRepo = new \ShippingBridge\SubscriptionRepository($subscriptionPdo);
+        $subscriptionData = $subscriptionRepo->findByInsalesId($settings->insalesId);
+
         http_response_code(200);
         self::renderSettingsPage(
             $settings,
@@ -178,7 +182,8 @@ final class AppSettingsHandler
             $error,
             $counteragents,
             $counteragentsError,
-            $shops->findAccessToken($settings->insalesId) ?? ''
+            $shops->findAccessToken($settings->insalesId) ?? '',
+            $subscriptionData
         );
     }
  
@@ -296,6 +301,7 @@ final class AppSettingsHandler
         array $counteragents,
         ?string $counteragentsError,
         string $accessToken = '',
+        ?array $subscription = null,
     ): void {
         $h   = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
         $tid = $s->senderTerminalId !== null && $s->senderTerminalId > 0 ? (string) $s->senderTerminalId : '';
@@ -349,6 +355,31 @@ final class AppSettingsHandler
                     <div class="sdot"></div>
                     <div class="stxt">PAT активен</div>
                 </div>
+                <?php
+                $planLabels = [
+                    'calc_only' => 'Калькулятор',
+                    'full' => 'Полный',
+                    'automation' => 'Автоматизация',
+                ];
+                $subStatus = $subscription['status'] ?? null;
+                $subPlanLabel = $planLabels[$subscription['plan'] ?? ''] ?? '—';
+                ?>
+                <?php if ($subStatus === 'trial' && !empty($subscription['trial_ends_at'])): ?>
+                    <div class="sbar-status" style="margin-top:6px">
+                        <div class="sdot" style="background:#f5a623"></div>
+                        <div class="stxt">Пробный период до <?= $h(date('d.m.Y', strtotime((string) $subscription['trial_ends_at']))) ?></div>
+                    </div>
+                <?php elseif ($subStatus === 'active' && !empty($subscription['current_period_ends_at'])): ?>
+                    <div class="sbar-status" style="margin-top:6px">
+                        <div class="sdot" style="background:#3dd68c"></div>
+                        <div class="stxt">Тариф «<?= $h($subPlanLabel) ?>» до <?= $h(date('d.m.Y', strtotime((string) $subscription['current_period_ends_at']))) ?></div>
+                    </div>
+                <?php elseif ($subStatus === 'past_due'): ?>
+                    <div class="sbar-status" style="margin-top:6px">
+                        <div class="sdot" style="background:#e5484d"></div>
+                        <div class="stxt">Оплата просрочена</div>
+                    </div>
+                <?php endif; ?>
                 <nav class="nav">
                     <div class="nav-lbl">Настройки</div>
                     <button class="nav-item active" data-page="sender" data-label="Отправитель"><span class="nav-ico">👤</span>Отправитель</button>
@@ -357,7 +388,7 @@ final class AppSettingsHandler
                     <button class="nav-item" data-page="support" data-label="Поддержка"><span class="nav-ico">💬</span>Поддержка</button>
                 </nav>
                 <div style="padding:0 12px;margin-top:8px">
-                    <a href="/insales/billing?shop=<?= $shopQ ?>&insales_id=<?= $iidQ ?>&atk=<?= $h($accessToken) ?>" style="display:block;text-align:center;padding:9px 12px;background:var(--amber);color:#1a1714;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">Тариф</a>
+                    <a href="<?= $h(rtrim($config->landingUrl ?? 'https://receptly.ru', '/')) ?>/?shop=<?= $shopQ ?>&insales_id=<?= $iidQ ?>&atk=<?= $h($accessToken) ?>" target="_blank" rel="noopener" style="display:block;text-align:center;padding:9px 12px;background:var(--amber);color:#1a1714;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600">Тариф</a>
                 </div>
                 <div class="sbar-footer">
                     <div class="sbar-ver">inSales Bridge</div>

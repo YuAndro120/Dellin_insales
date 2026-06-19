@@ -73,7 +73,13 @@ final class BillingPage
             return;
         }
 
-        self::renderPlansPage($subscriptions, $insalesId, $shopHost, $requiredAccessToken ?? '');
+        // GET без выбора тарифа — не показываем карточки, отправляем на лендинг.
+        http_response_code(302);
+        header('Location: ' . rtrim($config->landingUrl ?? 'https://receptly.ru', '/') . '/?' . http_build_query([
+            'insales_id' => $insalesId,
+            'shop' => $shopHost,
+            'atk' => $requiredAccessToken ?? '',
+        ]));
     }
 
     private static function handlePlanSelection(

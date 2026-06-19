@@ -19,6 +19,7 @@ final class Config
         public readonly string $publicBridgeUrl,
         public readonly ?string $tbankTerminalKey = null,
         public readonly ?string $tbankTerminalPassword = null,
+        public readonly ?string $landingUrl = null,
     ) {}
 
     /** Полная конфигурация для API расчёта и справочников. */
@@ -41,6 +42,7 @@ final class Config
             publicBridgeUrl: self::opt('PUBLIC_BRIDGE_URL') ?? '',
             tbankTerminalKey: self::opt('TBANK_TERMINAL_KEY'),
             tbankTerminalPassword: self::opt('TBANK_TERMINAL_PASSWORD'),
+            landingUrl: self::opt('LANDING_URL'),
         );
     }
 
@@ -70,6 +72,7 @@ final class Config
             publicBridgeUrl: self::opt('PUBLIC_BRIDGE_URL') ?? '',
             tbankTerminalKey: self::opt('TBANK_TERMINAL_KEY'),
             tbankTerminalPassword: self::opt('TBANK_TERMINAL_PASSWORD'),
+            landingUrl: self::opt('LANDING_URL'),
         );
     }
 

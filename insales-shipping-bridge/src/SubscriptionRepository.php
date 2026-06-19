@@ -166,6 +166,14 @@ final class SubscriptionRepository
         ]);
     }
 
+    public function saveRebillId(string $insalesId, string $rebillId): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE subscriptions SET tbank_rebill_id = :rebill_id WHERE insales_id = :iid'
+        );
+        $stmt->execute([':rebill_id' => $rebillId, ':iid' => $insalesId]);
+    }
+
     public function markPastDue(string $insalesId): void
     {
         $stmt = $this->pdo->prepare(

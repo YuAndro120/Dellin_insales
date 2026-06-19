@@ -74,6 +74,15 @@ final class BillingWebhookHandler
         $pdo = Db::pdo($config);
         $subscriptions = new SubscriptionRepository($pdo);
 
+        if ($status === 'AUTHORIZED' && $rebillId !== '') {
+            // RebillId приходит именно в уведомлении AUTHORIZED, не CONFIRMED —
+            // сохраняем его сразу, не дожидаясь подтверждения платежа.
+            $subscriptions->saveRebillId($insalesId, $rebillId);
+            Logger::info($insalesId, null, 'billing.rebill_id.saved', [
+                'payment_id' => $paymentId,
+            ]);
+        }
+
         if ($status === 'CONFIRMED' && $success) {
             $periodEnd = (new \DateTimeImmutable())->modify('+30 days');
             $subscriptions->activateAfterPayment(

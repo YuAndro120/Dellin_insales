@@ -17,8 +17,9 @@ final class Config
         public readonly ?string $insalesAppId,
         public readonly ?string $insalesAppSecret,
         public readonly string $publicBridgeUrl,
-    ) {
-    }
+        public readonly ?string $tbankTerminalKey = null,
+        public readonly ?string $tbankTerminalPassword = null,
+    ) {}
 
     /** Полная конфигурация для API расчёта и справочников. */
     public static function fromEnv(): self
@@ -38,6 +39,8 @@ final class Config
             insalesAppId: self::opt('INSALES_APP_ID'),
             insalesAppSecret: self::opt('INSALES_APP_SECRET'),
             publicBridgeUrl: self::opt('PUBLIC_BRIDGE_URL') ?? '',
+            tbankTerminalKey: self::opt('TBANK_TERMINAL_KEY'),
+            tbankTerminalPassword: self::opt('TBANK_TERMINAL_PASSWORD'),
         );
     }
 
@@ -65,6 +68,8 @@ final class Config
             insalesAppId: self::opt('INSALES_APP_ID'),
             insalesAppSecret: self::opt('INSALES_APP_SECRET'),
             publicBridgeUrl: self::opt('PUBLIC_BRIDGE_URL') ?? '',
+            tbankTerminalKey: self::opt('TBANK_TERMINAL_KEY'),
+            tbankTerminalPassword: self::opt('TBANK_TERMINAL_PASSWORD'),
         );
     }
 

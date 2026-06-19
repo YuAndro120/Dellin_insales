@@ -200,6 +200,10 @@ final class BillingPage
                 echo '<input type="hidden" name="insales_id" value="' . $h($insalesId) . '">';
                 echo '<input type="hidden" name="atk" value="' . $h($accessToken) . '">';
                 echo '<input type="hidden" name="select_plan" value="' . $h($planKey) . '">';
+                echo '<label style="display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:#666;margin-bottom:12px;cursor:pointer;line-height:1.4">';
+                echo '<input type="checkbox" name="recurrent" value="1" style="margin-top:2px;flex-shrink:0">';
+                echo '<span>Подключить автопродление — карта сохранится, и оплата следующего периода спишется автоматически. Можно отключить в любой момент.</span>';
+                echo '</label>';
                 echo '<button type="submit" class="plan-btn">Выбрать и оплатить</button>';
                 echo '</form>';
             }

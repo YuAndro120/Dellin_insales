@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace ShippingBridge;
 
 /**
- * Структурированное логирование в файлы по дням с маскированием
- * персональных данных (телефон/email получателя).
+ * Структурированное логирование в JSON Lines (.jsonl) файлы по дням,
+ * с маскированием персональных данных (телефон/email получателя).
  *
- * Лог-файл: /var/log/bridge/YYYY-MM-DD.log
- * Формат строки: [HH:MM:SS] [LEVEL] shop=<insales_id> order=<id|-> event=<name> <key=value ...>
+ * Лог-файл: /var/log/bridge/YYYY-MM-DD.jsonl
+ * Каждая строка — отдельный JSON-объект:
+ * {"time":"HH:MM:SS","level":"INFO","shop":"...","order":"...","event":"...","context":{...}}
  *
  * Ошибки (error()) дополнительно пишутся в таблицу admin_alerts той же БД
  * для отображения в админ-панели. Если запись в БД не удалась — это не
@@ -65,12 +66,6 @@ final class Logger
         return $local[0] . '***' . $domain;
     }
 
-    /**
-     * Частично маскирует адрес — оставляет город, скрывает дом/квартиру.
-     * Используется только если нужно логировать полный адрес объекта;
-     * по умолчанию город/улицу можно оставлять как есть (не персональные
-     * данные сами по себе), маскировка дома — опционально на месте вызова.
-     */
     public static function maskHouseNumber(string $house): string
     {
         if ($house === '') {
@@ -79,12 +74,46 @@ final class Logger
         return str_repeat('*', max(1, strlen($house)));
     }
 
+    /**
+     * Рекурсивно маскирует известные чувствительные ключи внутри тела
+     * запроса/ответа перед логированием (для $context['body'] и подобных).
+     * Используется когда логируется сырой массив от API ДЛ/inSales, в
+     * котором могут встретиться ФИО, телефон, email на разных уровнях
+     * вложенности.
+     *
+     * @param array<mixed> $data
+     * @return array<mixed>
+     */
+    public static function maskSensitiveFields(array $data): array
+    {
+        $phoneKeys = ['phone', 'phoneNumber', 'number'];
+        $emailKeys = ['email'];
+        $nameKeys = []; // ФИО намеренно не маскируем — нужно для диагностики "кому едет заказ"
+
+        $result = [];
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $result[$key] = self::maskSensitiveFields($value);
+                continue;
+            }
+            if (is_string($value) && in_array($key, $phoneKeys, true)) {
+                $result[$key] = self::maskPhone($value);
+                continue;
+            }
+            if (is_string($value) && in_array($key, $emailKeys, true)) {
+                $result[$key] = self::maskEmail($value);
+                continue;
+            }
+            $result[$key] = $value;
+        }
+        return $result;
+    }
+
     private static function write(string $level, string $shopId, ?string $orderId, string $event, array $context): void
     {
         $line = self::formatLine($level, $shopId, $orderId, $event, $context);
-        $file = self::LOG_DIR . '/' . date('Y-m-d') . '.log';
+        $file = self::LOG_DIR . '/' . date('Y-m-d') . '.jsonl';
 
-        // Не блокируем основной поток приложения при сбое логирования.
         try {
             file_put_contents($file, $line . PHP_EOL, FILE_APPEND | LOCK_EX);
         } catch (\Throwable) {
@@ -137,9 +166,6 @@ final class Logger
         }
 
         try {
-            // Переиспользуем то же соединение/учётные данные, что и основное
-            // приложение (Db::pdo требует Config, но конфиг уже инициализирован
-            // глобально через getenv() к моменту вызова Logger).
             self::$alertPdo = Db::pdo(Config::fromEnvForInsales());
             return self::$alertPdo;
         } catch (\Throwable) {
@@ -150,27 +176,16 @@ final class Logger
 
     private static function formatLine(string $level, string $shopId, ?string $orderId, string $event, array $context): string
     {
-        $time = date('H:i:s');
-        $orderPart = $orderId !== null && $orderId !== '' ? $orderId : '-';
+        $entry = [
+            'time' => date('H:i:s'),
+            'level' => $level,
+            'shop' => $shopId,
+            'order' => ($orderId !== null && $orderId !== '') ? $orderId : null,
+            'event' => $event,
+            'context' => $context,
+        ];
 
-        $parts = [];
-        foreach ($context as $key => $value) {
-            if (is_array($value)) {
-                $value = json_encode($value, JSON_UNESCAPED_UNICODE);
-            }
-            $parts[] = $key . '=' . self::escapeValue((string) $value);
-        }
-        $contextStr = implode(' ', $parts);
-
-        return "[{$time}] [{$level}] shop={$shopId} order={$orderPart} event={$event}" . ($contextStr !== '' ? ' ' . $contextStr : '');
-    }
-
-    private static function escapeValue(string $value): string
-    {
-        $value = str_replace(["\r", "\n"], ' ', $value);
-        if (str_contains($value, ' ')) {
-            return '"' . str_replace('"', '\\"', $value) . '"';
-        }
-        return $value;
+        $json = json_encode($entry, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return $json !== false ? $json : '{"error":"log_encode_failed"}';
     }
 }

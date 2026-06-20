@@ -541,6 +541,7 @@ final class CarrierApi
         CalculatorContext $calcCtx,
         ?CarrierCredentials $credentials = null,
         string $deliveryType = 'auto',
+        ?string $insalesIdForLog = null,
     ): array {
         $body = $this->buildCalculatorBody(
             $sessionId,
@@ -552,7 +553,22 @@ final class CarrierApi
             $credentials,
             $deliveryType,
         );
+        if ($insalesIdForLog !== null) {
+            \ShippingBridge\Logger::info($insalesIdForLog, null, 'calc.terminal.request', [
+                'terminal_id' => $arrivalTerminalId,
+                'delivery_type' => $deliveryType,
+                'cargo' => $body['cargo'] ?? [],
+            ]);
+        }
         $res = $this->postJson(self::URL_CALC, $body);
+        if ($insalesIdForLog !== null) {
+            \ShippingBridge\Logger::info($insalesIdForLog, null, 'calc.terminal.response', [
+                'terminal_id' => $arrivalTerminalId,
+                'price' => $res['data']['price'] ?? null,
+                'status' => $res['metadata']['status'] ?? null,
+                'errors' => $res['errors'] ?? null,
+            ]);
+        }
         return $this->parseCalculatorResponse($res);
     }
 
@@ -578,6 +594,7 @@ final class CarrierApi
         ?CarrierCredentials $credentials = null,
         string $deliveryType = 'auto',
         int $maxExtraDays = 5,
+        ?string $insalesIdForLog = null,
     ): array {
         $results = [];
         $pending = array_values(array_unique($terminalIds));
@@ -624,7 +641,14 @@ final class CarrierApi
         foreach ($pending as $tid) {
             $results[$tid] = null;
         }
-
+        if ($insalesIdForLog !== null) {
+            \ShippingBridge\Logger::info($insalesIdForLog, null, 'calc.terminals_batch.summary', [
+                'delivery_type' => $deliveryType,
+                'requested_terminals' => count($terminalIds),
+                'resolved' => count(array_filter($results, static fn($r) => $r !== null)),
+                'cargo' => $cargo,
+            ]);
+        }
         return $results;
     }
 
@@ -638,6 +662,7 @@ final class CarrierApi
         CalculatorContext $calcCtx,
         ?CarrierCredentials $credentials = null,
         string $deliveryType = 'auto',
+        ?string $insalesIdForLog = null,
     ): array {
         $streetKladr = null;
         if ($arrivalStreet !== null && $arrivalStreet !== '') {
@@ -658,7 +683,21 @@ final class CarrierApi
             $streetKladr,
             $deliveryType,
         );
+        if ($insalesIdForLog !== null) {
+            \ShippingBridge\Logger::info($insalesIdForLog, null, 'calc.city.request', [
+                'delivery_type' => $deliveryType,
+                'cargo' => $body['cargo'] ?? [],
+                'arrival_variant' => $body['delivery']['arrival']['variant'] ?? null,
+            ]);
+        }
         $res = $this->postJson(self::URL_CALC, $body);
+        if ($insalesIdForLog !== null) {
+            \ShippingBridge\Logger::info($insalesIdForLog, null, 'calc.city.response', [
+                'price' => $res['data']['price'] ?? null,
+                'status' => $res['metadata']['status'] ?? null,
+                'errors' => $res['errors'] ?? null,
+            ]);
+        }
         return $this->parseCalculatorResponse($res);
     }
  

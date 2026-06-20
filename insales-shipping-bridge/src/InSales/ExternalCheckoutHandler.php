@@ -123,7 +123,8 @@ final class ExternalCheckoutHandler
                         $cargo,
                         $ctx,
                         $creds,
-                        $dtype
+                        $dtype,
+                        $settings->insalesId
                     ),
                     $calcCtx,
                     $settings->insalesId,
@@ -226,6 +227,8 @@ final class ExternalCheckoutHandler
                     $calcCtx,
                     $creds,
                     $dtype,
+                    5,
+                    $settings->insalesId,
                 );
             } catch (\Throwable $ex) {
                 \ShippingBridge\Logger::error($settings->insalesId, null, 'calc.pickup_points_batch.error', [
@@ -302,7 +305,8 @@ final class ExternalCheckoutHandler
                 $cargo,
                 $ctx,
                 $creds,
-                $dtype
+                $dtype,
+                $settings->insalesId
             ),
             $calcCtx,
             $settings->insalesId,

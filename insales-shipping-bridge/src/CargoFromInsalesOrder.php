@@ -34,6 +34,7 @@ final class CargoFromInsalesOrder
         $maxL = 0.01;
         $maxW = 0.01;
         $maxH = 0.01;
+        $maxSingleWeight = 0.01;
         $oversizedWeight = 0.0;
         $oversizedVolume = 0.0;
 
@@ -52,6 +53,7 @@ final class CargoFromInsalesOrder
             $maxL = max($maxL, $l);
             $maxW = max($maxW, $wd);
             $maxH = max($maxH, $h);
+            $maxSingleWeight = max($maxSingleWeight, $w);
 
             // Каждое место в позиции имеет одинаковый вес/габариты — если
             // одно место негабаритно, негабаритны все $qty мест этой позиции.
@@ -74,7 +76,8 @@ final class CargoFromInsalesOrder
         }
 
         return [
-            'weight' => round($totalWeight, 3),
+            'weight' => round($maxSingleWeight, 3),
+            'total_weight' => round($totalWeight, 3),
             'volume' => round($totalVolume, 4),
             'length' => round($maxL, 2),
             'width' => round($maxW, 2),

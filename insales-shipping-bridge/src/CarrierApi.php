@@ -980,7 +980,7 @@ final class CarrierApi
             'productInfo' => [
                 'type'        => 4,
                 'productType' => 5,
-                'info'        => [['param' => 'shipping-bridge', 'value' => 'mvp-1']],
+                'info'        => [['param' => 'DL Connect', 'value' => 'mvp 0.1.']],
             ],
         ];
         return $body;
@@ -1035,7 +1035,7 @@ final class CarrierApi
             'productInfo' => [
                 'type'        => 4,
                 'productType' => 5,
-                'info'        => [['param' => 'shipping-bridge', 'value' => 'mvp-1-city']],
+                'info'        => [['param' => 'DL Connect', 'value' => 'mvp 0.1.']],
             ],
         ];
     }

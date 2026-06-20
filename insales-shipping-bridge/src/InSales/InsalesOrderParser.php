@@ -90,16 +90,24 @@ final class InsalesOrderParser
             $qty = max(1, (int) ($line['quantity'] ?? 1));
             $weight = (float) ($line['weight'] ?? 0);
             $dims = trim((string) ($line['dimensions'] ?? ''));
+            // Цена позиции — checkout API inSales может присылать как total-price
+            // (уже за всё количество), так и price (за единицу); приоритет первому.
+            $totalPrice = (float) ($line['total-price'] ?? $line['total_price'] ?? 0);
+            if ($totalPrice <= 0) {
+                $unitPrice = (float) ($line['price'] ?? 0);
+                $totalPrice = $unitPrice * $qty;
+            }
             $out[] = [
                 'quantity' => $qty,
                 'weight' => $weight > 0 ? $weight : 0.0,
                 'dimensions' => $dims,
+                'total_price' => $totalPrice,
             ];
         }
 
         return $out;
     }
-    
+
     /** @param array<string, mixed> $body */
     public static function street(array $body): ?string
     {

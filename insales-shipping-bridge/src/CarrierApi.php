@@ -407,10 +407,9 @@ final class CarrierApi
         $orderIdForLog = (string) ($order['insales_order_id'] ?? '');
         \ShippingBridge\Logger::info($settings->insalesId, $orderIdForLog, 'order.create.request', [
             'delivery_type' => $deliveryType,
-            'weight' => $weight,
-            'stated_value' => $statedValue,
-            'receiver_phone' => \ShippingBridge\Logger::maskPhone($receiverPhone ?? ''),
-            'arrival_city_kladr' => trim($arrivalCityKladr, '0') !== '' ? $arrivalCityKladr : '',
+            'dellin_delivery_type' => $dellinDeliveryType,
+            'dellin_terminal_id' => $dellinTerminalId,
+            'body' => \ShippingBridge\Logger::maskSensitiveFields($body),
         ]);
 
         $res = $this->postJson(self::URL_ORDER, $body);
@@ -418,6 +417,7 @@ final class CarrierApi
         if (!empty($res['errors'])) {
             \ShippingBridge\Logger::error($settings->insalesId, $orderIdForLog, 'order.create.error', [
                 'errors' => $res['errors'],
+                'response' => \ShippingBridge\Logger::maskSensitiveFields($res),
             ]);
             throw new \RuntimeException('Dellin order error: ' . json_encode($res['errors'], JSON_UNESCAPED_UNICODE));
         }
@@ -435,6 +435,7 @@ final class CarrierApi
         \ShippingBridge\Logger::info($settings->insalesId, $orderIdForLog, 'order.create.success', [
             'request_id' => $requestId,
             'barcode' => $barcode,
+            'response' => \ShippingBridge\Logger::maskSensitiveFields($res),
         ]);
 
         return ['request_id' => $requestId, 'barcode' => $barcode];

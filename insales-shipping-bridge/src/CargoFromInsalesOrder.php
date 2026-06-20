@@ -9,9 +9,13 @@ namespace ShippingBridge;
  */
 final class CargoFromInsalesOrder
 {
+    // Лимиты ДЛ для определения негабаритного места.
+    private const OVERSIZED_WEIGHT_KG = 800.0;
+    private const OVERSIZED_DIMENSION_M = 3.0;
+
     /**
      * @param list<array{quantity:int,weight:float,dimensions:string}> $lines
-     * @return array{weight:float,volume:float,length:float,width:float,height:float,quantity:int,stated_value:float}
+     * @return array{weight:float,volume:float,length:float,width:float,height:float,quantity:int,stated_value:float,oversized_weight:float,oversized_volume:float}
      */
     public static function aggregate(array $lines, ?ShopSettings $defaults = null): array
     {
@@ -28,6 +32,8 @@ final class CargoFromInsalesOrder
         $maxL = 0.01;
         $maxW = 0.01;
         $maxH = 0.01;
+        $oversizedWeight = 0.0;
+        $oversizedVolume = 0.0;
 
         foreach ($lines as $line) {
             $qty = max(1, (int) $line['quantity']);
@@ -42,6 +48,18 @@ final class CargoFromInsalesOrder
             $maxL = max($maxL, $l);
             $maxW = max($maxW, $wd);
             $maxH = max($maxH, $h);
+
+            // Каждое место в позиции имеет одинаковый вес/габариты — если
+            // одно место негабаритно, негабаритны все $qty мест этой позиции.
+            $isOversized = $w >= self::OVERSIZED_WEIGHT_KG
+                || $l >= self::OVERSIZED_DIMENSION_M
+                || $wd >= self::OVERSIZED_DIMENSION_M
+                || $h >= self::OVERSIZED_DIMENSION_M;
+
+            if ($isOversized) {
+                $oversizedWeight += $w * $qty;
+                $oversizedVolume += $l * $wd * $h * $qty;
+            }
         }
 
         if ($totalWeight < 0.01) {
@@ -59,6 +77,8 @@ final class CargoFromInsalesOrder
             'height' => round($maxH, 2),
             'quantity' => 1,
             'stated_value' => round(max(0.0, $fallbackStated), 2),
+            'oversized_weight' => round($oversizedWeight, 3),
+            'oversized_volume' => round($oversizedVolume, 4),
         ];
     }
 

@@ -261,7 +261,21 @@ final class OrderSubmitHandler
         $terminalId = '';
         if ($shippingHandle === 'dellin' && $outletType === 'pvz') {
             $deliveryType = 'pickup';
-            $terminalId = $outletExternalId;
+            // external_id закодирован как realTerminalId * 10 + typeIndex
+            // (см. ExternalCheckoutHandler::pickupPoints/pickupPoint, та же схема
+            // кодирования) — раскодируем здесь, так как inSales не гарантированно
+            // сохраняет dellin_calc_type из fields_values для точек самовывоза.
+            $encodedId = (int) $outletExternalId;
+            if ($encodedId > 0) {
+                $typeListForDecode = ['auto', 'avia', 'express', 'small'];
+                $decodedType = $typeListForDecode[$encodedId % 10] ?? 'auto';
+                $terminalId = (string) intdiv($encodedId, 10);
+                if ($deliveryCalcType === 'auto') {
+                    $deliveryCalcType = $decodedType;
+                }
+            } else {
+                $terminalId = $outletExternalId;
+            }
         }
         // Тип расчёта доставки из tariff_id (inSales не сохраняет dellin_calc_type)
         $tariffId = (string) ($deliveryInfo['tariff_id'] ?? '');

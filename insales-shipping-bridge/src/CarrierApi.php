@@ -568,7 +568,7 @@ final class CarrierApi
                 'body' => \ShippingBridge\Logger::maskSensitiveFields($res),
             ]);
         }
-        return $this->parseCalculatorResponse($res);
+        return $this->parseCalculatorResponse($res, 'terminal');
     }
 
     /**
@@ -626,7 +626,7 @@ final class CarrierApi
                     // это не "дата недоступна", а сбой сети.
                     continue;
                 }
-                $parsed = $this->parseCalculatorResponse($raw);
+                $parsed = $this->parseCalculatorResponse($raw, 'terminal');
                 $errorsJson = isset($parsed['errors']) ? json_encode($parsed['errors'], JSON_UNESCAPED_UNICODE) : '';
                 if ($parsed['price'] === null && str_contains($errorsJson, '180012')) {
                     $stillPending[] = $tid;
@@ -700,7 +700,7 @@ final class CarrierApi
                 'body' => \ShippingBridge\Logger::maskSensitiveFields($res),
             ]);
         }
-        return $this->parseCalculatorResponse($res);
+        return $this->parseCalculatorResponse($res, 'address');
     }
  
     // ─────────────────────────────────────────────────────────────
@@ -1208,7 +1208,7 @@ final class CarrierApi
         return $sid;
     }
 
-    private function parseCalculatorResponse(array $res): array
+    private function parseCalculatorResponse(array $res, string $arrivalVariant = ''): array
     {
         $meta   = $res['metadata'] ?? [];
         $status = (int) ($meta['status'] ?? 0);
@@ -1218,24 +1218,55 @@ final class CarrierApi
         }
         $data  = $res['data'] ?? [];
         $price = isset($data['price']) ? (float) $data['price'] : null;
-        $days  = null;
-        if (isset($data['orderDates']['arrivalToOspReceiver'])) {
-            try {
-                $d0   = new \DateTimeImmutable('today');
-                $d1   = new \DateTimeImmutable((string) $data['orderDates']['arrivalToOspReceiver']);
-                $days = (int) $d0->diff($d1)->format('%a');
-            } catch (\Throwable) {
-            }
-        }
+        $days  = $this->extractDeliveryDays($data['orderDates'] ?? [], $arrivalVariant);
         return ['price' => $price, 'days' => $days, 'metadata' => is_array($meta) ? $meta : [], 'raw' => $res];
     }
 
-    private function postJson(string $url, ?array $body): array
+    /**
+     * Извлекает срок доставки (в днях от сегодня) из orderDates ответа
+     * калькулятора ДЛ — строго по конечной точке маршрута, без
+     * промежуточных дат (риск показать заниженный/неверный срок клиенту).
+     *
+     * Подтверждённая (не предполагаемая) семантика полей по сценариям:
+     * - arrival.variant === 'address' и тип avia/express → derivalToAddress
+     *   (поле гарантированно присутствует только для avia/express, согласно
+     *   официальной документации ДЛ).
+     * - arrival.variant === 'address' и тип auto → derivalFromOspReceiver
+     *   (последнее заполняемое поле в наборе orderDates для этого сценария,
+     *   подтверждено реальным ответом API: arrivalToOspReceiver — лишь
+     *   прибытие на терминал, ещё не у клиента).
+     * - arrival.variant === 'terminal' (самовывоз/ПВЗ) → giveoutFromOspReceiver
+     *   (момент готовности груза к выдаче клиенту на терминале).
+     *
+     * Если для сценария ожидаемое поле отсутствует — возвращаем null
+     * (UI покажет "Срок уточняется"), не подставляем промежуточную дату.
+     *
+     * @param array<string,mixed> $orderDates
+     */
+    private function extractDeliveryDays(array $orderDates, string $arrivalVariant): ?int
     {
-        $json = $this->http('POST', $url, $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE));
-        return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-    }
+        if ($arrivalVariant === 'terminal') {
+            $field = 'giveoutFromOspReceiver';
+        } else {
+            $field = isset($orderDates['derivalToAddress']) && $orderDates['derivalToAddress'] !== ''
+                ? 'derivalToAddress'
+                : 'derivalFromOspReceiver';
+        }
 
+        $value = $orderDates[$field] ?? null;
+        if (!is_string($value) || $value === '') {
+            return null;
+        }
+
+        try {
+            $d0 = new \DateTimeImmutable('today');
+            $d1 = new \DateTimeImmutable($value);
+            $diff = (int) $d0->diff($d1)->format('%a');
+            return $diff >= 0 ? $diff : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
     /**
      * Параллельно отправляет несколько POST JSON-запросов на один URL
      * через curl_multi. Запросы с ошибкой сети/таймаутом или невалидным

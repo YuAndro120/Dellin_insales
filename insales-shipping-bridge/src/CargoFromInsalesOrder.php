@@ -30,6 +30,7 @@ final class CargoFromInsalesOrder
         $totalWeight = 0.0;
         $totalVolume = 0.0;
         $totalStatedValue = 0.0;
+        $totalQuantity = 0;
         $maxL = 0.01;
         $maxW = 0.01;
         $maxH = 0.01;
@@ -39,6 +40,7 @@ final class CargoFromInsalesOrder
         foreach ($lines as $line) {
             $totalStatedValue += (float) ($line['total_price'] ?? 0.0);
             $qty = max(1, (int) $line['quantity']);
+            $totalQuantity += $qty;
             $w = $line['weight'] > 0 ? $line['weight'] : $fallbackWeight;
             $dimsRaw = trim($line['dimensions']);
             [$l, $wd, $h] = $dimsRaw !== ''
@@ -77,7 +79,7 @@ final class CargoFromInsalesOrder
             'length' => round($maxL, 2),
             'width' => round($maxW, 2),
             'height' => round($maxH, 2),
-            'quantity' => 1,
+            'quantity' => $totalQuantity,
             'stated_value' => round(max(0.0, $totalStatedValue > 0 ? $totalStatedValue : $fallbackStated), 2),
             'oversized_weight' => round($oversizedWeight, 3),
             'oversized_volume' => round($oversizedVolume, 4),

@@ -1070,7 +1070,8 @@ final class CarrierApi
         $h      = max(0.01, (float) ($cargo['height']   ?? 0.2));
         $q      = max(1,    (int)   ($cargo['quantity'] ?? 1));
         $stated = (float) ($cargo['stated_value'] ?? 0.0);
-        return [
+
+        $result = [
             'quantity'    => $q,
             'length'      => round($l,  2),
             'width'       => round($wd, 2),
@@ -1084,6 +1085,19 @@ final class CarrierApi
                 'term'        => false,
             ],
         ];
+
+        // Негабарит: вес ≥ 800 кг ИЛИ хотя бы одна грань ≥ 3 м для места.
+        // oversizedWeight/oversizedVolume считаются заранее в CargoFromInsalesOrder
+        // на уровне отдельных позиций заказа (там известны реальные габариты
+        // каждого товара, не усреднённые максимумы) и передаются сюда готовыми.
+        $oversizedWeight = (float) ($cargo['oversized_weight'] ?? 0.0);
+        $oversizedVolume = (float) ($cargo['oversized_volume'] ?? 0.0);
+        if ($oversizedWeight > 0 || $oversizedVolume > 0) {
+            $result['oversizedWeight'] = round($oversizedWeight, 2);
+            $result['oversizedVolume'] = round($oversizedVolume, 4);
+        }
+
+        return $result;
     }
 
     private function parseCounteragents(array $res): array

@@ -1,427 +1,1044 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ДЛ Коннект — доставка Деловыми Линиями для inSales</title>
-<meta name="description" content="ДЛ Коннект подключает Деловые Линии к вашему магазину на inSales: расчёт стоимости со скидками перевозчика и автоматическое оформление заявок на доставку.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#16181c;
-  --bg-soft:#1c1f24;
-  --bg-card:#1f2228;
-  --line:#2c3038;
-  --line-soft:#24272e;
-  --ink:#f2efe9;
-  --ink-dim:#a8a59d;
-  --ink-faint:#6b6963;
-  --amber:#e8742c;
-  --amber-soft:#3a2a1c;
-  --green:#5fb88a;
-  --green-soft:#1a2b22;
-  --display:'Space Grotesk',sans-serif;
-  --sans:'Inter',sans-serif;
-  --mono:'IBM Plex Mono',monospace;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important}}
-body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
-a{color:inherit}
-img,svg{display:block;max-width:100%}
-.wrap{max-width:1100px;margin:0 auto;padding:0 24px}
-:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ДЛ Коннект — доставка Деловыми Линиями для inSales</title>
+  <meta name="description"
+    content="ДЛ Коннект подключает Деловые Линии к вашему магазину на inSales: расчёт стоимости со скидками перевозчика и автоматическое оформление заявок на доставку.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #16181c;
+      --bg-soft: #1c1f24;
+      --bg-card: #1f2228;
+      --line: #2c3038;
+      --line-soft: #24272e;
+      --ink: #f2efe9;
+      --ink-dim: #a8a59d;
+      --ink-faint: #6b6963;
+      --amber: #e8742c;
+      --amber-soft: #3a2a1c;
+      --green: #5fb88a;
+      --green-soft: #1a2b22;
+      --display: 'Space Grotesk', sans-serif;
+      --sans: 'Inter', sans-serif;
+      --mono: 'IBM Plex Mono', monospace;
+    }
 
-/* NAV */
-.nav{position:sticky;top:0;z-index:50;background:rgba(22,24,28,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft)}
-.nav-inner{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;max-width:1100px;margin:0 auto}
-.nav-brand{display:flex;align-items:center;gap:9px;font-family:var(--display);font-weight:600;font-size:18px;letter-spacing:-0.01em;text-decoration:none}
-.nav-dot{width:9px;height:9px;border-radius:50%;background:var(--amber)}
-.nav-links{display:flex;gap:28px;font-size:14px;color:var(--ink-dim)}
-.nav-links a{text-decoration:none;transition:color .15s}
-.nav-links a:hover{color:var(--ink)}
-.nav-cta{font-size:13.5px;font-weight:600;background:var(--amber);color:#1a1208;padding:9px 18px;border-radius:8px;text-decoration:none;white-space:nowrap}
-@media (max-width:760px){.nav-links{display:none}}
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
 
-/* HERO */
-.hero{position:relative;padding:88px 0 64px;overflow:hidden}
-.hero-grid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:56px;align-items:center}
-@media (max-width:880px){.hero-grid{grid-template-columns:1fr;gap:40px}.hero{padding:56px 0 40px}}
-.eyebrow{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:20px}
-.eyebrow::before{content:'';width:5px;height:5px;background:var(--amber);border-radius:50%}
-h1{font-family:var(--display);font-size:clamp(34px,5vw,52px);font-weight:600;line-height:1.08;letter-spacing:-0.02em;margin-bottom:20px}
-h1 em{font-style:normal;color:var(--amber)}
-.hero-sub{font-size:17px;color:var(--ink-dim);max-width:480px;margin-bottom:32px;line-height:1.6}
-.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:36px}
-.btn-primary{background:var(--amber);color:#1a1208;font-weight:600;font-size:15px;padding:13px 24px;border-radius:9px;text-decoration:none;display:inline-block;transition:transform .15s,box-shadow .15s}
-.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px -8px rgba(232,116,44,.5)}
-.btn-secondary{border:1px solid var(--line);color:var(--ink);font-weight:500;font-size:15px;padding:12px 23px;border-radius:9px;text-decoration:none;transition:border-color .15s}
-.btn-secondary:hover{border-color:var(--ink-faint)}
-.hero-meta{display:flex;gap:24px;font-size:13px;color:var(--ink-faint);font-family:var(--mono)}
+    html {
+      scroll-behavior: smooth
+    }
 
-/* ROUTE SIGNATURE */
-.route-card{background:var(--bg-card);border:1px solid var(--line);border-radius:16px;padding:32px 28px;position:relative}
-.route-label{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:22px;display:flex;justify-content:space-between}
-.route-svg{width:100%;height:auto}
-.route-stop-label{font-family:var(--mono);font-size:11px;fill:var(--ink-dim)}
-.route-stop-sub{font-family:var(--mono);font-size:9.5px;fill:var(--ink-faint)}
-@keyframes pulse{0%,100%{opacity:1;r:5}50%{opacity:.4;r:7}}
-.pulse-dot{animation:pulse 2.2s ease-in-out infinite}
-@keyframes dash{to{stroke-dashoffset:0}}
-.route-path{stroke-dasharray:6 5;stroke-dashoffset:600;animation:dash 2.4s ease-out forwards}
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto
+      }
 
-/* TRUST STRIP */
-.trust{padding:28px 0;border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)}
-.trust-row{display:flex;align-items:center;justify-content:center;gap:48px;flex-wrap:wrap;font-size:13px;color:var(--ink-faint);font-family:var(--mono)}
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important
+      }
+    }
 
-/* SECTIONS */
-section{padding:80px 0}
-.section-head{max-width:560px;margin-bottom:48px}
-.section-eyebrow{font-family:var(--mono);font-size:12px;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
-h2{font-family:var(--display);font-size:clamp(26px,3.4vw,36px);font-weight:600;letter-spacing:-0.015em;line-height:1.18;margin-bottom:14px}
-.section-desc{color:var(--ink-dim);font-size:15.5px;line-height:1.65}
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased
+    }
 
-/* FEATURES */
-.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:14px;overflow:hidden}
-@media (max-width:760px){.features-grid{grid-template-columns:1fr}}
-.feature{background:var(--bg-card);padding:30px 26px}
-.feature-num{font-family:var(--mono);font-size:12px;color:var(--ink-faint);margin-bottom:16px}
-.feature h3{font-family:var(--display);font-size:18px;font-weight:600;margin-bottom:9px}
-.feature p{font-size:14px;color:var(--ink-dim);line-height:1.6}
+    a {
+      color: inherit
+    }
 
-/* PRICING */
-.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-@media (max-width:880px){.pricing-grid{grid-template-columns:1fr}}
-.price-card{background:var(--bg-card);border:1px solid var(--line);border-radius:16px;padding:30px 26px;display:flex;flex-direction:column}
-.price-card.featured{border-color:var(--amber);position:relative}
-.price-tag{position:absolute;top:-12px;left:26px;background:var(--amber);color:#1a1208;font-size:11px;font-weight:700;padding:4px 11px;border-radius:20px;font-family:var(--mono);letter-spacing:.03em}
-.price-name{font-family:var(--display);font-size:19px;font-weight:600;margin-bottom:6px}
-.price-amount{font-family:var(--mono);font-size:34px;font-weight:600;margin-bottom:2px}
-.price-amount span{font-size:14px;color:var(--ink-faint);font-weight:400}
-.price-trial{font-size:12.5px;color:var(--green);font-family:var(--mono);margin-bottom:20px}
-.price-features{list-style:none;font-size:14px;color:var(--ink-dim);flex:1;margin-bottom:24px}
-.price-features li{padding:8px 0;border-top:1px solid var(--line-soft);display:flex;gap:9px;align-items:flex-start}
-.price-features li:first-child{border-top:0}
-.price-check{color:var(--green);flex-shrink:0;margin-top:2px}
-.price-btn{text-align:center;padding:12px;border-radius:9px;text-decoration:none;font-weight:600;font-size:14.5px;border:1px solid var(--line)}
-.price-card.featured .price-btn{background:var(--amber);color:#1a1208;border-color:var(--amber)}
-.plan-form{display:flex;flex-direction:column;gap:10px}
-.recurrent-label{display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:var(--ink-faint);cursor:pointer;line-height:1.4}
-.recurrent-label input{margin-top:2px;flex-shrink:0}
-.plan-submit{width:100%;cursor:pointer;font-family:inherit}
+    img,
+    svg {
+      display: block;
+      max-width: 100%
+    }
 
-/* HOW */
-.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
-@media (max-width:880px){.steps{grid-template-columns:1fr 1fr}}
-@media (max-width:520px){.steps{grid-template-columns:1fr}}
-.step-num{font-family:var(--mono);font-size:13px;color:var(--amber);margin-bottom:12px}
-.step h4{font-family:var(--display);font-size:16px;font-weight:600;margin-bottom:7px}
-.step p{font-size:13.5px;color:var(--ink-dim);line-height:1.55}
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px
+    }
 
-/* FAQ */
-.faq-item{border-top:1px solid var(--line-soft);padding:22px 0}
-.faq-item:last-child{border-bottom:1px solid var(--line-soft)}
-.faq-q{font-family:var(--display);font-size:16px;font-weight:600;margin-bottom:8px}
-.faq-a{font-size:14.5px;color:var(--ink-dim);line-height:1.6;max-width:680px}
+    :focus-visible {
+      outline: 2px solid var(--amber);
+      outline-offset: 3px
+    }
 
-/* CONTACT / LEGAL */
-.legal-card{background:var(--bg-card);border:1px solid var(--line);border-radius:16px;padding:32px}
-.legal-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px}
-@media (max-width:700px){.legal-grid{grid-template-columns:1fr}}
-.legal-block dt{font-family:var(--mono);font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;margin-top:16px}
-.legal-block dt:first-child{margin-top:0}
-.legal-block dd{font-size:14.5px;color:var(--ink)}
-.legal-links{display:flex;gap:20px;margin-top:24px;padding-top:24px;border-top:1px solid var(--line-soft);font-size:13.5px}
-.legal-links a{color:var(--amber);text-decoration:none}
-.legal-links a:hover{text-decoration:underline}
+    /* NAV */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(22, 24, 28, .88);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line-soft)
+    }
 
-/* FOOTER */
-footer{border-top:1px solid var(--line-soft);padding:32px 0;font-size:13px;color:var(--ink-faint)}
-.footer-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-</style>
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      max-width: 1100px;
+      margin: 0 auto
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+      text-decoration: none
+    }
+
+    .nav-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--amber)
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      font-size: 14px;
+      color: var(--ink-dim)
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      transition: color .15s
+    }
+
+    .nav-links a:hover {
+      color: var(--ink)
+    }
+
+    .nav-cta {
+      font-size: 13.5px;
+      font-weight: 600;
+      background: var(--amber);
+      color: #1a1208;
+      padding: 9px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      white-space: nowrap
+    }
+
+    @media (max-width:760px) {
+      .nav-links {
+        display: none
+      }
+    }
+
+    /* HERO */
+    .hero {
+      position: relative;
+      padding: 88px 0 64px;
+      overflow: hidden
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 56px;
+      align-items: center
+    }
+
+    @media (max-width:880px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 40px
+      }
+
+      .hero {
+        padding: 56px 0 40px
+      }
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 20px
+    }
+
+    .eyebrow::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      background: var(--amber);
+      border-radius: 50%
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(34px, 5vw, 52px);
+      font-weight: 600;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px
+    }
+
+    h1 em {
+      font-style: normal;
+      color: var(--amber)
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      color: var(--ink-dim);
+      max-width: 480px;
+      margin-bottom: 32px;
+      line-height: 1.6
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 36px
+    }
+
+    .btn-primary {
+      background: var(--amber);
+      color: #1a1208;
+      font-weight: 600;
+      font-size: 15px;
+      padding: 13px 24px;
+      border-radius: 9px;
+      text-decoration: none;
+      display: inline-block;
+      transition: transform .15s, box-shadow .15s
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px -8px rgba(232, 116, 44, .5)
+    }
+
+    .btn-secondary {
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-weight: 500;
+      font-size: 15px;
+      padding: 12px 23px;
+      border-radius: 9px;
+      text-decoration: none;
+      transition: border-color .15s
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--ink-faint)
+    }
+
+    .hero-meta {
+      display: flex;
+      gap: 24px;
+      font-size: 13px;
+      color: var(--ink-faint);
+      font-family: var(--mono)
+    }
+
+    /* ROUTE SIGNATURE */
+    .route-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 32px 28px;
+      position: relative
+    }
+
+    .route-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 22px;
+      display: flex;
+      justify-content: space-between
+    }
+
+    .route-svg {
+      width: 100%;
+      height: auto
+    }
+
+    .route-stop-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      fill: var(--ink-dim)
+    }
+
+    .route-stop-sub {
+      font-family: var(--mono);
+      font-size: 9.5px;
+      fill: var(--ink-faint)
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        r: 5
+      }
+
+      50% {
+        opacity: .4;
+        r: 7
+      }
+    }
+
+    .pulse-dot {
+      animation: pulse 2.2s ease-in-out infinite
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: 0
+      }
+    }
+
+    .route-path {
+      stroke-dasharray: 6 5;
+      stroke-dashoffset: 600;
+      animation: dash 2.4s ease-out forwards
+    }
+
+    /* TRUST STRIP */
+    .trust {
+      padding: 28px 0;
+      border-top: 1px solid var(--line-soft);
+      border-bottom: 1px solid var(--line-soft)
+    }
+
+    .trust-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--ink-faint);
+      font-family: var(--mono)
+    }
+
+    /* SECTIONS */
+    section {
+      padding: 80px 0
+    }
+
+    .section-head {
+      max-width: 560px;
+      margin-bottom: 48px
+    }
+
+    .section-eyebrow {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 12px
+    }
+
+    h2 {
+      font-family: var(--display);
+      font-size: clamp(26px, 3.4vw, 36px);
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      line-height: 1.18;
+      margin-bottom: 14px
+    }
+
+    .section-desc {
+      color: var(--ink-dim);
+      font-size: 15.5px;
+      line-height: 1.65
+    }
+
+    /* FEATURES */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line-soft);
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      overflow: hidden
+    }
+
+    @media (max-width:760px) {
+      .features-grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .feature {
+      background: var(--bg-card);
+      padding: 30px 26px
+    }
+
+    .feature-num {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink-faint);
+      margin-bottom: 16px
+    }
+
+    .feature h3 {
+      font-family: var(--display);
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 9px
+    }
+
+    .feature p {
+      font-size: 14px;
+      color: var(--ink-dim);
+      line-height: 1.6
+    }
+
+    /* PRICING */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px
+    }
+
+    @media (max-width:880px) {
+      .pricing-grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .price-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 30px 26px;
+      display: flex;
+      flex-direction: column
+    }
+
+    .price-card.featured {
+      border-color: var(--amber);
+      position: relative
+    }
+
+    .price-tag {
+      position: absolute;
+      top: -12px;
+      left: 26px;
+      background: var(--amber);
+      color: #1a1208;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 11px;
+      border-radius: 20px;
+      font-family: var(--mono);
+      letter-spacing: .03em
+    }
+
+    .price-name {
+      font-family: var(--display);
+      font-size: 19px;
+      font-weight: 600;
+      margin-bottom: 6px
+    }
+
+    .price-amount {
+      font-family: var(--mono);
+      font-size: 34px;
+      font-weight: 600;
+      margin-bottom: 2px
+    }
+
+    .price-amount span {
+      font-size: 14px;
+      color: var(--ink-faint);
+      font-weight: 400
+    }
+
+    .price-trial {
+      font-size: 12.5px;
+      color: var(--green);
+      font-family: var(--mono);
+      margin-bottom: 20px
+    }
+
+    .price-features {
+      list-style: none;
+      font-size: 14px;
+      color: var(--ink-dim);
+      flex: 1;
+      margin-bottom: 24px
+    }
+
+    .price-features li {
+      padding: 8px 0;
+      border-top: 1px solid var(--line-soft);
+      display: flex;
+      gap: 9px;
+      align-items: flex-start
+    }
+
+    .price-features li:first-child {
+      border-top: 0
+    }
+
+    .price-check {
+      color: var(--green);
+      flex-shrink: 0;
+      margin-top: 2px
+    }
+
+    .price-btn {
+      text-align: center;
+      padding: 12px;
+      border-radius: 9px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14.5px;
+      border: 1px solid var(--line)
+    }
+
+    .price-card.featured .price-btn {
+      background: var(--amber);
+      color: #1a1208;
+      border-color: var(--amber)
+    }
+
+    .plan-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px
+    }
+
+    .recurrent-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      font-size: 11.5px;
+      color: var(--ink-faint);
+      cursor: pointer;
+      line-height: 1.4
+    }
+
+    .recurrent-label input {
+      margin-top: 2px;
+      flex-shrink: 0
+    }
+
+    .plan-submit {
+      width: 100%;
+      cursor: pointer;
+      font-family: inherit
+    }
+
+    /* HOW */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px
+    }
+
+    @media (max-width:880px) {
+      .steps {
+        grid-template-columns: 1fr 1fr
+      }
+    }
+
+    @media (max-width:520px) {
+      .steps {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .step-num {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--amber);
+      margin-bottom: 12px
+    }
+
+    .step h4 {
+      font-family: var(--display);
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 7px
+    }
+
+    .step p {
+      font-size: 13.5px;
+      color: var(--ink-dim);
+      line-height: 1.55
+    }
+
+    /* FAQ */
+    .faq-item {
+      border-top: 1px solid var(--line-soft);
+      padding: 22px 0
+    }
+
+    .faq-item:last-child {
+      border-bottom: 1px solid var(--line-soft)
+    }
+
+    .faq-q {
+      font-family: var(--display);
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px
+    }
+
+    .faq-a {
+      font-size: 14.5px;
+      color: var(--ink-dim);
+      line-height: 1.6;
+      max-width: 680px
+    }
+
+    /* CONTACT / LEGAL */
+    .legal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 32px
+    }
+
+    .legal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px
+    }
+
+    @media (max-width:700px) {
+      .legal-grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .legal-block dt {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 4px;
+      margin-top: 16px
+    }
+
+    .legal-block dt:first-child {
+      margin-top: 0
+    }
+
+    .legal-block dd {
+      font-size: 14.5px;
+      color: var(--ink)
+    }
+
+    .legal-links {
+      display: flex;
+      gap: 20px;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line-soft);
+      font-size: 13.5px
+    }
+
+    .legal-links a {
+      color: var(--amber);
+      text-decoration: none
+    }
+
+    .legal-links a:hover {
+      text-decoration: underline
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--line-soft);
+      padding: 32px 0;
+      font-size: 13px;
+      color: var(--ink-faint)
+    }
+
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px
+    }
+  </style>
 </head>
+
 <body>
 
-<nav class="nav">
-  <div class="nav-inner">
-    <a href="#" class="nav-brand"><span class="nav-dot"></span>ДЛ Коннект</a>
-    <div class="nav-links">
-      <a href="#how">Как работает</a>
-      <a href="#pricing">Тарифы</a>
-      <a href="#faq">Вопросы</a>
-      <a href="#contacts">Контакты</a>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand"><span class="nav-dot"></span>ДЛ Коннект</a>
+      <div class="nav-links">
+        <a href="#how">Как работает</a>
+        <a href="#pricing">Тарифы</a>
+        <a href="#faq">Вопросы</a>
+        <a href="#contacts">Контакты</a>
+      </div>
+      <a href="#pricing" class="nav-cta">Подключить</a>
     </div>
-    <a href="#pricing" class="nav-cta">Подключить</a>
-  </div>
-</nav>
+  </nav>
 
-<header class="hero">
-  <div class="wrap hero-grid">
-    <div>
-      <div class="eyebrow">Приложение для inSales</div>
-      <h1>Деловые Линии<br>прямо из <em>корзины</em><br>вашего магазина</h1>
-      <p class="hero-sub">ДЛ Коннект считает стоимость доставки со скидками Деловых Линий ещё на этапе оформления заказа и одним кликом отправляет заявку перевозчику — без переключения между личными кабинетами.</p>
-      <div class="hero-actions">
-        <a href="#pricing" class="btn-primary">Выбрать тариф</a>
-        <a href="#how" class="btn-secondary">Как это работает</a>
-      </div>
-      <div class="hero-meta">
-        <span>14 дней бесплатно</span>
-        <span>·</span>
-        <span>Без привязки карты для старта</span>
-      </div>
-    </div>
-
-    <div class="route-card">
-      <div class="route-label"><span>МАРШРУТ ЗАЯВКИ</span><span>~40 СЕК</span></div>
-      <svg class="route-svg" viewBox="0 0 380 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Схема обработки заявки: от заказа в магазине до получения товара">
-        <path class="route-path" d="M40,30 C40,90 150,60 150,130 C150,200 320,170 320,230" fill="none" stroke="#e8742c" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
-        <circle cx="40" cy="30" r="5" fill="#e8742c"/>
-        <text x="54" y="26" class="route-stop-label">Заказ в inSales</text>
-        <text x="54" y="40" class="route-stop-sub">покупатель оформляет</text>
-
-        <circle cx="150" cy="130" r="5" fill="#e8742c"/>
-        <text x="164" y="126" class="route-stop-label">Расчёт ДЛ Коннект</text>
-        <text x="164" y="140" class="route-stop-sub">тариф, скидка, сроки</text>
-
-        <circle cx="320" cy="230" r="6" fill="#5fb88a" class="pulse-dot"/>
-        <text x="266" y="216" class="route-stop-label">Заявка в ДЛ</text>
-        <text x="278" y="250" class="route-stop-sub">оформлена</text>
-      </svg>
-    </div>
-  </div>
-</header>
-
-<div class="trust">
-  <div class="wrap trust-row">
-    <span>inSales App Store</span>
-    <span>Деловые Линии API</span>
-    <span>Платежи через Т-Банк</span>
-  </div>
-</div>
-
-<section id="how">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="section-eyebrow">Как это работает</div>
-      <h2>Четыре шага от установки до первой заявки</h2>
-      <p class="section-desc">ДЛ Коннект встраивается в админку inSales и работает поверх вашего личного кабинета Деловых Линий — никаких отдельных сайтов и переключений между вкладками.</p>
-    </div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">01</div>
-        <h4>Установка</h4>
-        <p>Подключаете приложение из каталога inSales в один клик, указываете токен Деловых Линий.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <h4>Настройка отправителя</h4>
-        <p>Заполняете реквизиты и терминал отгрузки один раз — дальше ДЛ Коннект подставляет их в каждую заявку.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <h4>Расчёт в корзине</h4>
-        <p>Покупатель видит точную стоимость и сроки Деловых Линий ещё до оформления заказа.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">04</div>
-        <h4>Заявка одним кликом</h4>
-        <p>Вы подтверждаете заказ — ДЛ Коннект сам формирует и отправляет заявку в Деловые Линии.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section style="padding-top:0">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="section-eyebrow">Что внутри</div>
-      <h2>Не просто калькулятор — рабочий инструмент логиста</h2>
-    </div>
-    <div class="features-grid">
-      <div class="feature">
-        <div class="feature-num">01</div>
-        <h3>Расчёт со скидками</h3>
-        <p>Тарифы считаются по вашему персональному договору с Деловыми Линиями, а не по публичному прайсу.</p>
-      </div>
-      <div class="feature">
-        <div class="feature-num">02</div>
-        <h3>Терминалы и забор</h3>
-        <p>Отгрузка с терминала или забор курьером от адреса — с реальным расписанием и доступными датами.</p>
-      </div>
-      <div class="feature">
-        <div class="feature-num">03</div>
-        <h3>Гибкие типы доставки</h3>
-        <p>Авто, авиа, экспресс и малогабаритные грузы — покупатель выбирает нужный вариант прямо в корзине.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="pricing">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="section-eyebrow">Тарифы</div>
-      <h2>Один магазин — один тариф, который растёт вместе с вами</h2>
-      <p class="section-desc">14 дней бесплатного доступа ко всем функциям тарифа «Полный» — решите, какой объём автоматизации вам нужен, попробовав его на практике.</p>
-    </div>
-    <div class="pricing-grid">
-      <div class="price-card">
-        <div class="price-name">Калькулятор</div>
-        <div class="price-amount">999 ₽<span> / мес</span></div>
-        <div class="price-trial">14 дней пробного периода</div>
-        <ul class="price-features">
-          <li><span class="price-check">✓</span>Расчёт стоимости со скидками ДЛ в корзине</li>
-          <li><span class="price-check">✓</span>Сроки доставки для покупателя</li>
-          <li><span class="price-check">✓</span>Все типы доставки ДЛ</li>
-        </ul>
-        <form class="plan-form" method="post" action="/insales/billing">
-          <input type="hidden" name="select_plan" value="calc_only">
-          <input type="hidden" name="insales_id" class="js-insales-id">
-          <input type="hidden" name="shop" class="js-shop">
-          <input type="hidden" name="atk" class="js-atk">
-          <label class="recurrent-label">
-            <input type="checkbox" name="recurrent" value="1">
-            <span>Автопродление</span>
-          </label>
-          <button type="submit" class="price-btn plan-submit">Подключить</button>
-        </form>
-      </div>
-      <div class="price-card featured">
-        <div class="price-tag">Популярный</div>
-        <div class="price-name">Полный</div>
-        <div class="price-amount">1999 ₽<span> / мес</span></div>
-        <div class="price-trial">14 дней пробного периода</div>
-        <ul class="price-features">
-          <li><span class="price-check">✓</span>Всё из тарифа «Калькулятор»</li>
-          <li><span class="price-check">✓</span>Оформление заявки в ДЛ из админки</li>
-          <li><span class="price-check">✓</span>Терминалы, забор от адреса, расписание</li>
-          <li><span class="price-check">✓</span>Полные настройки отправителя</li>
-        </ul>
-        <form class="plan-form" method="post" action="/insales/billing">
-          <input type="hidden" name="select_plan" value="full">
-          <input type="hidden" name="insales_id" class="js-insales-id">
-          <input type="hidden" name="shop" class="js-shop">
-          <input type="hidden" name="atk" class="js-atk">
-          <label class="recurrent-label">
-            <input type="checkbox" name="recurrent" value="1">
-            <span>Автопродление</span>
-          </label>
-          <button type="submit" class="price-btn plan-submit">Подключить</button>
-        </form>
-      </div>
-      <div class="price-card" style="opacity:.6">
-        <div class="price-name">Автоматизация</div>
-        <div class="price-amount">4999 ₽<span> / мес</span></div>
-        <div class="price-trial" style="color:var(--ink-faint)">Скоро в новых релизах</div>
-        <ul class="price-features">
-          <li><span class="price-check">✓</span>Всё из тарифа «Полный»</li>
-          <li><span class="price-check">✓</span>Действия по стадиям заказа inSales</li>
-          <li><span class="price-check">✓</span>Отчёты по затратам на логистику</li>
-          <li><span class="price-check">✓</span>Счета и платёжные ссылки</li>
-        </ul>
-        <span class="price-btn" style="background:transparent;color:var(--ink-faint);cursor:default">Пока недоступно</span>
-      </div>
-    </div>
-    <p id="no-shop-notice" style="display:none;margin-top:18px;font-size:13px;color:var(--ink-faint);font-family:var(--mono)">
-      Чтобы подключить тариф, откройте эту страницу по ссылке «Тариф» из настроек приложения в вашем магазине inSales.
-    </p>
-  </div>
-</section>
-
-<section id="faq">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="section-eyebrow">Вопросы</div>
-      <h2>Коротко о важном</h2>
-    </div>
-    <div class="faq-list">
-      <div class="faq-item">
-        <div class="faq-q">Нужен ли мне договор с Деловыми Линиями?</div>
-        <div class="faq-a">Да, ДЛ Коннект работает поверх вашего личного кабинета Деловых Линий — нужен персональный токен доступа (PAT), который вы получаете в настройках интеграции ДЛ.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q">Что происходит после 14 дней пробного периода?</div>
-        <div class="faq-a">Если вы не выбрали тариф, доступ к оформлению заявок приостанавливается до оплаты. Все ваши настройки и история заказов сохраняются.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q">Можно ли сменить тариф или отменить подписку?</div>
-        <div class="faq-a">Да, смена тарифа и отмена подписки доступны в любой момент из настроек приложения внутри inSales.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q">Как происходит оплата?</div>
-        <div class="faq-a">Картой через защищённую форму Т-Банка, с опциональным автопродлением подписки, или по счёту для организаций — выбор способа доступен на странице оплаты.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="contacts">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="section-eyebrow">Контакты и реквизиты</div>
-      <h2>Связаться с нами</h2>
-    </div>
-    <div class="legal-card">
-      <div class="legal-grid">
-        <div class="legal-block">
-          <dl>
-            <dt>Связь с поддержкой</dt>
-            <dd><a href="mailto:g120255908@gmail.com" style="color:var(--amber);text-decoration:none">g120255908@gmail.com</a></dd>
-            <dt>Отвечаем</dt>
-            <dd>В течение 1 рабочего дня</dd>
-          </dl>
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">Приложение для inSales</div>
+        <h1>Автоматизируйте<br>отправку заказов<br>через <em>Деловые Линии</em></h1>
+        <p class="hero-sub">Покупатель видит точную цену доставки в корзине — меньше брошенных заказов. Менеджер
+          оформляет заявку в ДЛ одним кликом — без ручного ввода и опечаток. Без программистов. 14 дней бесплатно.</p>
+        <div class="hero-actions">
+          <a href="#pricing" class="btn-primary">Выбрать тариф</a>
+          <a href="#how" class="btn-secondary">Как это работает</a>
         </div>
-        <div class="legal-block">
-          <dl>
-            <dt>Исполнитель</dt>
-            <dd>Индивидуальный предприниматель Андронов Юрий Витальевич</dd>
-            <dt>ИНН</dt>
-            <dd style="font-family:var(--mono)">550315094488</dd>
-            <dt>ОГРНИП</dt>
-            <dd style="font-family:var(--mono)">326554300001476</dd>
-            <dt>Адрес</dt>
-            <dd>644007, Россия, Омская обл., г. Омск, ул. Осоавиахимовская, д. 51</dd>
-          </dl>
+        <div class="hero-meta">
+          <span>14 дней бесплатно</span>
+          <span>·</span>
+          <span>Без привязки карты для старта</span>
         </div>
       </div>
-      <div class="legal-links">
-        <a href="/offer.html">Публичная оферта</a>
-        <a href="/refund.html">Политика возврата</a>
-        <a href="/privacy.html">Обработка персональных данных</a>
+
+      <div class="route-card">
+        <div class="route-label"><span>МАРШРУТ ЗАЯВКИ</span><span>~40 СЕК</span></div>
+        <svg class="route-svg" viewBox="0 0 380 260" xmlns="http://www.w3.org/2000/svg" role="img"
+          aria-label="Схема обработки заявки: от заказа в магазине до получения товара">
+          <path class="route-path" d="M40,30 C40,90 150,60 150,130 C150,200 320,170 320,230" fill="none"
+            stroke="#e8742c" stroke-width="2" stroke-linecap="round" opacity="0.55" />
+          <circle cx="40" cy="30" r="5" fill="#e8742c" />
+          <text x="54" y="26" class="route-stop-label">Заказ в inSales</text>
+          <text x="54" y="40" class="route-stop-sub">покупатель оформляет</text>
+
+          <circle cx="150" cy="130" r="5" fill="#e8742c" />
+          <text x="164" y="126" class="route-stop-label">Расчёт ДЛ Коннект</text>
+          <text x="164" y="140" class="route-stop-sub">тариф, скидка, сроки</text>
+
+          <circle cx="320" cy="230" r="6" fill="#5fb88a" class="pulse-dot" />
+          <text x="266" y="216" class="route-stop-label">Заявка в ДЛ</text>
+          <text x="278" y="250" class="route-stop-sub">оформлена</text>
+        </svg>
       </div>
     </div>
+  </header>
+
+  <div class="trust">
+    <div class="wrap trust-row">
+      <span>inSales</span>
+      <span>Деловые Линии</span>
+      <span>Т-Банк</span>
+    </div>
   </div>
-</section>
 
-<footer>
-  <div class="wrap footer-row">
-    <span>© 2026 ИП Андронов Ю. В. · ДЛ Коннект</span>
-    <span>ДЛ Коннект — независимая интеграция, не аффилирована с ООО «Деловые Линии» и inSales</span>
-  </div>
-</footer>
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-eyebrow">Как это работает</div>
+        <h2>От установки до первой заявки — без программистов</h2>
+        <p class="section-desc">ДЛ Коннект встраивается в админку inSales и работает поверх вашего личного кабинета
+          Деловых Линий — никаких отдельных сайтов и переключений между вкладками.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <h4>Установка за 1 минуту</h4>
+          <p>Подключаете приложение из каталога inSales, указываете токен Деловых Линий — без участия разработчика.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <h4>Прозрачная цена для покупателя</h4>
+          <p>Точная стоимость и сроки Деловых Линий видны в корзине ещё до оформления — меньше отказов на этапе
+            доставки.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <h4>Одна кнопка для менеджера</h4>
+          <p>Заявка в Деловые Линии формируется и отправляется автоматически — без ручного переноса данных и опечаток.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <h4>Экономия часов в неделю</h4>
+          <p>Меньше рутины у логиста, меньше ошибок в адресах и весе груза — особенно заметно при десятках заказов в
+            день.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-<script>
-(function () {
-  var params = new URLSearchParams(window.location.search);
-  var insalesId = params.get('insales_id') || '';
-  var shop = params.get('shop') || '';
-  var atk = params.get('atk') || '';
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-eyebrow">Что внутри</div>
+        <h2>Не просто калькулятор — рабочий инструмент логиста</h2>
+      </div>
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-num">01</div>
+          <h3>Расчёт со скидками</h3>
+          <p>Тарифы считаются по вашему персональному договору с Деловыми Линиями, а не по публичному прайсу.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-num">02</div>
+          <h3>Терминалы и забор</h3>
+          <p>Отгрузка с терминала или забор курьером от адреса — с реальным расписанием и доступными датами.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-num">03</div>
+          <h3>Гибкие типы доставки</h3>
+          <p>Авто, авиа, экспресс и малогабаритные грузы — покупатель выбирает нужный вариант прямо в корзине.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  document.querySelectorAll('.js-insales-id').forEach(function (el) { el.value = insalesId; });
-  document.querySelectorAll('.js-shop').forEach(function (el) { el.value = shop; });
-  document.querySelectorAll('.js-atk').forEach(function (el) { el.value = atk; });
+  <section id="pricing">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-eyebrow">Тарифы</div>
+        <h2>Один магазин — один тариф, который растёт вместе с вами</h2>
+        <p class="section-desc">14 дней бесплатного доступа ко всем функциям тарифа «Полный» — решите, какой объём
+          автоматизации вам нужен, попробовав его на практике.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="price-card">
+          <div class="price-name">Старт</div>
+          <div class="price-amount">999 ₽<span> / мес</span></div>
+          <div class="price-trial">14 дней пробного периода</div>
+          <ul class="price-features">
+            <li><span class="price-check">✓</span>Расчёт стоимости со скидками ДЛ в корзине</li>
+            <li><span class="price-check">✓</span>Сроки доставки для покупателя</li>
+            <li><span class="price-check">✓</span>Все типы доставки ДЛ</li>
+          </ul>
+          <form class="plan-form" method="post" action="/insales/billing">
+            <input type="hidden" name="select_plan" value="calc_only">
+            <input type="hidden" name="insales_id" class="js-insales-id">
+            <input type="hidden" name="shop" class="js-shop">
+            <input type="hidden" name="atk" class="js-atk">
+            <label class="recurrent-label">
+              <input type="checkbox" name="recurrent" value="1">
+              <span>Автопродление</span>
+            </label>
+            <button type="submit" class="price-btn plan-submit">Подключить</button>
+          </form>
+        </div>
+        <div class="price-card featured">
+          <div class="price-tag">Популярный</div>
+          <div class="price-name">Полный</div>
+          <div class="price-amount">1999 ₽<span> / мес</span></div>
+          <div class="price-trial">14 дней пробного периода</div>
+          <ul class="price-features">
+            <li><span class="price-check">✓</span>Всё из тарифа «Старт»</li>
+            <li><span class="price-check">✓</span>Оформление заявки в ДЛ из админки</li>
+            <li><span class="price-check">✓</span>Терминалы, забор от адреса, расписание</li>
+            <li><span class="price-check">✓</span>Полные настройки отправителя</li>
+          </ul>
+          <form class="plan-form" method="post" action="/insales/billing">
+            <input type="hidden" name="select_plan" value="full">
+            <input type="hidden" name="insales_id" class="js-insales-id">
+            <input type="hidden" name="shop" class="js-shop">
+            <input type="hidden" name="atk" class="js-atk">
+            <label class="recurrent-label">
+              <input type="checkbox" name="recurrent" value="1">
+              <span>Автопродление</span>
+            </label>
+            <button type="submit" class="price-btn plan-submit">Подключить</button>
+          </form>
+        </div>
+        <div class="price-card" style="opacity:.85">
+          <div class="price-name">Автоматизация</div>
+          <div class="price-amount">4999 ₽<span> / мес</span></div>
+          <div class="price-trial" style="color:var(--ink-faint)">Скоро — собираем ранний доступ</div>
+          <ul class="price-features">
+            <li><span class="price-check">✓</span>Всё из тарифа «Полный»</li>
+            <li><span class="price-check">✓</span>Действия по стадиям заказа inSales</li>
+            <li><span class="price-check">✓</span>Отчёты по затратам на логистику</li>
+            <li><span class="price-check">✓</span>Счета и платёжные ссылки</li>
+          </ul>
+          <form class="plan-form" id="early-access-form">
+            <input type="email" name="email" placeholder="Ваш email" required
+              style="padding:9px 12px;background:var(--bg3);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-size:13px;margin-bottom:8px">
+            <input type="hidden" name="insales_id" class="js-insales-id">
+            <button type="submit" class="price-btn plan-submit"
+              style="background:transparent;border:1px solid var(--amber);color:var(--amber)">Хочу в ранний
+              доступ</button>
+          </form>
+          <div id="early-access-thanks"
+            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо! Напишем,
+            когда откроем доступ.</div>
+        </div>
+      </div>
+      <p id="no-shop-notice"
+        style="display:none;margin-top:18px;font-size:13px;color:var(--ink-faint);font-family:var(--mono)">
+        Чтобы подключить тариф, откройте эту страницу по ссылке «Тариф» из настроек приложения в вашем магазине inSales.
+      </p>
+    </div>
+  </section>
 
-  if (!insalesId) {
-    document.querySelectorAll('.plan-form').forEach(function (form) {
-      form.querySelectorAll('button, input[type="checkbox"]').forEach(function (el) { el.disabled = true; });
-    });
-    var notice = document.getElementById('no-shop-notice');
-    if (notice) notice.style.display = 'block';
-  }
-})();
-</script>
+  <section id="faq">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-eyebrow">Вопросы</div>
+        <h2>Коротко о важном</h2>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-q">Нужен ли мне договор с Деловыми Линиями?</div>
+          <div class="faq-a">Да, ДЛ Коннект работает поверх вашего личного кабинета Деловых Линий — нужен персональный
+            токен доступа (PAT), который вы получаете в настройках интеграции ДЛ.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Что происходит после 14 дней пробного периода?</div>
+          <div class="faq-a">Если вы не выбрали тариф, доступ к оформлению заявок приостанавливается до оплаты. Все ваши
+            настройки и история заказов сохраняются.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Можно ли сменить тариф или отменить подписку?</div>
+          <div class="faq-a">Да, смена тарифа и отмена подписки доступны в любой момент из настроек приложения внутри
+            inSales.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Как происходит оплата?</div>
+          <div class="faq-a">Картой через защищённую форму Т-Банка, с опциональным автопродлением подписки, или по счёту
+            для организаций — выбор способа доступен на странице оплаты.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contacts">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-eyebrow">Контакты и реквизиты</div>
+        <h2>Связаться с нами</h2>
+      </div>
+      <div class="legal-card">
+        <div class="legal-grid">
+          <div class="legal-block">
+            <dl>
+              <dt>Связь с поддержкой</dt>
+              <dd><a href="mailto:g120255908@gmail.com"
+                  style="color:var(--amber);text-decoration:none">g120255908@gmail.com</a></dd>
+              <dt>Отвечаем</dt>
+              <dd>В течение 1 рабочего дня</dd>
+            </dl>
+          </div>
+          <div class="legal-block">
+            <dl>
+              <dt>Исполнитель</dt>
+              <dd>Индивидуальный предприниматель Андронов Юрий Витальевич</dd>
+              <dt>ИНН</dt>
+              <dd style="font-family:var(--mono)">550315094488</dd>
+              <dt>ОГРНИП</dt>
+              <dd style="font-family:var(--mono)">326554300001476</dd>
+              <dt>Адрес</dt>
+              <dd>644007, Россия, Омская обл., г. Омск, ул. Осоавиахимовская, д. 51</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="legal-links">
+          <a href="/offer.html">Публичная оферта</a>
+          <a href="/refund.html">Политика возврата</a>
+          <a href="/privacy.html">Обработка персональных данных</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap footer-row">
+      <span>© 2026 ИП Андронов Ю. В. · ДЛ Коннект</span>
+      <span>ДЛ Коннект — независимая интеграция, не аффилирована с ООО «Деловые Линии» и inSales</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var insalesId = params.get('insales_id') || '';
+      var shop = params.get('shop') || '';
+      var atk = params.get('atk') || '';
+
+      document.querySelectorAll('.js-insales-id').forEach(function (el) { el.value = insalesId; });
+      document.querySelectorAll('.js-shop').forEach(function (el) { el.value = shop; });
+      document.querySelectorAll('.js-atk').forEach(function (el) { el.value = atk; });
+
+      if (!insalesId) {
+        document.querySelectorAll('.plan-form:not(#early-access-form)').forEach(function (form) {
+          form.querySelectorAll('button, input[type="checkbox"]').forEach(function (el) { el.disabled = true; });
+        });
+        var notice = document.getElementById('no-shop-notice');
+        if (notice) notice.style.display = 'block';
+      }
+
+      var earlyForm = document.getElementById('early-access-form');
+      if (earlyForm) {
+        earlyForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var btn = earlyForm.querySelector('button');
+          var emailInput = earlyForm.querySelector('input[name="email"]');
+          btn.disabled = true;
+          btn.textContent = 'Отправляем…';
+
+          var formData = new FormData(earlyForm);
+          fetch('/insales/early-access', { method: 'POST', body: formData })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (data.ok) {
+                earlyForm.style.display = 'none';
+                document.getElementById('early-access-thanks').style.display = 'block';
+              } else {
+                btn.disabled = false;
+                btn.textContent = 'Хочу в ранний доступ';
+                alert(data.error || 'Не удалось отправить заявку');
+              }
+            })
+            .catch(function () {
+              btn.disabled = false;
+              btn.textContent = 'Хочу в ранний доступ';
+              alert('Ошибка сети, попробуйте ещё раз');
+            });
+        });
+      }
+    })();
+  </script>
 </body>
+
 </html>

@@ -33,6 +33,16 @@ final class OrdersHandler
             return;
         }
 
+        $requiredAccessToken = $shops->findAccessToken($settings->insalesId);
+        if ($requiredAccessToken !== null) {
+            $providedAccessToken = trim((string) ($_GET['atk'] ?? $_POST['atk'] ?? ''));
+            if ($providedAccessToken === '' || !hash_equals($requiredAccessToken, $providedAccessToken)) {
+                http_response_code(403);
+                self::renderError('Доступ запрещён.');
+                return;
+            }
+        }
+
         $pdo = Db::pdo($config);
 
         $stmt = $pdo->prepare('
@@ -49,8 +59,8 @@ final class OrdersHandler
         $stmt->execute(['shop_id' => $settings->insalesId]);
         $orders = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        $q = http_build_query(['shop' => $settings->shopHost, 'insales_id' => $settings->insalesId]);
-        $qWithToken = http_build_query(['shop' => $settings->shopHost, 'insales_id' => $settings->insalesId, 'atk' => $shops->findAccessToken($settings->insalesId) ?? '']);
+        $q = http_build_query(['shop' => $settings->shopHost, 'insales_id' => $settings->insalesId, 'atk' => $requiredAccessToken ?? '']);
+        $qWithToken = $q;
 
         self::renderHead('Заказы — Деловые Линии');
         echo '<h1>Заказы</h1>';
@@ -130,6 +140,16 @@ final class OrdersHandler
             return;
         }
 
+        $requiredAccessToken = $shops->findAccessToken($settings->insalesId);
+        if ($requiredAccessToken !== null) {
+            $providedAccessToken = trim((string) ($_GET['atk'] ?? $_POST['atk'] ?? ''));
+            if ($providedAccessToken === '' || !hash_equals($requiredAccessToken, $providedAccessToken)) {
+                http_response_code(403);
+                self::renderError('Доступ запрещён.');
+                return;
+            }
+        }
+
         $pdo = Db::pdo($config);
 
         // Сохранение изменений
@@ -186,7 +206,7 @@ final class OrdersHandler
             return;
         }
 
-        $q = http_build_query(['shop' => $settings->shopHost, 'insales_id' => $settings->insalesId]);
+        $q = http_build_query(['shop' => $settings->shopHost, 'insales_id' => $settings->insalesId, 'atk' => $requiredAccessToken ?? '']);
         $number = htmlspecialchars((string) ($order['insales_order_number'] ?? $orderId), ENT_QUOTES, 'UTF-8');
 
         self::renderHead('Заказ ' . $number . ' — Деловые Линии');
@@ -219,6 +239,7 @@ final class OrdersHandler
         echo '<form method="POST" action="' . htmlspecialchars($formAction, ENT_QUOTES, 'UTF-8') . '">';
         echo '<input type="hidden" name="shop" value="' . htmlspecialchars($settings->shopHost, ENT_QUOTES, 'UTF-8') . '">';
         echo '<input type="hidden" name="insales_id" value="' . htmlspecialchars($settings->insalesId, ENT_QUOTES, 'UTF-8') . '">';
+        echo '<input type="hidden" name="atk" value="' . htmlspecialchars($requiredAccessToken ?? '', ENT_QUOTES, 'UTF-8') . '">';
         echo '<input type="hidden" name="order_id" value="' . $orderId . '">';
 
         echo '<h2>Получатель</h2>';
@@ -246,6 +267,7 @@ final class OrdersHandler
             echo '<form method="POST" action="' . htmlspecialchars($submitUrl, ENT_QUOTES, 'UTF-8') . '" style="margin-top:1.5rem">';
             echo '<input type="hidden" name="shop" value="' . htmlspecialchars($settings->shopHost, ENT_QUOTES, 'UTF-8') . '">';
             echo '<input type="hidden" name="insales_id" value="' . htmlspecialchars($settings->insalesId, ENT_QUOTES, 'UTF-8') . '">';
+            echo '<input type="hidden" name="atk" value="' . htmlspecialchars($requiredAccessToken ?? '', ENT_QUOTES, 'UTF-8') . '">';
             echo '<input type="hidden" name="order_id" value="' . $orderId . '">';
             echo '<button type="submit" style="background:#2e7d32">Оформить в Деловые Линии</button>';
             echo '</form>';

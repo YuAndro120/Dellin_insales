@@ -163,7 +163,7 @@ final class CarrierApi
         if ($derivalTerminalId !== null && $derivalTerminalId > 0) {
             $body['derivalTerminalID'] = $derivalTerminalId;
         }
-        $body['arrivalPoint'] = $arrivalKladr ?? '7700000000000000000000000';
+        $body['arrivalPoint'] = $derivalKladr ?? '7700000000000000000000000';
         return $this->postJson(
             'https://api.dellin.ru/v1/public/request_conditions.json',
             $body

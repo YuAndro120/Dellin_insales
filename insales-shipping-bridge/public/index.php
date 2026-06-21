@@ -192,6 +192,10 @@ if (str_starts_with($uri, '/insales/')) {
             \ShippingBridge\InSales\BillingWebhookHandler::handle($config);
             exit;
         }
+        if ($uri === '/insales/billing/invoice' && $method === 'POST') {
+            \ShippingBridge\InSales\InvoicingPage::handle($config, $shops, $method);
+            exit;
+        }
         if (str_starts_with($uri, '/insales/orders/edit') && ($method === 'GET' || $method === 'POST')) {
             OrdersHandler::handleEdit($config, $shops, $method);
             exit;

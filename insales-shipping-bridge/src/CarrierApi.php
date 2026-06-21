@@ -449,6 +449,7 @@ final class CarrierApi
             'request_id' => $requestId,
             'barcode' => $barcode,
             'response' => \ShippingBridge\Logger::maskSensitiveFields($res),
+            'response_times' => self::summarizeResponseTimes(),
         ]);
 
         return ['request_id' => $requestId, 'barcode' => $barcode];
@@ -579,6 +580,7 @@ final class CarrierApi
             \ShippingBridge\Logger::info($insalesIdForLog, null, 'calc.terminal.response', [
                 'terminal_id' => $arrivalTerminalId,
                 'body' => \ShippingBridge\Logger::maskSensitiveFields($res),
+                'response_times' => self::summarizeResponseTimes(),
             ]);
         }
         return $this->parseCalculatorResponse($res, 'terminal');
@@ -665,6 +667,7 @@ final class CarrierApi
                     static fn($r) => $r !== null ? ['price' => $r['price'] ?? null, 'days' => $r['days'] ?? null, 'errors' => $r['errors'] ?? null] : null,
                     $results
                 ),
+                'response_times' => self::summarizeResponseTimes(),
             ]);
         }
         return $results;
@@ -711,6 +714,7 @@ final class CarrierApi
         if ($insalesIdForLog !== null) {
             \ShippingBridge\Logger::info($insalesIdForLog, null, 'calc.city.response', [
                 'body' => \ShippingBridge\Logger::maskSensitiveFields($res),
+                'response_times' => self::summarizeResponseTimes(),
             ]);
         }
         return $this->parseCalculatorResponse($res, 'address');
@@ -1283,9 +1287,46 @@ final class CarrierApi
 
     private function postJson(string $url, ?array $body): array
     {
+        $start = microtime(true);
         $json = $this->http('POST', $url, $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE));
+        self::recordResponseTime($url, microtime(true) - $start);
         return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
     }
+
+    /**
+     * Накапливает время отклика API ДЛ по эндпоинту в shared-памяти процесса
+     * (статическая переменная класса) — используется только для логирования
+     * сводки в конце запроса через summarizeResponseTimes(), не персистентно
+     * между HTTP-запросами пользователей.
+     */
+    private static array $responseTimes = [];
+
+    private static function recordResponseTime(string $url, float $seconds): void
+    {
+        $path = parse_url($url, PHP_URL_PATH) ?: $url;
+        self::$responseTimes[$path][] = round($seconds * 1000);
+    }
+
+    /**
+     * Возвращает сводку по времени отклика API ДЛ за текущий HTTP-запрос
+     * (среднее/максимум по эндпоинту) — вызывается явно в местах, где нужно
+     * залогировать производительность (например после завершения расчёта).
+     *
+     * @return array<string, array{count:int,avg_ms:int,max_ms:int}>
+     */
+    public static function summarizeResponseTimes(): array
+    {
+        $summary = [];
+        foreach (self::$responseTimes as $path => $times) {
+            $summary[$path] = [
+                'count' => count($times),
+                'avg_ms' => (int) round(array_sum($times) / count($times)),
+                'max_ms' => (int) max($times),
+            ];
+        }
+        return $summary;
+    }
+
     /**
      * Параллельно отправляет несколько POST JSON-запросов на один URL
      * через curl_multi. Запросы с ошибкой сети/таймаутом или невалидным
@@ -1301,6 +1342,7 @@ final class CarrierApi
             return [];
         }
 
+        $start = microtime(true);
         $multiHandle = curl_multi_init();
         $handles = [];
 
@@ -1349,6 +1391,8 @@ final class CarrierApi
         }
 
         curl_multi_close($multiHandle);
+
+        self::recordResponseTime($url, microtime(true) - $start);
 
         return $results;
     }

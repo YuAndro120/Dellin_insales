@@ -20,6 +20,7 @@ final class Config
         public readonly ?string $tbankTerminalKey = null,
         public readonly ?string $tbankTerminalPassword = null,
         public readonly ?string $landingUrl = null,
+        public readonly ?string $tbankInvoicingToken = null,
     ) {}
 
     /** Полная конфигурация для API расчёта и справочников. */
@@ -43,6 +44,7 @@ final class Config
             tbankTerminalKey: self::opt('TBANK_TERMINAL_KEY'),
             tbankTerminalPassword: self::opt('TBANK_TERMINAL_PASSWORD'),
             landingUrl: self::opt('LANDING_URL'),
+            tbankInvoicingToken: self::opt('TBANK_INVOICING_TOKEN'),
         );
     }
 
@@ -73,6 +75,7 @@ final class Config
             tbankTerminalKey: self::opt('TBANK_TERMINAL_KEY'),
             tbankTerminalPassword: self::opt('TBANK_TERMINAL_PASSWORD'),
             landingUrl: self::opt('LANDING_URL'),
+            tbankInvoicingToken: self::opt('TBANK_INVOICING_TOKEN'),
         );
     }
 

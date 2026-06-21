@@ -241,6 +241,42 @@ final class InSalesClient
             ],
         ]);
     }
+
+    /**
+     * Список всех вебхуков приложения в магазине — используется для
+     * одноразовой чистки дубликатов (например после смены URL на
+     * защищённый, с ?wsk=).
+     * @return list<array{id:int,address:string,topic:string}>
+     */
+    public function listWebhooks(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+    ): array {
+        $res = $this->getJsonPath($shopHost, $applicationLogin, $apiPasswordMd5, '/admin/webhooks.json');
+        $items = is_array($res) && array_is_list($res) ? $res : ($res['webhooks'] ?? []);
+        $out = [];
+        foreach ((array) $items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $out[] = [
+                'id' => (int) ($item['id'] ?? 0),
+                'address' => (string) ($item['address'] ?? ''),
+                'topic' => (string) ($item['topic'] ?? ''),
+            ];
+        }
+        return $out;
+    }
+
+    public function deleteWebhook(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        int $webhookId,
+    ): void {
+        $this->deleteJson($shopHost, $applicationLogin, $apiPasswordMd5, "/admin/webhooks/{$webhookId}.json");
+    }
     /**
      * Регистрация нового виджета в карточке заказа inSales.
      * Возвращает id созданного виджета (нужно сохранить, чтобы в будущем

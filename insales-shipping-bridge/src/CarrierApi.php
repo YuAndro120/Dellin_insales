@@ -193,6 +193,7 @@ final class CarrierApi
         $arrivalHouse     = (string) ($order['arrival_house'] ?? '');
         $arrivalFlat      = (string) ($order['arrival_flat'] ?? '');
         $weight           = max(0.1, (float) ($order['weight'] ?? 1.0));
+        $totalWeight      = max($weight, (float) ($order['total_weight'] ?? $weight));
         $statedValue      = max(1.0, (float) ($order['stated_value'] ?? 1000.0));
         $receiverName     = (string) ($order['receiver_name'] ?? 'Получатель');
         $receiverPhone    = preg_replace('/\D/', '', (string) ($order['receiver_phone'] ?? ''));
@@ -204,7 +205,7 @@ final class CarrierApi
             $arrivalHouse  = '';
             $arrivalFlat   = '';
         }
-        error_log('[BRIDGE] createOrder: street=' . $arrivalStreet . ' house=' . $arrivalHouse . ' deliveryType=' . $dellinDeliveryType . ' terminalId=' . $dellinTerminalId);
+
         // Резолвим КЛАДР улицы
         $streetKladr = null;
         if ($arrivalStreet !== '') {
@@ -256,7 +257,7 @@ final class CarrierApi
                 ];
             }
         }
-        error_log('[BRIDGE] arrivalBlock: ' . json_encode($arrivalBlock, JSON_UNESCAPED_UNICODE));
+
         // Интервал доставки
         $deliveryInterval = (string) ($order['delivery_interval'] ?? '');
         if ($deliveryInterval !== '' && ($arrivalBlock['variant'] ?? '') === 'address') {
@@ -346,11 +347,18 @@ final class CarrierApi
         // Упаковка из настроек (UID из request_services.csv принимается ДЛ API напрямую)
         $packageUid = ($settings->packageInCalc ?? false) ? ($settings->packageUid ?? '') : '';
 
-        // Блок cargo
+        // Блок cargo: quantity и негабарит берём из реальной агрегации позиций
+        // заказа (CargoFromInsalesOrder::aggregate через parseInsalesOrder),
+        // чтобы итоговая заявка совпадала с тем, что показывалось покупателю
+        // при расчёте стоимости в корзине.
+        $quantity = max(1, (int) ($order['quantity'] ?? 1));
+        $oversizedWeight = (float) ($order['oversized_weight'] ?? 0.0);
+        $oversizedVolume = (float) ($order['oversized_volume'] ?? 0.0);
+
         $cargoBlock = [
-            'quantity'    => 1,
+            'quantity'    => $quantity,
             'weight'      => $weight,
-            'totalWeight' => $weight,
+            'totalWeight' => $totalWeight,
             'length'      => $dimL,
             'width'       => $dimW,
             'height'      => $dimH,
@@ -361,6 +369,11 @@ final class CarrierApi
             ],
             'freightUID'  => $freightUid,
         ];
+
+        if ($oversizedWeight > 0 || $oversizedVolume > 0) {
+            $cargoBlock['oversizedWeight'] = round($oversizedWeight, 2);
+            $cargoBlock['oversizedVolume'] = round($oversizedVolume, 4);
+        }
 
         // Блок derival (терминал или адрес)
         $derivalBlock = $this->buildDerivalForOrder(
@@ -1266,6 +1279,12 @@ final class CarrierApi
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    private function postJson(string $url, ?array $body): array
+    {
+        $json = $this->http('POST', $url, $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE));
+        return json_decode($json, true, 512, JSON_THROW_ON_ERROR);
     }
     /**
      * Параллельно отправляет несколько POST JSON-запросов на один URL

@@ -169,9 +169,7 @@ final class OrderSubmitHandler
         $order = self::parseInsalesOrder($insalesId, $insalesOrderId, $insalesOrder);
         $order['derival_date'] = trim((string) ($body['derival_date'] ?? ''));
         $order['derival_time'] = trim((string) ($body['derival_time'] ?? ''));
-        error_log('[BRIDGE] order fields_values: ' . json_encode($insalesOrder['fields_values'] ?? [], JSON_UNESCAPED_UNICODE));
-        error_log('[BRIDGE] parsed delivery_type: ' . ($order['dellin_delivery_type'] ?? 'пусто'));
-        error_log('[BRIDGE] parsed terminal_id: ' . ($order['dellin_terminal_id'] ?? 'пусто'));
+
         // Credentials Dellin
         $creds = $shops->findCarrierCredentials($insalesId, $config->bridgeSecret);
         if ($creds === null) {
@@ -223,20 +221,29 @@ final class OrderSubmitHandler
                 ?: (($client['first-name'] ?? '') . ' ' . ($client['last-name'] ?? ''))
         );
 
-        $weight = 0.0;
-        $statedValue = 0.0;
-        $maxDimsRaw = '';
+        $cargoLines = [];
         foreach ($raw['order-lines'] ?? $raw['order_lines'] ?? [] as $line) {
-            $qty = (int) ($line['quantity'] ?? 1);
-            $weight += (float) ($line['weight'] ?? 0) * $qty;
-            $statedValue += (float) ($line['total-price'] ?? $line['total_price'] ?? 0);
-            if ($maxDimsRaw === '' && trim((string) ($line['dimensions'] ?? '')) !== '') {
-                $maxDimsRaw = trim((string) $line['dimensions']);
+            $qty = max(1, (int) ($line['quantity'] ?? 1));
+            $totalPrice = (float) ($line['total-price'] ?? $line['total_price'] ?? 0);
+            if ($totalPrice <= 0) {
+                $totalPrice = (float) ($line['price'] ?? 0) * $qty;
             }
+            $cargoLines[] = [
+                'quantity' => $qty,
+                'weight' => (float) ($line['weight'] ?? 0),
+                'dimensions' => trim((string) ($line['dimensions'] ?? '')),
+                'total_price' => $totalPrice,
+            ];
         }
-        if ($weight <= 0) {
-            $weight = 1.0;
-        }
+
+        $cargo = $cargoLines !== []
+            ? \ShippingBridge\CargoFromInsalesOrder::aggregate($cargoLines)
+            : ['weight' => 1.0, 'total_weight' => 1.0, 'volume' => 0.008, 'length' => 0.2, 'width' => 0.2, 'height' => 0.2, 'quantity' => 1, 'stated_value' => 0.0, 'oversized_weight' => 0.0, 'oversized_volume' => 0.0];
+
+        $weight = $cargo['weight'];
+        $totalWeight = $cargo['total_weight'];
+        $statedValue = $cargo['stated_value'];
+        $maxDimsRaw = $cargo['length'] . 'x' . $cargo['width'] . 'x' . $cargo['height'];
 
         // Интервал доставки из кастомного поля
         $deliveryInterval = null;
@@ -279,7 +286,6 @@ final class OrderSubmitHandler
         }
         // Тип расчёта доставки из tariff_id (inSales не сохраняет dellin_calc_type)
         $tariffId = (string) ($deliveryInfo['tariff_id'] ?? '');
-        error_log('[BRIDGE] tariff_id: ' . $tariffId . ' | deliveryCalcType before: ' . $deliveryCalcType);
         if ($deliveryCalcType === 'auto' && str_starts_with($tariffId, 'dellin_courier_')) {
             $extractedType = substr($tariffId, strlen('dellin_courier_'));
             if (in_array($extractedType, ['auto', 'avia', 'express', 'small'], true)) {
@@ -309,8 +315,12 @@ final class OrderSubmitHandler
             'arrival_house'              => (string) ($location['house'] ?? ''),
             'arrival_flat'               => (string) ($location['flat'] ?? $location['apartment'] ?? ''),
             'weight'                     => round($weight, 3),
+            'total_weight'               => round($totalWeight, 3),
             'stated_value'               => round($statedValue, 2),
             'dimensions_cm'              => $maxDimsRaw,
+            'quantity'                   => $cargo['quantity'],
+            'oversized_weight'           => $cargo['oversized_weight'],
+            'oversized_volume'           => $cargo['oversized_volume'],
             'delivery_interval'          => $deliveryInterval,
             'delivery_calc_type'         => $deliveryCalcType,
             'dellin_delivery_type'       => $deliveryType,

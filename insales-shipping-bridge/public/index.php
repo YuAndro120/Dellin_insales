@@ -196,6 +196,10 @@ if (str_starts_with($uri, '/insales/')) {
             \ShippingBridge\InSales\InvoicingPage::handle($config, $shops, $method);
             exit;
         }
+        if ($uri === '/insales/early-access' && $method === 'POST') {
+            \ShippingBridge\InSales\EarlyAccessHandler::handle($config, $method);
+            exit;
+        }
         if (str_starts_with($uri, '/insales/orders/edit') && ($method === 'GET' || $method === 'POST')) {
             OrdersHandler::handleEdit($config, $shops, $method);
             exit;

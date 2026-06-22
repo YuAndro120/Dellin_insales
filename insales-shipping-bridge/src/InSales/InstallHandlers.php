@@ -68,6 +68,19 @@ final class InstallHandlers
       // Не блокируем установку при сбое регистрации/обновления виджета
     }
 
+    // Создаём способы доставки ДЛ (update-or-create — дублей не будет).
+    $deliverySetup = new InSalesDeliverySetup($client, $config);
+    try {
+      $deliverySetup->createPickUpDeliveryVariant($shop, $apiPassword);
+    } catch (\Throwable) {
+      // Не блокируем установку при сбое создания способа доставки «терминал»
+    }
+    try {
+      $deliverySetup->createCourierDeliveryVariant($shop, $apiPassword);
+    } catch (\Throwable) {
+      // Не блокируем установку при сбое создания способа доставки «курьер»
+    }
+
     // Создаём собственное поле заказа под трек-номер ДЛ.
     // Поле принадлежит нашему приложению, поэтому СДЭК и прочие модули
     // его не перезаписывают. Если id уже сохранён — пропускаем.

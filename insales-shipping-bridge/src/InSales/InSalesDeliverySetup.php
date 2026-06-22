@@ -13,13 +13,13 @@ use ShippingBridge\Config;
  */
 final class InSalesDeliverySetup
 {
-    private const DELIVERY_TITLE = 'Деловые Линии — терминал';
+    private const DELIVERY_TITLE_TERMINAL = 'Деловые Линии — терминал';
+    private const DELIVERY_TITLE_COURIER  = 'Деловые Линии — курьер';
 
     public function __construct(
         private readonly InSalesClient $client,
         private readonly Config $config,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{id: int, title: string}
@@ -39,7 +39,7 @@ final class InSalesDeliverySetup
         $base = $this->publicBridgeBaseUrl();
         $payload = [
             'delivery_variant' => [
-                'title' => self::DELIVERY_TITLE,
+                'title' => self::DELIVERY_TITLE_TERMINAL,
                 'type' => 'DeliveryVariant::PickUp',
                 'description' => 'Доставка до терминала Деловых Линий (выбор ПВЗ на оформлении заказа)',
                 'add_payment_gateways' => true,
@@ -68,7 +68,7 @@ final class InSalesDeliverySetup
             throw new \RuntimeException('InSales не вернул id способа доставки: ' . json_encode($created, JSON_UNESCAPED_UNICODE));
         }
 
-        return ['id' => $id, 'title' => (string) ($created['title'] ?? self::DELIVERY_TITLE)];
+        return ['id' => $id, 'title' => (string) ($created['title'] ?? self::DELIVERY_TITLE_TERMINAL)];
     }
 
     /**
@@ -82,7 +82,7 @@ final class InSalesDeliverySetup
                 continue;
             }
             $title = (string) ($row['title'] ?? '');
-            if ($title === self::DELIVERY_TITLE) {
+            if ($title === self::DELIVERY_TITLE_TERMINAL) {
                 $id = (int) ($row['id'] ?? 0);
                 if ($id > 0) {
                     return ['id' => $id, 'title' => $title];
@@ -101,5 +101,71 @@ final class InSalesDeliverySetup
         }
 
         return 'http://127.0.0.1';
+    }
+    /**
+     * Создаёт внешний способ доставки «курьер» в магазине (update-or-create).
+     * Тип DeliveryVariant::External — inSales запрашивает стоимость у нашего калькулятора.
+     * @return array{id: int, title: string}
+     */
+    public function createCourierDeliveryVariant(string $shopHost, string $apiPasswordMd5): array
+    {
+        $login = $this->config->insalesAppId ?? '';
+        if ($login === '') {
+            throw new \RuntimeException('INSALES_APP_ID не задан в .env');
+        }
+
+        $existing = $this->findExistingCourier($shopHost, $login, $apiPasswordMd5);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $base = $this->publicBridgeBaseUrl();
+        $payload = [
+            'delivery_variant' => [
+                'title'               => self::DELIVERY_TITLE_COURIER,
+                'type'                => 'DeliveryVariant::External',
+                'description'         => 'Курьерская доставка Деловых Линий (стоимость рассчитывается автоматически)',
+                'add_payment_gateways' => true,
+                'url'                 => $base . '/insales/external/v2/courier',
+            ],
+        ];
+
+        $created = $this->client->postJson(
+            $shopHost,
+            $login,
+            $apiPasswordMd5,
+            '/admin/delivery_variants.json',
+            $payload,
+        );
+
+        $id = (int) ($created['id'] ?? 0);
+        if ($id <= 0) {
+            throw new \RuntimeException(
+                'InSales не вернул id курьерского способа доставки: '
+                    . json_encode($created, JSON_UNESCAPED_UNICODE)
+            );
+        }
+
+        return ['id' => $id, 'title' => (string) ($created['title'] ?? self::DELIVERY_TITLE_COURIER)];
+    }
+
+    /**
+     * @return array{id: int, title: string}|null
+     */
+    private function findExistingCourier(string $shopHost, string $login, string $apiPasswordMd5): ?array
+    {
+        $list = $this->client->getJsonPath($shopHost, $login, $apiPasswordMd5, '/admin/delivery_variants.json');
+        foreach ($list as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            if ((string) ($row['title'] ?? '') === self::DELIVERY_TITLE_COURIER) {
+                $id = (int) ($row['id'] ?? 0);
+                if ($id > 0) {
+                    return ['id' => $id, 'title' => self::DELIVERY_TITLE_COURIER];
+                }
+            }
+        }
+        return null;
     }
 }

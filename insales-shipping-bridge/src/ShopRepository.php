@@ -341,6 +341,23 @@ SQL;
         $stmt->execute([':wid' => $widgetId, ':iid' => $insalesId]);
     }
 
+    public function findOrderFieldId(string $insalesId): ?int
+    {
+        $row = $this->fetchRow(
+            'SELECT dellin_order_field_id FROM insales_shops WHERE insales_id = :iid AND uninstalled_at IS NULL LIMIT 1',
+            [':iid' => $insalesId]
+        );
+        if ($row === null || $row['dellin_order_field_id'] === null) {
+            return null;
+        }
+        return (int) $row['dellin_order_field_id'];
+    }
+
+    public function saveOrderFieldId(string $insalesId, int $fieldId): void
+    {
+        $stmt = $this->pdo->prepare('UPDATE insales_shops SET dellin_order_field_id = :fid WHERE insales_id = :iid');
+        $stmt->execute([':fid' => $fieldId, ':iid' => $insalesId]);
+    }
     public function findAccessToken(string $insalesId): ?string
     {
         $row = $this->fetchRow(

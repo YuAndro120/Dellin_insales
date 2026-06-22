@@ -372,4 +372,79 @@ final class InSalesClient
             "/admin/orders/{$orderId}.json",
         );
     }
+
+    /**
+     * Создаёт поле заказа (доп. поле) в магазине. Принадлежит приложению,
+     * поэтому чужие модули (например СДЭК) его не перезаписывают.
+     * @return array{id:int,handle:string}
+     */
+    public function createOrderField(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        string $title,
+    ): array {
+        $res = $this->postJson(
+            $shopHost,
+            $applicationLogin,
+            $apiPasswordMd5,
+            '/admin/order_fields.json',
+            ['order_field' => [
+                'title' => $title,
+                'type'  => 'OrderField::TextField',
+            ]],
+        );
+        return [
+            'id'     => (int) ($res['id'] ?? 0),
+            'handle' => (string) ($res['handle'] ?? ''),
+        ];
+    }
+
+    /**
+     * Список полей заказа магазина — для поиска уже созданного нами поля
+     * при переустановке (чтобы не плодить дубли).
+     * @return list<array{id:int,handle:string,title:string,application_id:int}>
+     */
+    public function listOrderFields(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+    ): array {
+        $res = $this->getJsonPath($shopHost, $applicationLogin, $apiPasswordMd5, '/admin/order_fields.json');
+        $items = is_array($res) && array_is_list($res) ? $res : ($res['order_fields'] ?? []);
+        $out = [];
+        foreach ((array) $items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $out[] = [
+                'id'             => (int) ($item['id'] ?? 0),
+                'handle'         => (string) ($item['handle'] ?? ''),
+                'title'          => (string) ($item['title'] ?? ''),
+                'application_id' => (int) ($item['application_id'] ?? 0),
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Обновить заказ в inSales.
+     * @param array<string, mixed> $orderPayload содержимое ключа "order"
+     * @return array<string, mixed>
+     */
+    public function updateOrder(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        int $orderId,
+        array $orderPayload,
+    ): array {
+        return $this->putJson(
+            $shopHost,
+            $applicationLogin,
+            $apiPasswordMd5,
+            "/admin/orders/{$orderId}.json",
+            ['order' => $orderPayload],
+        );
+    }
 }

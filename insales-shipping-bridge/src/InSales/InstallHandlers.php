@@ -68,6 +68,25 @@ final class InstallHandlers
       // Не блокируем установку при сбое регистрации/обновления виджета
     }
 
+    // Создаём собственное поле заказа под трек-номер ДЛ.
+    // Поле принадлежит нашему приложению, поэтому СДЭК и прочие модули
+    // его не перезаписывают. Если id уже сохранён — пропускаем.
+    try {
+      if ($shops->findOrderFieldId($insalesId) === null) {
+        $field = $client->createOrderField(
+          $shop,
+          $config->insalesAppId ?? '',
+          $apiPassword,
+          'Трек-номер Деловые Линии'
+        );
+        if ($field['id'] > 0) {
+          $shops->saveOrderFieldId($insalesId, $field['id']);
+        }
+      }
+    } catch (\Throwable) {
+      // Не блокируем установку при сбое создания поля
+    }
+
     http_response_code(200);
     echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Установка</title></head><body>';
     $q = http_build_query(['shop' => $shop, 'insales_id' => $insalesId, 'atk' => $shops->findAccessToken($insalesId) ?? '']);

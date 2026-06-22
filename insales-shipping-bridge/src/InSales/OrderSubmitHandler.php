@@ -136,6 +136,34 @@ final class OrderSubmitHandler
         }
         $existing = $shops->findOrderByInsalesId($insalesId, $insalesOrderId);
         if ($existing !== null && $existing['dellin_request_id'] !== null) {
+            // Backfill: заявка уже была, но трек мог не записаться при первом
+            // оформлении (например, поле ещё не существовало). Пробуем снова.
+            $fieldId = $shops->findOrderFieldId($insalesId);
+            if ($fieldId !== null) {
+                $authForBackfill = $shops->findApiAuthByInsalesId($insalesId);
+                if ($authForBackfill !== null) {
+                    try {
+                        $clientForBackfill = new InSalesClient();
+                        $insalesOrderForBackfill = $clientForBackfill->getOrder(
+                            $authForBackfill['shop_host'],
+                            $config->insalesAppId ?? '',
+                            $authForBackfill['api_password'],
+                            (int) $insalesOrderId,
+                        );
+                        self::writeTrackingNumber(
+                            $clientForBackfill,
+                            $authForBackfill,
+                            $config,
+                            (int) $insalesOrderId,
+                            $insalesOrderForBackfill,
+                            $fieldId,
+                            (string) $existing['dellin_request_id'],
+                        );
+                    } catch (\Throwable) {
+                        // best-effort, ответ не блокируем
+                    }
+                }
+            }
             Response::json([
                 'ok'         => true,
                 'request_id' => $existing['dellin_request_id'],
@@ -196,10 +224,26 @@ final class OrderSubmitHandler
         // Сохраняем результат
         self::upsertOrder($pdo, $order, (int) $result['request_id'], (string) $result['barcode']);
 
+        // Записываем номер заказа ДЛ в наше поле заказа inSales.
+        $fieldId = $shops->findOrderFieldId($insalesId);
+        $trackingWritten = false;
+        if ($fieldId !== null && $fieldId > 0) {
+            $trackingWritten = self::writeTrackingNumber(
+                $client,
+                $auth,
+                $config,
+                (int) $insalesOrderId,
+                $insalesOrder,
+                $fieldId,
+                (string) $result['request_id'],
+            );
+        }
+
         Response::json([
-            'ok'         => true,
-            'request_id' => $result['request_id'],
-            'barcode'    => $result['barcode'],
+            'ok'               => true,
+            'request_id'       => $result['request_id'],
+            'barcode'          => $result['barcode'],
+            'tracking_written' => $trackingWritten,
         ], 200, $cors);
     }
 
@@ -379,5 +423,65 @@ final class OrderSubmitHandler
             'request_id'   => $requestId,
             'barcode'      => $barcode,
         ]);
+    }
+    /**
+     * Записывает номер заказа ДЛ в наше поле заказа inSales по сохранённому field_id.
+     * Если значение уже было — обновляем ту же строку, иначе создаём новую.
+     *
+     * @param array{shop_host:string,api_password:string} $auth
+     * @param array<string,mixed> $insalesOrder уже загруженный заказ (для поиска id значения)
+     */
+    private static function writeTrackingNumber(
+        InSalesClient $client,
+        array $auth,
+        Config $config,
+        int $insalesOrderId,
+        array $insalesOrder,
+        int $fieldId,
+        string $trackValue,
+    ): bool {
+        if ($trackValue === '' || $trackValue === '0') {
+            return false;
+        }
+
+        // Ищем id уже существующего значения именно этого поля в заказе,
+        // чтобы обновить его, а не создавать дубль.
+        $valueRowId = null;
+        foreach ($insalesOrder['fields_values'] ?? [] as $fv) {
+            $fvFieldId = (int) ($fv['field_id'] ?? $fv['order_field_id'] ?? 0);
+            if ($fvFieldId === $fieldId) {
+                $valueRowId = (int) ($fv['id'] ?? 0) ?: null;
+                break;
+            }
+        }
+
+        $attr = $valueRowId !== null
+            ? ['id' => $valueRowId, 'value' => $trackValue]    // обновление
+            : ['field_id' => $fieldId, 'value' => $trackValue]; // создание
+
+        try {
+            $client->updateOrder(
+                $auth['shop_host'],
+                $config->insalesAppId ?? '',
+                $auth['api_password'],
+                $insalesOrderId,
+                ['fields_values_attributes' => [$attr]],
+            );
+            \ShippingBridge\Logger::info(
+                $config->insalesAppId ?? '',
+                (string) $insalesOrderId,
+                'tracking.written',
+                ['field_id' => $fieldId, 'value' => $trackValue],
+            );
+            return true;
+        } catch (\Throwable $e) {
+            \ShippingBridge\Logger::error(
+                $config->insalesAppId ?? '',
+                (string) $insalesOrderId,
+                'tracking.write_failed',
+                ['error' => $e->getMessage()],
+            );
+            return false;
+        }
     }
 }

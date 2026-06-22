@@ -383,6 +383,7 @@ final class CarrierApi
             (string) ($order['derival_time'] ?? '')
         );
 
+        $managerComment = trim((string) ($order['manager_comment'] ?? ''));
         $body = [
             'appkey'    => $appkey,
             'sessionID' => $sessionId,
@@ -392,6 +393,7 @@ final class CarrierApi
                 'derival'      => $derivalBlock,
                 'arrival'      => $arrivalBlock,
                 'packages'     => $packageUid !== '' ? [['uid' => $packageUid, 'count' => 1]] : [],
+                'comment'      => $managerComment !== '' ? $managerComment : null,
             ],
             'members' => [
                 'requester' => [

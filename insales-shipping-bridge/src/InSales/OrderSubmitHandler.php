@@ -373,6 +373,7 @@ final class OrderSubmitHandler
             'receiver_inn'               => (string) ($client['inn'] ?? ''),
             'receiver_kpp'               => (string) ($client['kpp'] ?? ''),
             'receiver_juridical_address' => (string) ($client['juridical_address'] ?? ''),
+            'manager_comment'            => trim((string) ($raw['manager_comment'] ?? '')),
         ];
     }
 

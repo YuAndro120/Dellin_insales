@@ -142,6 +142,10 @@ label{display:block;margin-top:8px;font-weight:500}
 </style>
 </head><body>
 <div id="app">
+  <div id="previewBlock" style="display:none;margin-bottom:8px">
+    <p class="hint" style="margin:0 0 4px">Данные для отправки в ДЛ:</p>
+    <div id="previewContent" style="font-size:12px;line-height:1.6;color:#333"></div>
+  </div>
   <div id="derivalForm">
     <p class="hint">Забор груза от адреса:</p>
     <label>Дата забора</label>
@@ -149,7 +153,11 @@ label{display:block;margin-top:8px;font-weight:500}
     <label>Время приезда экспедитора</label>
     <select id="derivalTime"><option value="">— выберите дату —</option></select>
   </div>
-  <button id="btn" onclick="submitOrder()">Оформить в Деловые Линии</button>
+  <button id="btn" onclick="showPreview()">Оформить в Деловые Линии</button>
+  <div id="confirmBlock" style="display:none;margin-top:6px">
+    <button class="green" onclick="submitOrder()">✓ Подтвердить и отправить</button>
+    <button onclick="cancelPreview()" style="background:#888;margin-left:6px">Отмена</button>
+  </div>
   <div id="status"></div>
   <div id="labelForm">
     <p class="hint">Этикетка для груза:</p>
@@ -216,6 +224,8 @@ function loadDerivalDates() {
     .catch(function(){ sel.innerHTML = '<option value="">Ошибка загрузки</option>'; });
 }
 
+var previewData = null;
+
 function initDerivalForm() {
   fetch(bridgeUrl + '/insales/orders/preview', {
     method: 'POST',
@@ -224,7 +234,9 @@ function initDerivalForm() {
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
-    if (d.ok && d.delivery && d.delivery.derival_variant === 'address') {
+    if (!d.ok) return;
+    previewData = d;
+    if (d.delivery && d.delivery.derival_variant === 'address') {
       document.getElementById('derivalForm').style.display = 'block';
       loadDerivalDates();
       document.getElementById('derivalDate').addEventListener('change', function(){
@@ -233,6 +245,61 @@ function initDerivalForm() {
     }
   })
   .catch(function(){});
+}
+
+function showPreview() {
+  var orderId = window.order_info ? window.order_info.id : null;
+  if (!orderId) {
+    document.getElementById('status').innerHTML = '<p class="err">Не удалось получить ID заказа</p>';
+    return;
+  }
+
+  // Перезапрашиваем превью чтобы взять актуальные данные (менеджер мог изменить заказ)
+  document.getElementById('btn').disabled = true;
+  document.getElementById('btn').textContent = 'Загрузка…';
+
+  fetch(bridgeUrl + '/insales/orders/preview', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({insales_id: insalesId, insales_order_id: String(orderId)})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    document.getElementById('btn').disabled = false;
+    document.getElementById('btn').textContent = 'Оформить в Деловые Линии';
+    if (!d.ok) {
+      document.getElementById('status').innerHTML = '<p class="err">Ошибка: ' + (d.error || 'неизвестная ошибка') + '</p>';
+      return;
+    }
+    previewData = d;
+    var r = d.receiver || {};
+    var c = d.cargo || {};
+    var addr = [r.city, r.street, r.house ? 'д.' + r.house : '', r.flat ? 'кв.' + r.flat : ''].filter(Boolean).join(', ');
+    var html = '<b>Получатель:</b> ' + (r.name || '—') + '<br>';
+    html += '<b>Телефон:</b> ' + (r.phone || '—') + '<br>';
+    html += '<b>Адрес:</b> ' + (addr || '—') + '<br>';
+    html += '<b>Вес:</b> ' + (c.weight || '—') + ' кг, ';
+    html += '<b>Объявл. стоимость:</b> ' + (c.stated_value || '—') + ' ₽<br>';
+    if (d.delivery && d.delivery.produce_date) {
+      html += '<b>Дата отгрузки:</b> ' + d.delivery.produce_date + '<br>';
+    }
+    document.getElementById('previewContent').innerHTML = html;
+    document.getElementById('previewBlock').style.display = 'block';
+    document.getElementById('confirmBlock').style.display = 'block';
+    document.getElementById('btn').style.display = 'none';
+  })
+  .catch(function(){
+    document.getElementById('btn').disabled = false;
+    document.getElementById('btn').textContent = 'Оформить в Деловые Линии';
+    document.getElementById('status').innerHTML = '<p class="err">Ошибка сети</p>';
+  });
+}
+
+function cancelPreview() {
+  document.getElementById('previewBlock').style.display = 'none';
+  document.getElementById('confirmBlock').style.display = 'none';
+  document.getElementById('btn').style.display = '';
+  document.getElementById('status').innerHTML = '';
 }
 
 if (window.order_info && window.order_info.id) {
@@ -248,9 +315,12 @@ function submitOrder() {
     return;
   }
   currentOrderId = String(orderId);
+  document.getElementById('confirmBlock').style.display = 'none';
+  document.getElementById('previewBlock').style.display = 'none';
   var btn = document.getElementById('btn');
   btn.disabled = true;
   btn.textContent = 'Отправка...';
+  btn.style.display = '';
   var derivalDateEl = document.getElementById('derivalDate');
   var derivalTimeEl = document.getElementById('derivalTime');
   fetch(bridgeUrl + '/insales/orders/submit', {

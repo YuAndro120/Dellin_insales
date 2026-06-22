@@ -241,7 +241,7 @@ final class CarrierApi
                 ]),
             ];
         } else {
-            $realTerminalId = $dellinTerminalId !== '' ? (int) ((int) $dellinTerminalId / 10) : 0;
+            $realTerminalId = $dellinTerminalId !== '' ? (int) $dellinTerminalId : 0;
             if ($realTerminalId > 0) {
                 $arrivalBlock = [
                     'variant'    => 'terminal',
@@ -343,6 +343,12 @@ final class CarrierApi
         $dimL = isset($dimParts[0]) && $dimParts[0] > 0 ? round($dimParts[0] / 100, 2) : 0.30;
         $dimW = isset($dimParts[1]) && $dimParts[1] > 0 ? round($dimParts[1] / 100, 2) : 0.20;
         $dimH = isset($dimParts[2]) && $dimParts[2] > 0 ? round($dimParts[2] / 100, 2) : 0.20;
+        // Защита: если все три нуля (например "0x0x0") — подставляем дефолт
+        if ($dimL <= 0 && $dimW <= 0 && $dimH <= 0) {
+            $dimL = 0.30;
+            $dimW = 0.20;
+            $dimH = 0.20;
+        }
 
         // Упаковка из настроек (UID из request_services.csv принимается ДЛ API напрямую)
         $packageUid = ($settings->packageInCalc ?? false) ? ($settings->packageUid ?? '') : '';

@@ -938,7 +938,7 @@ final class CarrierApi
             return [
                 'produceDate'  => $derivalDate !== '' ? $derivalDate : $produceDate,
                 'variant'      => 'terminal',
-                'terminalID'   => (string) $settings->senderTerminalId,
+                'terminalID'   => (int) $settings->senderTerminalId,
                 'requirements' => [],
             ];
         }

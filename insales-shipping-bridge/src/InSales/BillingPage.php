@@ -113,8 +113,8 @@ final class BillingPage
         $publicUrl = rtrim($config->publicBridgeUrl, '/');
 
         $initExtra = [
-            'SuccessURL' => $publicUrl . '/insales/billing?' . $returnQuery . '&paid=1',
-            'FailURL' => $publicUrl . '/insales/billing?' . $returnQuery . '&paid=0',
+            'SuccessURL' => $publicUrl . '/checkout?plan=' . urlencode($plan) . '&' . $returnQuery . '&paid=1',
+            'FailURL'    => $publicUrl . '/checkout?plan=' . urlencode($plan) . '&' . $returnQuery . '&paid=0',
         ];
         if ($wantsRecurrent) {
             // Плательщик добровольно согласился на автопродление (чекбокс на форме) —

@@ -48,6 +48,18 @@ final class CheckoutPage
     $shopHost  = trim((string) ($_GET['shop']       ?? ''));
     $atk       = trim((string) ($_GET['atk']        ?? ''));
 
+    $landingUrl = rtrim($config->landingUrl ?? 'https://receptly.ru', '/');
+
+    $paid = $_GET['paid'] ?? null;
+    if ($paid === '1') {
+      self::renderSuccess(self::PLANS[$plan] ?? [], $insalesId, $shopHost, $landingUrl);
+      return;
+    }
+    if ($paid === '0') {
+      self::renderFail($plan, $insalesId, $shopHost, $atk);
+      return;
+    }
+
     if (!isset(self::PLANS[$plan])) {
       http_response_code(404);
       echo '<p style="font-family:sans-serif;padding:40px">Тариф не найден.</p>';
@@ -62,7 +74,6 @@ final class CheckoutPage
 
     $billingUrl  = rtrim($config->publicBridgeUrl ?? '', '/') . '/insales/billing';
     $invoiceUrl  = rtrim($config->publicBridgeUrl ?? '', '/') . '/insales/billing/invoice';
-    $landingUrl  = rtrim($config->landingUrl      ?? 'https://receptly.ru', '/');
 
     echo <<<HTML
 <!DOCTYPE html>
@@ -463,6 +474,83 @@ document.querySelectorAll('input[name="payment_method"]').forEach(function(el) {
 updatePriceBlock();
 updateMethodUI();
 </script>
+</body>
+</html>
+HTML;
+  }
+  private static function renderSuccess(array $planInfo, string $insalesId, string $shopHost, string $landingUrl): void
+  {
+    $h = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+    $appUrl = '/insales/app?' . http_build_query(['insales_id' => $insalesId, 'shop' => $shopHost]);
+    echo <<<HTML
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Оплата прошла — ДЛ Коннект</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#16181c; --bg-card:#1f2228; --line:#2c3038; --ink:#f2efe9; --ink-dim:#a8a59d; --ink-faint:#6b6963; --amber:#e8742c; --green:#5fb88a; --green-soft:#1a2b22 }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; -webkit-font-smoothing: antialiased }
+    .card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; padding: 48px 40px; max-width: 440px; width: 100%; text-align: center }
+    .icon { width: 52px; height: 52px; background: var(--green-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 22px }
+    h1 { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.01em }
+    p { font-size: 14px; color: var(--ink-dim); line-height: 1.6; margin-bottom: 8px }
+    .plan { display: inline-block; font-size: 12px; font-family: monospace; background: var(--green-soft); color: var(--green); padding: 3px 10px; border-radius: 20px; margin-bottom: 28px }
+    .btn { display: inline-block; background: var(--amber); color: #1a1208; font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 9px; text-decoration: none; margin-top: 8px }
+    .back { display: block; margin-top: 16px; font-size: 13px; color: var(--ink-faint); text-decoration: none }
+    .back:hover { color: var(--ink) }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">✓</div>
+    <h1>Оплата прошла</h1>
+    <p>Тариф активирован для вашего магазина.</p>
+    <div class="plan">{$h($planInfo['label'] ?? 'Тариф')}</div>
+    <br>
+    <a href="{$h($appUrl)}" class="btn">Перейти в настройки</a>
+    <a href="{$h($landingUrl)}" class="back">На главную</a>
+  </div>
+</body>
+</html>
+HTML;
+  }
+
+  private static function renderFail(string $plan, string $insalesId, string $shopHost, string $atk): void
+  {
+    $h = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+    $retryUrl = '/checkout?' . http_build_query(['plan' => $plan, 'insales_id' => $insalesId, 'shop' => $shopHost, 'atk' => $atk]);
+    echo <<<HTML
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ошибка оплаты — ДЛ Коннект</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#16181c; --bg-card:#1f2228; --line:#2c3038; --ink:#f2efe9; --ink-dim:#a8a59d; --ink-faint:#6b6963; --amber:#e8742c; --red-soft:#2c1414 }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; -webkit-font-smoothing: antialiased }
+    .card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; padding: 48px 40px; max-width: 440px; width: 100%; text-align: center }
+    .icon { width: 52px; height: 52px; background: var(--red-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 22px }
+    h1 { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.01em }
+    p { font-size: 14px; color: var(--ink-dim); line-height: 1.6; margin-bottom: 28px }
+    .btn { display: inline-block; background: var(--amber); color: #1a1208; font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 9px; text-decoration: none }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">✕</div>
+    <h1>Оплата не прошла</h1>
+    <p>Платёж был отклонён или отменён. Попробуйте ещё раз или выберите другой способ оплаты.</p>
+    <a href="{$h($retryUrl)}" class="btn">Попробовать снова</a>
+  </div>
 </body>
 </html>
 HTML;

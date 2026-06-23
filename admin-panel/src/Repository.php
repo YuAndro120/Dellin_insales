@@ -6,9 +6,7 @@ namespace AdminPanel;
 
 final class Repository
 {
-    public function __construct(private readonly \PDO $pdo)
-    {
-    }
+    public function __construct(private readonly \PDO $pdo) {}
 
     /** @return array{shops_total:int,shops_active_7d:int,orders_today:int,orders_7d:int,errors_today:int,success_rate_7d:float} */
     public function dashboardSummary(): array
@@ -71,8 +69,11 @@ final class Repository
                        (s.dellin_pat_enc IS NOT NULL AND s.dellin_pat_enc != '') AS has_pat,
                        (SELECT COUNT(*) FROM dellin_orders o WHERE o.insales_shop_id = s.insales_id) AS orders_total,
                        (SELECT COUNT(*) FROM dellin_orders o WHERE o.insales_shop_id = s.insales_id AND o.dellin_request_id IS NOT NULL) AS orders_submitted,
-                       (SELECT MAX(o.created_at) FROM dellin_orders o WHERE o.insales_shop_id = s.insales_id) AS last_order_at
-                FROM insales_shops s";
+                       (SELECT MAX(o.created_at) FROM dellin_orders o WHERE o.insales_shop_id = s.insales_id) AS last_order_at,
+                       sub.plan AS sub_plan, sub.status AS sub_status,
+                       sub.current_period_ends_at AS sub_ends_at, sub.trial_ends_at
+                FROM insales_shops s
+                LEFT JOIN subscriptions sub ON sub.insales_id = s.insales_id";
         $params = [];
         if ($search !== '') {
             $sql .= ' WHERE s.shop_host LIKE :search OR s.insales_id LIKE :search';
@@ -88,6 +89,23 @@ final class Repository
     public function shopByInsalesId(string $insalesId): ?array
     {
         $stmt = $this->pdo->prepare('SELECT * FROM insales_shops WHERE insales_id = :iid LIMIT 1');
+        $stmt->execute([':iid' => $insalesId]);
+        $row = $stmt->fetch();
+        return $row !== false ? $row : null;
+    }
+
+    public function subscriptionForShop(string $insalesId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT sub.plan, sub.status, sub.trial_ends_at, sub.current_period_ends_at,
+                    (SELECT SUM(p.amount) FROM payments p WHERE p.insales_id = sub.insales_id AND p.status = \'succeeded\') AS total_paid,
+                    (SELECT p.payment_method FROM payments p WHERE p.insales_id = sub.insales_id AND p.status = \'succeeded\' ORDER BY p.created_at DESC LIMIT 1) AS last_method,
+                    (SELECT p.created_at FROM payments p WHERE p.insales_id = sub.insales_id AND p.status = \'succeeded\' ORDER BY p.created_at DESC LIMIT 1) AS last_paid_at,
+                    (SELECT p.amount FROM payments p WHERE p.insales_id = sub.insales_id AND p.status = \'succeeded\' ORDER BY p.created_at DESC LIMIT 1) AS last_amount
+             FROM subscriptions sub
+             WHERE sub.insales_id = :iid
+             LIMIT 1'
+        );
         $stmt->execute([':iid' => $insalesId]);
         $row = $stmt->fetch();
         return $row !== false ? $row : null;

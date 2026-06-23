@@ -847,17 +847,8 @@
             <li><span class="price-check">✓</span>Сроки доставки для покупателя</li>
             <li><span class="price-check">✓</span>Все типы доставки ДЛ</li>
           </ul>
-          <form class="plan-form" method="post" action="/insales/billing">
-            <input type="hidden" name="select_plan" value="calc_only">
-            <input type="hidden" name="insales_id" class="js-insales-id">
-            <input type="hidden" name="shop" class="js-shop">
-            <input type="hidden" name="atk" class="js-atk">
-            <label class="recurrent-label">
-              <input type="checkbox" name="recurrent" value="1">
-              <span>Автопродление</span>
-            </label>
-            <button type="submit" class="price-btn plan-submit">Подключить</button>
-          </form>
+          <a class="price-btn plan-submit js-checkout-link" data-plan="calc_only"
+            href="/checkout?plan=calc_only">Подключить</a>
         </div>
         <div class="price-card featured">
           <div class="price-tag">Популярный</div>
@@ -870,17 +861,7 @@
             <li><span class="price-check">✓</span>Терминалы, забор от адреса, расписание</li>
             <li><span class="price-check">✓</span>Полные настройки отправителя</li>
           </ul>
-          <form class="plan-form" method="post" action="/insales/billing">
-            <input type="hidden" name="select_plan" value="full">
-            <input type="hidden" name="insales_id" class="js-insales-id">
-            <input type="hidden" name="shop" class="js-shop">
-            <input type="hidden" name="atk" class="js-atk">
-            <label class="recurrent-label">
-              <input type="checkbox" name="recurrent" value="1">
-              <span>Автопродление</span>
-            </label>
-            <button type="submit" class="price-btn plan-submit">Подключить</button>
-          </form>
+          <a class="price-btn plan-submit js-checkout-link" data-plan="full" href="/checkout?plan=full">Подключить</a>
         </div>
         <div class="price-card" style="opacity:.85">
           <div class="price-name">Автоматизация</div>
@@ -996,14 +977,20 @@
       var shop = params.get('shop') || '';
       var atk = params.get('atk') || '';
 
-      document.querySelectorAll('.js-insales-id').forEach(function (el) { el.value = insalesId; });
-      document.querySelectorAll('.js-shop').forEach(function (el) { el.value = shop; });
-      document.querySelectorAll('.js-atk').forEach(function (el) { el.value = atk; });
+      document.querySelectorAll('.js-checkout-link').forEach(function (el) {
+        if (insalesId) {
+          var plan = el.getAttribute('data-plan');
+          el.href = '/checkout?plan=' + plan
+            + '&insales_id=' + encodeURIComponent(insalesId)
+            + '&shop=' + encodeURIComponent(shop)
+            + '&atk=' + encodeURIComponent(atk);
+        } else {
+          el.style.opacity = '0.4';
+          el.style.pointerEvents = 'none';
+        }
+      });
 
       if (!insalesId) {
-        document.querySelectorAll('.plan-form:not(#early-access-form)').forEach(function (form) {
-          form.querySelectorAll('button, input[type="checkbox"]').forEach(function (el) { el.disabled = true; });
-        });
         var notice = document.getElementById('no-shop-notice');
         if (notice) notice.style.display = 'block';
       }

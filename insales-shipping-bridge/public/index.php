@@ -86,6 +86,19 @@ if (in_array($uri, $externalCheckoutUris, true)) {
     exit;
 }
 
+if ($uri === '/checkout' && $method === 'GET') {
+    try {
+        $config = Config::fromEnvForInsales();
+        $pdo    = Db::pdo($config);
+        $shops  = new ShopRepository($pdo);
+        \ShippingBridge\InSales\CheckoutPage::handle($config, $shops);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo '<p style="font-family:sans-serif;padding:40px">Ошибка: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p>';
+    }
+    exit;
+}
+
 if (str_starts_with($uri, '/insales/')) {
     try {
         $config = Config::fromEnvForInsales();
@@ -252,7 +265,6 @@ if (str_starts_with($uri, '/insales/')) {
                 exit;
             }
 
-            // Берём request_id из БД
             $order = $shops->findOrderByInsalesId($insalesId, $insalesOrderId);
             if ($order === null || !$order['dellin_request_id']) {
                 Response::json(['ok' => false, 'error' => 'Заявка ДЛ не найдена'], 404, $cors);

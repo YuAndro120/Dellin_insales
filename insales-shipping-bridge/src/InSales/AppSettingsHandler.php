@@ -598,6 +598,24 @@ final class AppSettingsHandler
                                         <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
                                     <?php endif; ?>
                                     <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
+                                    <input type="hidden" name="derival_variant" value="<?= $h($s->derivalVariant ?? 'terminal') ?>">
+                                    <input type="hidden" name="sender_terminal_id" value="<?= $h($tid) ?>">
+                                    <input type="hidden" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
+                                    <input type="hidden" name="derival_street" value="<?= $h($s->derivalStreet ?? '') ?>">
+                                    <input type="hidden" name="derival_house" value="<?= $h($s->derivalHouse ?? '') ?>">
+                                    <input type="hidden" name="requester_email" value="<?= $h($s->requesterEmail) ?>">
+                                    <input type="hidden" name="produce_days_offset" value="<?= $h((string)$s->produceDaysOffset) ?>">
+                                    <input type="hidden" name="default_weight_kg" value="<?= $h((string)$s->defaultWeightKg) ?>">
+                                    <input type="hidden" name="default_stated_value" value="<?= $h((string)$s->defaultStatedValue) ?>">
+                                    <input type="hidden" name="default_dimensions_cm" value="<?= $h($s->defaultDimensionsCm) ?>">
+                                    <input type="hidden" name="is_enabled" value="<?= $s->isEnabled ? '1' : '' ?>">
+                                    <input type="hidden" name="delivery_payer" value="<?= $h($s->deliveryPayer ?? 'sender') ?>">
+                                    <input type="hidden" name="requester_role" value="<?= $h($s->requesterRole ?? 'sender') ?>">
+                                    <?php foreach ($s->deliveryTypes as $dt): ?>
+                                        <input type="hidden" name="delivery_types[]" value="<?= $h($dt) ?>">
+                                    <?php endforeach; ?>
+                                    <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
+
                                 </div><!-- /page-col-right -->
                             </div><!-- /page-grid -->
 

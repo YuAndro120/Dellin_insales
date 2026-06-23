@@ -14,57 +14,57 @@ use ShippingBridge\SubscriptionRepository;
  */
 final class CheckoutPage
 {
-    private const PLANS = [
-        SubscriptionRepository::PLAN_CALC_ONLY => [
-            'label'    => 'Старт',
-            'price'    => 999,
-            'features' => [
-                'Расчёт стоимости со скидками ДЛ в корзине',
-                'Сроки доставки для покупателя',
-                'Все типы доставки ДЛ',
-            ],
-        ],
-        SubscriptionRepository::PLAN_FULL => [
-            'label'    => 'Полный',
-            'price'    => 1999,
-            'features' => [
-                'Всё из тарифа «Старт»',
-                'Оформление заявки в ДЛ из админки',
-                'Терминалы, забор от адреса, расписание',
-                'Полные настройки отправителя',
-                'Трек-номер автоматически в заказ',
-            ],
-        ],
-    ];
+  private const PLANS = [
+    SubscriptionRepository::PLAN_CALC_ONLY => [
+      'label'    => 'Старт',
+      'price'    => 999,
+      'features' => [
+        'Расчёт стоимости со скидками ДЛ в корзине',
+        'Сроки доставки для покупателя',
+        'Все типы доставки ДЛ',
+      ],
+    ],
+    SubscriptionRepository::PLAN_FULL => [
+      'label'    => 'Полный',
+      'price'    => 1999,
+      'features' => [
+        'Всё из тарифа «Старт»',
+        'Оформление заявки в ДЛ из админки',
+        'Терминалы, забор от адреса, расписание',
+        'Полные настройки отправителя',
+        'Трек-номер автоматически в заказ',
+      ],
+    ],
+  ];
 
-    private const ANNUAL_DISCOUNT = 0.20; // 20% скидка при оплате за год
+  private const ANNUAL_DISCOUNT = 0.20; // 20% скидка при оплате за год
 
-    public static function handle(Config $config, ShopRepository $shops): void
-    {
-        header('Content-Type: text/html; charset=utf-8');
+  public static function handle(Config $config, ShopRepository $shops): void
+  {
+    header('Content-Type: text/html; charset=utf-8');
 
-        $plan      = trim((string) ($_GET['plan']       ?? ''));
-        $insalesId = trim((string) ($_GET['insales_id'] ?? ''));
-        $shopHost  = trim((string) ($_GET['shop']       ?? ''));
-        $atk       = trim((string) ($_GET['atk']        ?? ''));
+    $plan      = trim((string) ($_GET['plan']       ?? ''));
+    $insalesId = trim((string) ($_GET['insales_id'] ?? ''));
+    $shopHost  = trim((string) ($_GET['shop']       ?? ''));
+    $atk       = trim((string) ($_GET['atk']        ?? ''));
 
-        if (!isset(self::PLANS[$plan])) {
-            http_response_code(404);
-            echo '<p style="font-family:sans-serif;padding:40px">Тариф не найден.</p>';
-            return;
-        }
+    if (!isset(self::PLANS[$plan])) {
+      http_response_code(404);
+      echo '<p style="font-family:sans-serif;padding:40px">Тариф не найден.</p>';
+      return;
+    }
 
-        $planInfo   = self::PLANS[$plan];
-        $monthPrice = $planInfo['price'];
-        $yearPrice  = (int) round($monthPrice * 12 * (1 - self::ANNUAL_DISCOUNT));
+    $planInfo   = self::PLANS[$plan];
+    $monthPrice = $planInfo['price'];
+    $yearPrice  = (int) round($monthPrice * 12 * (1 - self::ANNUAL_DISCOUNT));
 
-        $h = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+    $h = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
 
-        $billingUrl  = rtrim($config->publicBridgeUrl ?? '', '/') . '/insales/billing';
-        $invoiceUrl  = rtrim($config->publicBridgeUrl ?? '', '/') . '/insales/billing/invoice';
-        $landingUrl  = rtrim($config->landingUrl      ?? 'https://receptly.ru', '/');
+    $billingUrl  = rtrim($config->publicBridgeUrl ?? '', '/') . '/insales/billing';
+    $invoiceUrl  = rtrim($config->publicBridgeUrl ?? '', '/') . '/insales/billing/invoice';
+    $landingUrl  = rtrim($config->landingUrl      ?? 'https://receptly.ru', '/');
 
-        echo <<<HTML
+    echo <<<HTML
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -131,25 +131,32 @@ final class CheckoutPage
     .form-section:last-child { margin-bottom: 0 }
     .form-section-title { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 14px }
 
-    /* PERIOD TOGGLE */
-    .period-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+/* PERIOD TOGGLE */
+    .period-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
     .period-option { position: relative }
     .period-option input { position: absolute; opacity: 0; width: 0; height: 0 }
-    .period-option label { display: flex; flex-direction: column; gap: 3px; padding: 14px 16px; background: var(--bg-soft); border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer; transition: border-color .15s, background .15s }
-    .period-option input:checked + label { border-color: var(--amber); background: var(--amber-soft) }
+    .period-option label { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: transparent; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: border-color .15s }
+    .period-option input:checked + label { border-color: var(--amber) }
     .period-option label:hover { border-color: var(--ink-faint) }
-    .period-name { font-size: 14px; font-weight: 600; color: var(--ink) }
-    .period-price { font-family: var(--mono); font-size: 13px; color: var(--ink-dim) }
+    .period-radio { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--ink-faint); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: border-color .15s }
+    .period-option input:checked + label .period-radio { border-color: var(--amber) }
+    .period-option input:checked + label .period-radio::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--amber) }
+    .period-info { display: flex; flex-direction: column; gap: 1px }
+    .period-name { font-size: 13.5px; font-weight: 500; color: var(--ink) }
+    .period-price { font-family: var(--mono); font-size: 12px; color: var(--ink-faint) }
     .period-save { font-size: 11px; color: var(--green); font-family: var(--mono) }
 
     /* PAYMENT METHOD */
-    .method-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+    .method-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
     .method-option { position: relative }
     .method-option input { position: absolute; opacity: 0; width: 0; height: 0 }
-    .method-option label { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: var(--bg-soft); border: 1.5px solid var(--line); border-radius: 10px; cursor: pointer; transition: border-color .15s, background .15s; font-size: 14px; font-weight: 500 }
-    .method-option input:checked + label { border-color: var(--amber); background: var(--amber-soft) }
+    .method-option label { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: transparent; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: border-color .15s; font-size: 13.5px; font-weight: 500 }
+    .method-option input:checked + label { border-color: var(--amber) }
     .method-option label:hover { border-color: var(--ink-faint) }
-    .method-icon { font-size: 18px }
+    .method-radio { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--ink-faint); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: border-color .15s }
+    .method-option input:checked + label .method-radio { border-color: var(--amber) }
+    .method-option input:checked + label .method-radio::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--amber) }
+    .method-icon { font-size: 15px }
 
     /* INVOICE FIELDS */
     .invoice-fields { display: none; flex-direction: column; gap: 12px; margin-top: 16px }
@@ -207,11 +214,11 @@ final class CheckoutPage
     <ul class="plan-features">
 HTML;
 
-        foreach ($planInfo['features'] as $feature) {
-            echo '<li><span class="plan-check">✓</span>' . $h($feature) . '</li>';
-        }
+    foreach ($planInfo['features'] as $feature) {
+      echo '<li><span class="plan-check">✓</span>' . $h($feature) . '</li>';
+    }
 
-        echo <<<HTML
+    echo <<<HTML
     </ul>
 
     <div class="trial-badge">14 дней бесплатного периода</div>
@@ -227,16 +234,21 @@ HTML;
         <div class="period-option">
           <input type="radio" name="period" id="period-month" value="month" checked>
           <label for="period-month">
-            <span class="period-name">1 месяц</span>
-            <span class="period-price">{$monthPrice} ₽</span>
+            <span class="period-radio"></span>
+            <span class="period-info">
+              <span class="period-name">1 месяц</span>
+              <span class="period-price">{$monthPrice} ₽</span>
+            </span>
           </label>
         </div>
         <div class="period-option">
           <input type="radio" name="period" id="period-year" value="year">
           <label for="period-year">
-            <span class="period-name">12 месяцев</span>
-            <span class="period-price">{$yearPrice} ₽</span>
-            <span class="period-save">−20%</span>
+            <span class="period-radio"></span>
+            <span class="period-info">
+              <span class="period-name">12 месяцев <span class="period-save">−20%</span></span>
+              <span class="period-price">{$yearPrice} ₽</span>
+            </span>
           </label>
         </div>
       </div>
@@ -249,6 +261,7 @@ HTML;
         <div class="method-option">
           <input type="radio" name="payment_method" id="method-card" value="card" checked>
           <label for="method-card">
+            <span class="method-radio"></span>
             <span class="method-icon">💳</span>
             Картой
           </label>
@@ -256,6 +269,7 @@ HTML;
         <div class="method-option">
           <input type="radio" name="payment_method" id="method-invoice" value="invoice">
           <label for="method-invoice">
+            <span class="method-radio"></span>
             <span class="method-icon">🧾</span>
             Счёт для юрлица
           </label>
@@ -445,5 +459,5 @@ updateMethodUI();
 </body>
 </html>
 HTML;
-    }
+  }
 }

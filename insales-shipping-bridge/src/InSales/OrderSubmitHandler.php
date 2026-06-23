@@ -217,6 +217,7 @@ final class OrderSubmitHandler
 
             $result = $api->createOrder($sid, $settings, $order, $creds, $deliveryType);
         } catch (\Throwable $e) {
+            self::upsertOrderError($pdo, $order, $e->getMessage());
             Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
             return;
         }
@@ -375,6 +376,37 @@ final class OrderSubmitHandler
             'receiver_juridical_address' => (string) ($client['juridical_address'] ?? ''),
             'manager_comment'            => trim((string) ($raw['manager_comment'] ?? '')),
         ];
+    }
+
+    private static function upsertOrderError(
+        \PDO $pdo,
+        array $order,
+        string $error,
+    ): void {
+        try {
+            $stmt = $pdo->prepare(
+                'INSERT INTO dellin_orders
+                    (insales_shop_id, insales_order_id, insales_order_number,
+                     receiver_name, arrival_city_name, weight, stated_value, last_error, created_at)
+                 VALUES
+                    (:shop, :oid, :onum, :rname, :city, :wt, :sv, :err, NOW())
+                 ON DUPLICATE KEY UPDATE
+                    last_error = :err,
+                    updated_at = NOW()'
+            );
+            $stmt->execute([
+                ':shop'  => $order['insales_shop_id'],
+                ':oid'   => $order['insales_order_id'],
+                ':onum'  => $order['insales_order_number'] ?? '',
+                ':rname' => $order['receiver_name'] ?? '',
+                ':city'  => $order['arrival_city_name'] ?? '',
+                ':wt'    => $order['weight'] ?? 0,
+                ':sv'    => $order['stated_value'] ?? 0,
+                ':err'   => mb_substr($error, 0, 2000),
+            ]);
+        } catch (\Throwable) {
+            // не блокируем ответ
+        }
     }
 
     /**

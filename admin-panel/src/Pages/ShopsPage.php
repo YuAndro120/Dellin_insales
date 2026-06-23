@@ -140,17 +140,21 @@ final class ShopsPage
         if ($orders === []) {
             echo '<div class="empty-state">Заказов пока нет</div>';
         } else {
-            echo '<table><thead><tr><th>№</th><th>Получатель</th><th>Город</th><th>Вес</th><th>Статус ДЛ</th><th>Создан</th></tr></thead><tbody>';
+            echo '<table><thead><tr><th>№</th><th>Получатель</th><th>Город</th><th>Вес</th><th>Статус ДЛ</th><th>Ошибка</th><th>Создан</th></tr></thead><tbody>';
             foreach ($orders as $o) {
                 $statusBadge = $o['dellin_request_id']
                     ? '<span class="badge badge-ok">' . htmlspecialchars((string) ($o['dellin_status_title'] ?: 'оформлен'), ENT_QUOTES, 'UTF-8') . '</span>'
                     : '<span class="badge badge-neutral">не оформлен</span>';
+                $errorText = !empty($o['last_error'])
+                    ? '<span title="' . htmlspecialchars((string) $o['last_error'], ENT_QUOTES, 'UTF-8') . '" style="color:var(--err);cursor:help;font-size:11px">⚠ ошибка</span>'
+                    : '—';
                 echo '<tr>';
                 echo '<td class="mono">' . htmlspecialchars((string) $o['insales_order_number'], ENT_QUOTES, 'UTF-8') . '</td>';
                 echo '<td>' . htmlspecialchars((string) $o['receiver_name'], ENT_QUOTES, 'UTF-8') . '</td>';
                 echo '<td>' . htmlspecialchars((string) $o['arrival_city_name'], ENT_QUOTES, 'UTF-8') . '</td>';
                 echo '<td class="mono">' . htmlspecialchars((string) $o['weight'], ENT_QUOTES, 'UTF-8') . '</td>';
                 echo '<td>' . $statusBadge . '</td>';
+                echo '<td>' . $errorText . '</td>';
                 echo '<td class="mono">' . self::formatDate((string) $o['created_at']) . '</td>';
                 echo '</tr>';
             }

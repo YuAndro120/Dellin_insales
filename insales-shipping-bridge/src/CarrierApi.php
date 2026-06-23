@@ -390,17 +390,21 @@ final class CarrierApi
         );
 
         $managerComment = trim((string) ($order['manager_comment'] ?? ''));
+        $deliveryBlock = [
+            'deliveryType' => ['type' => $deliveryType],
+            'derival'      => $derivalBlock,
+            'arrival'      => $arrivalBlock,
+            'packages'     => $packageUid !== '' ? [['uid' => $packageUid, 'count' => 1]] : [],
+        ];
+        if ($managerComment !== '') {
+            $deliveryBlock['comment'] = $managerComment;
+        }
+
         $body = [
             'appkey'    => $appkey,
             'sessionID' => $sessionId,
             'inOrder'   => true,
-            'delivery'  => [
-                'deliveryType' => ['type' => $deliveryType],
-                'derival'      => $derivalBlock,
-                'arrival'      => $arrivalBlock,
-                'packages'     => $packageUid !== '' ? [['uid' => $packageUid, 'count' => 1]] : [],
-                'comment'      => $managerComment !== '' ? $managerComment : null,
-            ],
+            'delivery'  => $deliveryBlock,
             'members' => [
                 'requester' => [
                     'role'  => $settings->requesterRole ?? 'sender',
@@ -425,6 +429,7 @@ final class CarrierApi
                 'primaryPayer' => 'sender',
             ],
         ];
+
         $orderIdForLog = (string) ($order['insales_order_id'] ?? '');
         \ShippingBridge\Logger::info($settings->insalesId, $orderIdForLog, 'order.create.request', [
             'delivery_type' => $deliveryType,

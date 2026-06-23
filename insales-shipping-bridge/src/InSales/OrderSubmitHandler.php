@@ -287,7 +287,7 @@ final class OrderSubmitHandler
         $weight = $cargo['weight'];
         $totalWeight = $cargo['total_weight'];
         $statedValue = $cargo['stated_value'];
-        $maxDimsRaw = $cargo['length'] . 'x' . $cargo['width'] . 'x' . $cargo['height'];
+        $maxDimsRaw = round($cargo['length'] * 100, 1) . 'x' . round($cargo['width'] * 100, 1) . 'x' . round($cargo['height'] * 100, 1);
 
         // Интервал доставки из кастомного поля
         $deliveryInterval = null;

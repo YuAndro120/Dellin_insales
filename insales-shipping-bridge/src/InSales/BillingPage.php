@@ -69,7 +69,8 @@ final class BillingPage
 
         if ($method === 'POST' && isset($_POST['select_plan'])) {
             $wantsRecurrent = isset($_POST['recurrent']) && $_POST['recurrent'] === '1';
-            self::handlePlanSelection($config, $subscriptions, $insalesId, $shopHost, (string) $_POST['select_plan'], $wantsRecurrent);
+            $period = trim((string) ($_POST['period'] ?? 'month'));
+            self::handlePlanSelection($config, $subscriptions, $insalesId, $shopHost, (string) $_POST['select_plan'], $wantsRecurrent, $period);
             return;
         }
 
@@ -89,6 +90,7 @@ final class BillingPage
         string $shopHost,
         string $plan,
         bool $wantsRecurrent,
+        string $period = 'month',
     ): void {
         if (!isset(self::PLANS[$plan])) {
             http_response_code(400);
@@ -103,8 +105,12 @@ final class BillingPage
         }
 
         $planInfo = self::PLANS[$plan];
-        $orderId = self::buildOrderId($insalesId, $plan);
-        $amountKopecks = $planInfo['price'] * 100;
+        $orderId  = self::buildOrderId($insalesId, $plan);
+
+        $monthPrice = $planInfo['price'];
+        $amountKopecks = $period === 'year'
+            ? (int) round($monthPrice * 12 * 0.80) * 100
+            : $monthPrice * 100;
 
         $acquiring = new TbankAcquiring($config->tbankTerminalKey, $config->tbankTerminalPassword);
 

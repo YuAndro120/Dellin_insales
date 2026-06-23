@@ -45,10 +45,13 @@ final class AppSettingsHandler
         $requiredAccessToken = $shops->findAccessToken($settings->insalesId);
         if ($requiredAccessToken !== null) {
             $providedAccessToken = trim((string) ($_GET['atk'] ?? $_POST['atk'] ?? ''));
-            if ($providedAccessToken === '' || !hash_equals($requiredAccessToken, $providedAccessToken)) {
-                http_response_code(403);
-                self::renderError('Доступ запрещён. Откройте приложение через раздел «Приложения» в админке вашего магазина inSales.');
-                return;
+            $hasInsalesSession   = trim((string) ($_GET['user_id'] ?? '')) !== '';
+            if (!$hasInsalesSession) {
+                if ($providedAccessToken === '' || !hash_equals($requiredAccessToken, $providedAccessToken)) {
+                    http_response_code(403);
+                    self::renderError('Доступ запрещён. Откройте приложение через раздел «Приложения» в админке вашего магазина inSales.');
+                    return;
+                }
             }
         }
 

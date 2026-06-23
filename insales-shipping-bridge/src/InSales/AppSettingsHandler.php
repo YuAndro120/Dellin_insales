@@ -611,9 +611,6 @@ final class AppSettingsHandler
                                     <input type="hidden" name="is_enabled" value="<?= $s->isEnabled ? '1' : '' ?>">
                                     <input type="hidden" name="delivery_payer" value="<?= $h($s->deliveryPayer ?? 'sender') ?>">
                                     <input type="hidden" name="requester_role" value="<?= $h($s->requesterRole ?? 'sender') ?>">
-                                    <?php foreach ($s->deliveryTypes as $dt): ?>
-                                        <input type="hidden" name="delivery_types[]" value="<?= $h($dt) ?>">
-                                    <?php endforeach; ?>
                                     <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
 
                                 </div><!-- /page-col-right -->

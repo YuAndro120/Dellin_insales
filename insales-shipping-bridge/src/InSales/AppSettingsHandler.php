@@ -39,19 +39,6 @@ final class AppSettingsHandler
             return;
         }
 
-        // Защита от перебора insales_id: если у магазина задан access-токен,
-        // требуем его совпадения. Для магазинов без токена (старые установки
-        // до введения этой защиты) проверка не применяется — обратная совместимость.
-        $requiredAccessToken = $shops->findAccessToken($settings->insalesId);
-        if ($requiredAccessToken !== null) {
-            $providedAccessToken = trim((string) ($_GET['atk'] ?? $_POST['atk'] ?? ''));
-            if ($providedAccessToken === '' || !hash_equals($requiredAccessToken, $providedAccessToken)) {
-                http_response_code(403);
-                self::renderError('Доступ запрещён. Откройте приложение через раздел «Приложения» в админке вашего магазина inSales.');
-                return;
-            }
-        }
-
         $installTokenRaw = trim((string) ($_GET['token'] ?? ''));
         if ($installTokenRaw !== '' && ($config->insalesAppSecret ?? '') !== '') {
             try {

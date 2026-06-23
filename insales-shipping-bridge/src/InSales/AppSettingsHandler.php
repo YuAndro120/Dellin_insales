@@ -45,6 +45,18 @@ final class AppSettingsHandler
         $requiredAccessToken = $shops->findAccessToken($settings->insalesId);
         if ($requiredAccessToken !== null) {
             $providedAccessToken = trim((string) ($_GET['atk'] ?? $_POST['atk'] ?? ''));
+            if ($providedAccessToken === '' || !hash_equals($requiredAccessToken, $providedAccessToken)) {
+                http_response_code(403);
+                self::renderError('Доступ запрещён. Откройте приложение через раздел «Приложения» в админке вашего магазина inSales.');
+                return;
+            }
+        }
+
+        // Защита от перебора insales_id: если у магазина задан access-токен,
+        // требуем его совпадения. Если запрос пришёл из inSales (есть user_id) — пропускаем.
+        $requiredAccessToken = $shops->findAccessToken($settings->insalesId);
+        if ($requiredAccessToken !== null) {
+            $providedAccessToken = trim((string) ($_GET['atk'] ?? $_POST['atk'] ?? ''));
             $hasInsalesSession   = trim((string) ($_GET['user_id'] ?? '')) !== '';
             if (!$hasInsalesSession) {
                 if ($providedAccessToken === '' || !hash_equals($requiredAccessToken, $providedAccessToken)) {
@@ -54,7 +66,6 @@ final class AppSettingsHandler
                 }
             }
         }
-
         $installTokenRaw = trim((string) ($_GET['token'] ?? ''));
         if ($installTokenRaw !== '' && ($config->insalesAppSecret ?? '') !== '') {
             try {
@@ -437,9 +448,9 @@ final class AppSettingsHandler
                         </div>
 
                         <form method="post" action="/insales/app" id="settingsForm">
-                            <input type="hidden" name="shop" ...>
-                            <input type="hidden" name="insales_id" ...>
-                            <input type="hidden" name="atk" ...>
+                            <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
+                            <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
+                            <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
 
                             <div class="page-grid">
                                 <div class="page-col">
@@ -535,9 +546,9 @@ final class AppSettingsHandler
                                             </div>
                                         </div>
                                     </div>
-                                </div><!-- /col-left -->
+
+                                </div><!-- /page-col-left -->
                                 <div class="page-col">
-                                    <!-- Контрагент ДЛ -->
                                     <!-- Контрагент ДЛ -->
                                     <?php if (count($counteragents) >= 1 || $counteragentUid !== ''): ?>
                                         <div class="card">
@@ -552,64 +563,61 @@ final class AppSettingsHandler
                                                     <label>Контрагент</label>
                                                     <select name="counteragent_uid" required>
                                                         <option value="">— выберите —</option>
-                                                </div><!-- /col-right -->
-                                            </div><!-- /page-grid -->
-                                            <?php if (count($counteragents) === 0 && $counteragentUid !== ''): ?>
-                                                <option value="<?= $h($counteragentUid) ?>" selected><?= $h($counteragentName ?: $counteragentUid) ?></option>
-                                            <?php endif; ?>
-                                            <?php foreach ($counteragents as $c): ?>
-                                                <option value="<?= $h($c->uid) ?>" <?= $c->uid === $counteragentUid ? ' selected' : '' ?>><?= $h($c->name) ?></option>
-                                            <?php endforeach; ?>
-                                            </select>
+                                                        <?php if (count($counteragents) === 0 && $counteragentUid !== ''): ?>
+                                                            <option value="<?= $h($counteragentUid) ?>" selected><?= $h($counteragentName ?: $counteragentUid) ?></option>
+                                                        <?php endif; ?>
+                                                        <?php foreach ($counteragents as $c): ?>
+                                                            <option value="<?= $h($c->uid) ?>" <?= $c->uid === $counteragentUid ? ' selected' : '' ?>><?= $h($c->name) ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+                                            </div>
                                         </div>
-                                </div>
-                            </div>
-                        <?php elseif (count($counteragents) === 1): ?>
-                            <div class="card">
-                                <div class="card-hdr">
-                                    <div>
-                                        <div class="card-title">Контрагент ДЛ</div>
+                                    <?php elseif (count($counteragents) === 1): ?>
+                                        <div class="card">
+                                            <div class="card-hdr">
+                                                <div>
+                                                    <div class="card-title">Контрагент ДЛ</div>
+                                                </div>
+                                            </div>
+                                            <div class="card-body sm">
+                                                <div class="ir">
+                                                    <span class="ir-l">Выбран контрагент</span>
+                                                    <span class="ir-v"><?= $h($counteragentName) ?></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <!-- Контактное лицо -->
+                                    <div class="card">
+                                        <div class="card-hdr">
+                                            <div>
+                                                <div class="card-title">Контактное лицо</div>
+                                                <div class="card-sub">Для связи при отправке груза</div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="g2">
+                                                <div class="field"><label>Имя</label><input type="text" id="sender_contact_name" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>" placeholder="Иванов Иван"></div>
+                                                <div class="field"><label>Телефон</label><input type="text" id="sender_contact_phone" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>" placeholder="79131409995"></div>
+                                                <div class="field" style="grid-column:1/-1"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="card-body sm">
-                                    <div class="ir">
-                                        <span class="ir-l">Выбран контрагент</span>
-                                        <span class="ir-v"><?= $h($counteragentName) ?></span>
-                                    </div>
-                                </div>
+
+                                    <!-- Терминал отгрузки перенесён в страницу Доставка -->
+                                    <?php if (count($counteragents) === 0 && $counteragentUid !== ''): ?>
+                                        <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
+                                    <?php endif; ?>
+                                    <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
+                                </div><!-- /page-col-right -->
+                            </div><!-- /page-grid -->
+
+                            <div class="btn-row" style="justify-content:flex-start">
+                                <button type="submit" class="btn-p">Сохранить изменения</button>
+                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>&atk=<?= $h($accessToken) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
                             </div>
-                        <?php endif; ?>
-
-                        <!-- Контактное лицо -->
-                        <div class="card">
-                            <div class="card-hdr">
-                                <div>
-                                    <div class="card-title">Контактное лицо</div>
-                                    <div class="card-sub">Для связи при отправке груза</div>
-                                </div>
-                            </div>
-                            <div class="card-body">
-                                <div class="g2">
-                                    <div class="field"><label>Имя</label><input type="text" id="sender_contact_name" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>" placeholder="Иванов Иван"></div>
-                                    <div class="field"><label>Телефон</label><input type="text" id="sender_contact_phone" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>" placeholder="79131409995"></div>
-                                    <div class="field" style="grid-column:1/-1"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Терминал отгрузки MOVED TO SHIPPING PAGE -->
-
-
-
-                        <?php if (count($counteragents) === 0 && $counteragentUid !== ''): ?>
-                            <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
-                        <?php endif; ?>
-                        <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
-
-                        <div class="btn-row">
-                            <button type="submit" class="btn-p">Сохранить изменения</button>
-                            <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>&atk=<?= $h($accessToken) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
-                        </div>
                         </form>
                     </div><!-- /page-sender -->
 
@@ -625,6 +633,23 @@ final class AppSettingsHandler
                             <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
                             <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
                             <input type="hidden" name="requester_email" value="<?= $h($s->requesterEmail) ?>">
+                            <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
+                            <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
+                            <input type="hidden" name="sender_name" value="<?= $h($s->senderName ?? '') ?>">
+                            <input type="hidden" name="sender_type" value="<?= $h($s->senderType ?? 'person') ?>">
+                            <input type="hidden" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>">
+                            <input type="hidden" name="sender_doc_type" value="<?= $h($s->senderDocType ?? 'passport') ?>">
+                            <input type="hidden" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>">
+                            <input type="hidden" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>">
+                            <input type="hidden" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>">
+                            <input type="hidden" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>">
+                            <input type="hidden" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
+                            <input type="hidden" name="sender_opf_name" value="<?= $h($s->senderOpfName ?? '') ?>">
+                            <input type="hidden" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>">
+                            <input type="hidden" name="is_enabled" value="<?= $s->isEnabled ? '1' : '' ?>">
+                            <input type="hidden" name="package_uid" value="<?= $h($s->packageUid) ?>">
+                            <input type="hidden" name="package_name" value="<?= $h($s->packageName) ?>">
+                            <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
 
                             <div class="page-grid">
                                 <div class="page-col">
@@ -646,7 +671,6 @@ final class AppSettingsHandler
                                             </div>
                                         </div>
                                         <input type="hidden" id="derival_variant" name="derival_variant" value="<?= $h($s->derivalVariant ?? 'terminal') ?>">
-
                                         <!-- Блок терминала -->
                                         <div id="derivalTerminalBlock" <?= $s->derivalVariant === 'address' ? ' style="display:none"' : '' ?>>
                                             <div class="card-body">
@@ -706,7 +730,6 @@ final class AppSettingsHandler
                                                 <input type="hidden" id="derival_city_kladr" name="derival_city_kladr" value="<?= $h($s->derivalCityKladr ?? '') ?>">
                                             </div>
                                         </div>
-
                                         <!-- Блок адреса забора -->
                                         <div id="derivalAddressBlock" <?= $s->derivalVariant !== 'address' ? ' style="display:none"' : '' ?>>
                                             <?php $hasDerivalAddr = ($s->derivalStreet ?? '') !== '' && ($s->derivalHouse ?? '') !== ''; ?>
@@ -758,23 +781,6 @@ final class AppSettingsHandler
                                             </div>
                                         </div>
                                     </div>
-                                    <input type="hidden" name="counteragent_uid" value="<?= $h($counteragentUid) ?>">
-                                    <input type="hidden" name="sender_counteragent_id" value="<?= $h($s->senderCounterAgentId !== null ? (string)$s->senderCounterAgentId : '') ?>">
-                                    <input type="hidden" name="sender_name" value="<?= $h($s->senderName ?? '') ?>">
-                                    <input type="hidden" name="sender_type" value="<?= $h($s->senderType ?? 'person') ?>">
-                                    <input type="hidden" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>">
-                                    <input type="hidden" name="sender_doc_type" value="<?= $h($s->senderDocType ?? 'passport') ?>">
-                                    <input type="hidden" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>">
-                                    <input type="hidden" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>">
-                                    <input type="hidden" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>">
-                                    <input type="hidden" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>">
-                                    <input type="hidden" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
-                                    <input type="hidden" name="sender_opf_name" value="<?= $h($s->senderOpfName ?? '') ?>">
-                                    <input type="hidden" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>">
-                                    <input type="hidden" name="is_enabled" value="<?= $s->isEnabled ? '1' : '' ?>">
-                                    <input type="hidden" name="package_uid" value="<?= $h($s->packageUid) ?>">
-                                    <input type="hidden" name="package_name" value="<?= $h($s->packageName) ?>">
-                                    <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
 
                                     <!-- Груз по умолчанию -->
                                     <div class="card">
@@ -796,7 +802,7 @@ final class AppSettingsHandler
                                         </div>
                                     </div>
 
-                                </div><!-- /col-left -->
+                                </div><!-- /page-col-left -->
                                 <div class="page-col">
                                     <!-- Характер груза -->
                                     <div class="card">
@@ -918,9 +924,11 @@ final class AppSettingsHandler
                                             </div>
                                         </div>
                                     </div>
-                                </div><!-- /col-right -->
+
+                                </div><!-- /page-col-right -->
                             </div><!-- /page-grid -->
-                            <div class="btn-row">
+
+                            <div class="btn-row" style="justify-content:flex-start">
                                 <button type="submit" class="btn-p">Сохранить изменения</button>
                             </div>
                         </form>
@@ -1722,8 +1730,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .main::-webkit-scrollbar{width:4px}
 .main::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
 .content{max-width:1100px;padding:36px 40px}
-.page-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.page-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
 .page-col{display:flex;flex-direction:column;gap:0}
+.page-col .card:last-child{flex:1}
 @media(max-width:900px){.page-grid{grid-template-columns:1fr}}
  
 /* PAGES */

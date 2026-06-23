@@ -100,6 +100,29 @@ a.tlink:hover{text-decoration:underline}
 .field input{width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r);color:var(--ink);font-size:13px;outline:none}
 .field input:focus{border-color:var(--accent)}
 .alert-banner-err{padding:10px 14px;background:var(--err-dim);border:1px solid #5a2025;border-radius:var(--r);color:var(--err);font-size:13px;margin-bottom:14px}
+.topbar{display:none;position:fixed;top:0;left:0;right:0;z-index:300;background:var(--bg2);border-bottom:1px solid var(--line);padding:12px 16px;align-items:center;gap:12px}
+.burger{width:36px;height:36px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;flex-shrink:0}
+.burger span{display:block;width:16px;height:1.5px;background:var(--ink2);border-radius:2px}
+.topbar-title{font-size:14px;font-weight:600;color:var(--ink)}
+.overlay{display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.6)}
+.overlay.show{display:block}
+@media(max-width:768px){
+  .topbar{display:flex}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;z-index:200;transform:translateX(-100%);transition:transform .25s cubic-bezier(.22,1,.36,1);box-shadow:4px 0 24px rgba(0,0,0,.4)}
+  .sidebar.open{transform:translateX(0)}
+  .main{padding-top:58px}
+  .content{padding:20px 14px;max-width:100%}
+  .grid-4{grid-template-columns:1fr 1fr}
+  .grid-2{grid-template-columns:1fr}
+  .card{padding:14px}
+  table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .search-bar input{width:100%}
+  .filter-bar{flex-wrap:wrap}
+  .login-card{width:100%;max-width:340px;padding:24px 20px}
+}
+@media(max-width:420px){
+  .grid-4{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -116,7 +139,9 @@ HTML;
         ];
         $email = htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8');
 
-        echo '<div class="app"><aside class="sidebar"><div class="brand"><div class="brand-name">Dellin Bridge</div><div class="brand-sub">admin panel</div></div><nav class="nav">';
+        echo '<div class="topbar"><div class="burger" id="burger"><span></span><span></span><span></span></div><div class="topbar-title">Bridge Admin</div></div>';
+        echo '<div class="overlay" id="overlay"></div>';
+        echo '<div class="app"><aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-name">Dellin Bridge</div><div class="brand-sub">admin panel</div></div><nav class="nav">';
         foreach ($items as $key => [$href, $label]) {
             $active = $key === $activePage ? ' active' : '';
             $badge = '';
@@ -130,6 +155,17 @@ HTML;
 
     public static function footer(): void
     {
-        echo '</div></main></div></body></html>';
+        echo '</div></main></div><script>
+(function(){
+  var burger=document.getElementById("burger"),
+      sidebar=document.getElementById("sidebar"),
+      overlay=document.getElementById("overlay");
+  function open(){sidebar.classList.add("open");overlay.classList.add("show")}
+  function close(){sidebar.classList.remove("open");overlay.classList.remove("show")}
+  if(burger)burger.addEventListener("click",function(){sidebar.classList.contains("open")?close():open()});
+  if(overlay)overlay.addEventListener("click",close);
+  document.addEventListener("keydown",function(e){if(e.key==="Escape")close()});
+})();
+</script></body></html>';
     }
 }

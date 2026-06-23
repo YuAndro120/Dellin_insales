@@ -84,7 +84,12 @@ final class BillingWebhookHandler
         }
 
         if ($status === 'CONFIRMED' && $success) {
-            $periodEnd = (new \DateTimeImmutable())->modify('+30 days');
+            // period закодирован в orderId: insalesId-plan-period-timestamp
+            $orderParts = explode('-', $orderId);
+            $billingPeriod = in_array($orderParts[count($orderParts) - 2] ?? '', ['month', 'year'], true)
+                ? $orderParts[count($orderParts) - 2]
+                : 'month';
+            $periodEnd = (new \DateTimeImmutable())->modify($billingPeriod === 'year' ? '+365 days' : '+30 days');
             $subscriptions->activateAfterPayment(
                 $insalesId,
                 $plan,

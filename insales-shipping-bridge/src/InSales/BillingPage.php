@@ -105,7 +105,7 @@ final class BillingPage
         }
 
         $planInfo = self::PLANS[$plan];
-        $orderId  = self::buildOrderId($insalesId, $plan);
+        $orderId  = self::buildOrderId($insalesId, $plan, $period);
 
         $monthPrice = $planInfo['price'];
         $amountKopecks = $period === 'year'
@@ -151,9 +151,9 @@ final class BillingPage
         header('Location: ' . $result['payment_url'], true, 302);
     }
 
-    private static function buildOrderId(string $insalesId, string $plan): string
+    private static function buildOrderId(string $insalesId, string $plan, string $period = 'month'): string
     {
-        return $insalesId . '-' . $plan . '-' . time();
+        return $insalesId . '-' . $plan . '-' . $period . '-' . time();
     }
 
     private static function renderPlansPage(

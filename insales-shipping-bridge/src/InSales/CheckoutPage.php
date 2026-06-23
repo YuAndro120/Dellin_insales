@@ -431,13 +431,20 @@ function handleSubmit() {
   fetch(INVOICE_URL, { method: 'POST', body: body })
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      if (data.ok && data.invoice_url) {
-        window.location.href = data.invoice_url;
-      } else {
-        showError(data.error || 'Не удалось выставить счёт. Попробуйте позже.');
-        btn.disabled = false;
-        btn.textContent = 'Получить счёт';
-      }
+      if (data.ok) {
+  var msg = 'Счёт №' + (data.invoice_number || '') + ' выставлен.';
+  if (data.due_date) msg += ' Оплатите до ' + data.due_date + '.';
+  msg += ' Реквизиты отправлены на указанный email.';
+  document.getElementById('formError').style.background = 'var(--green-soft)';
+  document.getElementById('formError').style.borderColor = 'var(--green)';
+  document.getElementById('formError').style.color = 'var(--green)';
+  showError(msg);
+  btn.textContent = 'Счёт выставлен';
+} else {
+  showError(data.error || 'Не удалось выставить счёт. Попробуйте позже.');
+  btn.disabled = false;
+  btn.textContent = 'Получить счёт';
+}
     })
     .catch(function() {
       showError('Ошибка сети. Проверьте соединение и попробуйте снова.');

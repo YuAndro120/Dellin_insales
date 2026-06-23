@@ -218,7 +218,13 @@ final class OrderSubmitHandler
             $result = $api->createOrder($sid, $settings, $order, $creds, $deliveryType);
         } catch (\Throwable $e) {
             self::upsertOrderError($pdo, $order, $e->getMessage());
-            Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
+            \ShippingBridge\Logger::error(
+                $insalesId,
+                $insalesOrderId,
+                'order.create.failed',
+                ['error' => $e->getMessage(), 'order_number' => $order['insales_order_number'] ?? '']
+            );
+            Response::json(['ok' => false, 'error' => self::humanizeError($e->getMessage())], 422, $cors);
             return;
         }
 
@@ -456,6 +462,45 @@ final class OrderSubmitHandler
             'request_id'   => $requestId,
             'barcode'      => $barcode,
         ]);
+    }
+    private static function humanizeError(string $raw): string
+    {
+        // Ошибки от API ДЛ
+        if (str_contains($raw, '130025')) {
+            return 'Для оформления заявки требуется документ получателя.';
+        }
+        if (str_contains($raw, '130004')) {
+            return 'Не заполнены обязательные параметры заказа. Проверьте габариты и вес товара в inSales.';
+        }
+        if (str_contains($raw, '130021')) {
+            return 'Выбранный тип доставки недоступен для этого маршрута. Попробуйте другой тариф.';
+        }
+        if (str_contains($raw, '130015')) {
+            return 'Выбранная упаковка недоступна для этого вида перевозки. Отключите упаковку в настройках.';
+        }
+        if (str_contains($raw, '130022')) {
+            return 'Некорректный адрес или терминал. Проверьте настройки отправителя.';
+        }
+        if (str_contains($raw, '110003')) {
+            return 'Отсутствует обязательный параметр в запросе к ДЛ. Проверьте настройки приложения.';
+        }
+        if (str_contains($raw, 'HTTP 400')) {
+            return 'Ошибка при создании заявки в Деловых Линиях. Проверьте настройки отправителя и попробуйте снова.';
+        }
+        if (str_contains($raw, 'HTTP 401') || str_contains($raw, 'HTTP 403')) {
+            return 'Ошибка авторизации в API Деловых Линий. Обновите PAT-токен в настройках подключения.';
+        }
+        if (str_contains($raw, 'HTTP 429')) {
+            return 'Превышен лимит запросов к API Деловых Линий. Попробуйте через минуту.';
+        }
+        if (str_contains($raw, 'HTTP 5')) {
+            return 'Сервис Деловых Линий временно недоступен. Попробуйте через несколько минут.';
+        }
+        // Ошибки сети/сервера
+        if (str_contains($raw, 'cURL') || str_contains($raw, 'curl')) {
+            return 'Ошибка сети при обращении к API Деловых Линий. Проверьте соединение и повторите.';
+        }
+        return $raw;
     }
     /**
      * Записывает номер заказа ДЛ в наше поле заказа inSales по сохранённому field_id.

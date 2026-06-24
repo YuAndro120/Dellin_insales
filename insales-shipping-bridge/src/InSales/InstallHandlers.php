@@ -189,7 +189,7 @@ body{font-family:'Instrument Sans',system-ui,sans-serif;background:#f5f3f0;color
   <div class="card-title">Этикетка для груза</div>
   <div class="field">
     <label>Артикул грузового места <span style="font-weight:400;text-transform:none;letter-spacing:0">(до 30 симв., необязательно)</span></label>
-    <input type="text" id="cargoPlace" maxlength="30" placeholder="Оставьте пустым — ДЛ подставит номер заявки">
+    <input type="text" id="cargoPlace" maxlength="30" placeholder="Не обязательно. Максимум 30 символов">
   </div>
   <div class="field">
     <label>Формат этикетки</label>

@@ -757,9 +757,7 @@ final class AppSettingsHandler
                                                     <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">
                                                         <button type="submit" class="btn-p">Сохранить</button>
                                                         <?php if ($hasDerivalAddr): ?>
-                                                            <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">
-                                                                <button type="button" id="derivalAddrCancelBtn" class="btn-g">Отмена</button>
-                                                            </div>
+                                                            <button type="button" id="derivalAddrCancelBtn" class="btn-g">Отмена</button>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>

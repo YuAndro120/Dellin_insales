@@ -167,7 +167,7 @@ body{font-family:'Instrument Sans',system-ui,sans-serif;background:#f5f3f0;color
       <input type="time" id="derivalTimeFrom" style="width:100%;padding:7px 10px;background:#f9f8f6;border:1px solid #e4dfd8;border-radius:7px;font-size:13px;font-family:inherit;outline:none">
       <input type="time" id="derivalTimeTo" style="width:100%;padding:7px 10px;background:#f9f8f6;border:1px solid #e4dfd8;border-radius:7px;font-size:13px;font-family:inherit;outline:none">
     </div>
-    <div style="font-size:10px;color:#8c8580;margin-top:4px">Минимальный интервал — 4 часа (в Москве и СПб — 2 часа)</div>
+    <div style="font-size:10px;color:#8c8580;margin-top:4px">В среднем минимальный интервал — 4 часа</div>
   </div>
 </div>
 

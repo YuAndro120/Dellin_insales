@@ -754,185 +754,187 @@ final class AppSettingsHandler
                                                             <input type="text" id="derival_house_input" name="derival_house" value="<?= $h($s->derivalHouse ?? '') ?>" placeholder="5">
                                                         </div>
                                                     </div>
-                                                    <?php if ($hasDerivalAddr): ?>
-                                                        <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">
-                                                            <button type="button" id="derivalAddrCancelBtn" class="btn-g">Отмена</button>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-                                            <div id="derivalAddressCard" <?= !$hasDerivalAddr ? ' style="display:none"' : '' ?>>
-                                                <div class="card-body">
-                                                    <div class="term-saved">
-                                                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
-                                                            <div>
-                                                                <div class="term-name">Адрес забора груза</div>
-                                                                <div class="term-addr" id="derivalCardAddr">
-                                                                    <?= $h(trim((($s->derivalCityName ?? '') . ', ' . ($s->derivalStreet ?? '') . ', д. ' . ($s->derivalHouse ?? '')), ', ')) ?>
-                                                                </div>
+                                                    <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">
+                                                        <button type="submit" class="btn-p">Сохранить</button>
+                                                        <?php if ($hasDerivalAddr): ?>
+                                                            <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">
+                                                                <button type="button" id="derivalAddrCancelBtn" class="btn-g">Отмена</button>
                                                             </div>
-                                                            <button type="button" id="derivalAddrEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
-                                                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
-                                                                    <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-                                                                </svg>
-                                                                Изменить
-                                                            </button>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                                <div id="derivalAddressCard" <?= !$hasDerivalAddr ? ' style="display:none"' : '' ?>>
+                                                    <div class="card-body">
+                                                        <div class="term-saved">
+                                                            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+                                                                <div>
+                                                                    <div class="term-name">Адрес забора груза</div>
+                                                                    <div class="term-addr" id="derivalCardAddr">
+                                                                        <?= $h(trim((($s->derivalCityName ?? '') . ', ' . ($s->derivalStreet ?? '') . ', д. ' . ($s->derivalHouse ?? '')), ', ')) ?>
+                                                                    </div>
+                                                                </div>
+                                                                <button type="button" id="derivalAddrEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                                                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
+                                                                        <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                                    </svg>
+                                                                    Изменить
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Груз по умолчанию -->
-                                    <div class="card">
-                                        <div class="card-hdr">
-                                            <div>
-                                                <div class="card-title">Груз по умолчанию</div>
-                                                <div class="card-sub">Если у товара в inSales не заданы вес или габариты</div>
-                                            </div>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="g2">
-                                                <div class="field"><label>Вес, кг</label><input type="number" step="0.001" min="0.01" name="default_weight_kg" value="<?= $h((string)$s->defaultWeightKg) ?>"></div>
-                                                <div class="field"><label>Объявл. стоимость, ₽</label><input type="number" step="0.01" min="0" name="default_stated_value" value="<?= $h((string)$s->defaultStatedValue) ?>"></div>
-                                                <div class="field"><label>Дней до отгрузки</label><input type="number" min="0" max="30" name="produce_days_offset" value="<?= $h((string)$s->produceDaysOffset) ?>"></div>
-                                                <div class="field"><label>Габариты Д × Ш × В, см</label><input type="text" name="default_dimensions_cm" value="<?= $h($s->defaultDimensionsCm) ?>" placeholder="20x20x20">
-                                                    <div class="hint">Длина × ширина × высота в сантиметрах</div>
+                                        <!-- Груз по умолчанию -->
+                                        <div class="card">
+                                            <div class="card-hdr">
+                                                <div>
+                                                    <div class="card-title">Груз по умолчанию</div>
+                                                    <div class="card-sub">Если у товара в inSales не заданы вес или габариты</div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-
-                                </div><!-- /page-col-left -->
-                                <div class="page-col">
-                                    <!-- Характер груза -->
-                                    <div class="card">
-                                        <div class="card-hdr">
-                                            <div>
-                                                <div class="card-title">Характер груза</div>
-                                                <div class="card-sub">Из справочника Деловых Линий</div>
-                                            </div>
-                                        </div>
-                                        <div class="card-body">
-                                            <?php $hasFreight = ($s->freightUid ?? '') !== ''; ?>
-                                            <div class="field">
-                                                <label>Характер груза</label>
-                                                <div id="freightSaved" <?= !$hasFreight ? ' style="display:none"' : '' ?> class="opf-saved">
-                                                    <div>
-                                                        <div class="opf-name" id="freightSavedName"><?= $h($s->freightName ?? 'Сохранено') ?></div>
-                                                        <div class="opf-country">из справочника ДЛ</div>
+                                            <div class="card-body">
+                                                <div class="g2">
+                                                    <div class="field"><label>Вес, кг</label><input type="number" step="0.001" min="0.01" name="default_weight_kg" value="<?= $h((string)$s->defaultWeightKg) ?>"></div>
+                                                    <div class="field"><label>Объявл. стоимость, ₽</label><input type="number" step="0.01" min="0" name="default_stated_value" value="<?= $h((string)$s->defaultStatedValue) ?>"></div>
+                                                    <div class="field"><label>Дней до отгрузки</label><input type="number" min="0" max="30" name="produce_days_offset" value="<?= $h((string)$s->produceDaysOffset) ?>"></div>
+                                                    <div class="field"><label>Габариты Д × Ш × В, см</label><input type="text" name="default_dimensions_cm" value="<?= $h($s->defaultDimensionsCm) ?>" placeholder="20x20x20">
+                                                        <div class="hint">Длина × ширина × высота в сантиметрах</div>
                                                     </div>
-                                                    <button type="button" id="freightEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
-                                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
-                                                            <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-                                                        </svg>
-                                                        Изменить
-                                                    </button>
                                                 </div>
-                                                <div id="freightSearchWrap" <?= $hasFreight ? ' style="display:none"' : '' ?> class="opf-search-wrap">
-                                                    <input class="opf-search-input" type="text" id="freightSearch" autocomplete="off" placeholder="Начните вводить — бытовая техника, одежда…">
-                                                    <ul id="freightSuggestions" class="opf-list"></ul>
-                                                </div>
-                                                <input type="hidden" id="freight_uid" name="freight_uid" value="<?= $h($s->freightUid  ?? '') ?>">
-                                                <input type="hidden" id="freight_name" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Упаковка -->
-                                    <div class="card">
-                                        <div class="card-hdr">
-                                            <div>
-                                                <div class="card-title">Упаковка</div>
-                                                <div class="card-sub">Из справочника Деловых Линий</div>
+                                    </div><!-- /page-col-left -->
+                                    <div class="page-col">
+                                        <!-- Характер груза -->
+                                        <div class="card">
+                                            <div class="card-hdr">
+                                                <div>
+                                                    <div class="card-title">Характер груза</div>
+                                                    <div class="card-sub">Из справочника Деловых Линий</div>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <?php $hasFreight = ($s->freightUid ?? '') !== ''; ?>
+                                                <div class="field">
+                                                    <label>Характер груза</label>
+                                                    <div id="freightSaved" <?= !$hasFreight ? ' style="display:none"' : '' ?> class="opf-saved">
+                                                        <div>
+                                                            <div class="opf-name" id="freightSavedName"><?= $h($s->freightName ?? 'Сохранено') ?></div>
+                                                            <div class="opf-country">из справочника ДЛ</div>
+                                                        </div>
+                                                        <button type="button" id="freightEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
+                                                                <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                            </svg>
+                                                            Изменить
+                                                        </button>
+                                                    </div>
+                                                    <div id="freightSearchWrap" <?= $hasFreight ? ' style="display:none"' : '' ?> class="opf-search-wrap">
+                                                        <input class="opf-search-input" type="text" id="freightSearch" autocomplete="off" placeholder="Начните вводить — бытовая техника, одежда…">
+                                                        <ul id="freightSuggestions" class="opf-list"></ul>
+                                                    </div>
+                                                    <input type="hidden" id="freight_uid" name="freight_uid" value="<?= $h($s->freightUid  ?? '') ?>">
+                                                    <input type="hidden" id="freight_name" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="card-body">
-                                            <?php $hasPkg = $s->packageUid !== ''; ?>
-                                            <div class="field">
-                                                <label>Вид упаковки</label>
-                                                <div id="pkgSaved" <?= !$hasPkg ? ' style="display:none"' : '' ?> class="opf-saved">
-                                                    <div>
-                                                        <div class="opf-name" id="pkgSavedName"><?= $h($s->packageName ?: 'Сохранено') ?></div>
-                                                        <div class="opf-country">из справочника ДЛ</div>
+
+                                        <!-- Упаковка -->
+                                        <div class="card">
+                                            <div class="card-hdr">
+                                                <div>
+                                                    <div class="card-title">Упаковка</div>
+                                                    <div class="card-sub">Из справочника Деловых Линий</div>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <?php $hasPkg = $s->packageUid !== ''; ?>
+                                                <div class="field">
+                                                    <label>Вид упаковки</label>
+                                                    <div id="pkgSaved" <?= !$hasPkg ? ' style="display:none"' : '' ?> class="opf-saved">
+                                                        <div>
+                                                            <div class="opf-name" id="pkgSavedName"><?= $h($s->packageName ?: 'Сохранено') ?></div>
+                                                            <div class="opf-country">из справочника ДЛ</div>
+                                                        </div>
+                                                        <button type="button" id="pkgEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px">
+                                                                <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                            </svg>
+                                                            Изменить
+                                                        </button>
                                                     </div>
-                                                    <button type="button" id="pkgEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
-                                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px">
-                                                            <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-                                                        </svg>
-                                                        Изменить
-                                                    </button>
+                                                    <div id="pkgSearchWrap" <?= $hasPkg ? ' style="display:none"' : '' ?> class="opf-search-wrap">
+                                                        <div id="pkgLoading" style="font-size:12px;color:var(--ink3);padding:6px 0">Загрузка упаковок…</div>
+                                                        <ul id="pkgList" class="opf-list" style="display:none"></ul>
+                                                        <button type="button" id="pkgClearBtn" class="btn-g" style="font-size:11px;margin-top:8px">Без упаковки</button>
+                                                    </div>
+                                                    <input type="hidden" id="package_uid" name="package_uid" value="<?= $h($s->packageUid) ?>">
+                                                    <input type="hidden" id="package_name" name="package_name" value="<?= $h($s->packageName) ?>">
+                                                    <div class="ir">
+                                                        <span class="ir-l">Учитывать упаковку в расчёте стоимости</span>
+                                                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                                                            <input type="checkbox" name="package_in_calc" value="1" <?= $s->packageInCalc ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
+                                                            <span style="font-size:12px;color:var(--ink3)">Включено</span>
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                                <div id="pkgSearchWrap" <?= $hasPkg ? ' style="display:none"' : '' ?> class="opf-search-wrap">
-                                                    <div id="pkgLoading" style="font-size:12px;color:var(--ink3);padding:6px 0">Загрузка упаковок…</div>
-                                                    <ul id="pkgList" class="opf-list" style="display:none"></ul>
-                                                    <button type="button" id="pkgClearBtn" class="btn-g" style="font-size:11px;margin-top:8px">Без упаковки</button>
-                                                </div>
-                                                <input type="hidden" id="package_uid" name="package_uid" value="<?= $h($s->packageUid) ?>">
-                                                <input type="hidden" id="package_name" name="package_name" value="<?= $h($s->packageName) ?>">
+                                            </div>
+                                        </div>
+
+                                        <!-- Расчёт доставки -->
+                                        <div class="card">
+                                            <div class="card-hdr">
+                                                <div class="card-title">Расчёт доставки</div>
+                                            </div>
+                                            <div class="card-body sm">
                                                 <div class="ir">
-                                                    <span class="ir-l">Учитывать упаковку в расчёте стоимости</span>
+                                                    <span class="ir-l">Показывать доставку в корзине</span>
                                                     <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-                                                        <input type="checkbox" name="package_in_calc" value="1" <?= $s->packageInCalc ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
+                                                        <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
                                                         <span style="font-size:12px;color:var(--ink3)">Включено</span>
                                                     </label>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Расчёт доставки -->
-                                    <div class="card">
-                                        <div class="card-hdr">
-                                            <div class="card-title">Расчёт доставки</div>
-                                        </div>
-                                        <div class="card-body sm">
-                                            <div class="ir">
-                                                <span class="ir-l">Показывать доставку в корзине</span>
-                                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-                                                    <input type="checkbox" name="is_enabled" value="1" <?= $s->isEnabled ? ' checked' : '' ?> style="width:auto;cursor:pointer;accent-color:var(--amber)">
-                                                    <span style="font-size:12px;color:var(--ink3)">Включено</span>
-                                                </label>
-                                            </div>
-                                            <div class="ir" style="align-items:flex-start;flex-direction:column;gap:10px">
-                                                <span class="ir-l">Типы доставки в корзине</span>
-                                                <div style="display:flex;flex-direction:column;gap:8px">
-                                                    <?php foreach (
-                                                        [
-                                                            'auto'          => 'Автодоставка',
-                                                            'avia'          => 'Авиадоставка',
-                                                            'express'       => 'Экспресс',
-                                                            'small' => 'Малогабаритный груз',
-                                                        ] as $val => $label
-                                                    ): ?>
-                                                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--ink2)">
-                                                            <input type="checkbox" name="delivery_types[]" value="<?= $val ?>"
-                                                                <?= in_array($val, $s->deliveryTypes, true) ? 'checked' : '' ?>
-                                                                style="width:auto;cursor:pointer;accent-color:var(--amber)">
-                                                            <?= $label ?>
-                                                        </label>
-                                                    <?php endforeach; ?>
+                                                <div class="ir" style="align-items:flex-start;flex-direction:column;gap:10px">
+                                                    <span class="ir-l">Типы доставки в корзине</span>
+                                                    <div style="display:flex;flex-direction:column;gap:8px">
+                                                        <?php foreach (
+                                                            [
+                                                                'auto'          => 'Автодоставка',
+                                                                'avia'          => 'Авиадоставка',
+                                                                'express'       => 'Экспресс',
+                                                                'small' => 'Малогабаритный груз',
+                                                            ] as $val => $label
+                                                        ): ?>
+                                                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--ink2)">
+                                                                <input type="checkbox" name="delivery_types[]" value="<?= $val ?>"
+                                                                    <?= in_array($val, $s->deliveryTypes, true) ? 'checked' : '' ?>
+                                                                    style="width:auto;cursor:pointer;accent-color:var(--amber)">
+                                                                <?= $label ?>
+                                                            </label>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                </div>
+                                                <div class="ir">
+                                                    <span class="ir-l">Роль для скидок ДЛ</span>
+                                                    <div class="seg" style="width:auto;margin-bottom:0">
+                                                        <button type="button" class="seg-btn<?= $s->requesterRole === 'sender' ? ' on' : '' ?>" onclick="setRequesterRole(this,'sender')">Отправитель</button>
+                                                        <button type="button" class="seg-btn<?= $s->requesterRole === 'receiver' ? ' on' : '' ?>" onclick="setRequesterRole(this,'receiver')">Получатель</button>
+                                                        <button type="button" class="seg-btn<?= $s->requesterRole === 'payer' ? ' on' : '' ?>" onclick="setRequesterRole(this,'payer')">Плательщик</button>
+                                                    </div>
+                                                    <input type="hidden" id="requester_role" name="requester_role" value="<?= $h($s->requesterRole) ?>">
                                                 </div>
                                             </div>
-                                            <div class="ir">
-                                                <span class="ir-l">Роль для скидок ДЛ</span>
-                                                <div class="seg" style="width:auto;margin-bottom:0">
-                                                    <button type="button" class="seg-btn<?= $s->requesterRole === 'sender' ? ' on' : '' ?>" onclick="setRequesterRole(this,'sender')">Отправитель</button>
-                                                    <button type="button" class="seg-btn<?= $s->requesterRole === 'receiver' ? ' on' : '' ?>" onclick="setRequesterRole(this,'receiver')">Получатель</button>
-                                                    <button type="button" class="seg-btn<?= $s->requesterRole === 'payer' ? ' on' : '' ?>" onclick="setRequesterRole(this,'payer')">Плательщик</button>
-                                                </div>
-                                                <input type="hidden" id="requester_role" name="requester_role" value="<?= $h($s->requesterRole) ?>">
-                                            </div>
                                         </div>
-                                    </div>
 
-                                </div><!-- /page-col-right -->
-                            </div><!-- /page-grid -->
+                                    </div><!-- /page-col-right -->
+                                </div><!-- /page-grid -->
 
-                            <div class="btn-row" style="justify-content:flex-start">
-                                <button type="submit" class="btn-p">Сохранить изменения</button>
-                            </div>
+                                <div class="btn-row" style="justify-content:flex-start">
+                                    <button type="submit" class="btn-p">Сохранить изменения</button>
+                                </div>
                         </form>
                     </div>
 

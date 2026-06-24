@@ -8,7 +8,7 @@ use PDO;
 
 final class ShopRepository
 {
-    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_juridical_address, sender_opf_name, freight_name, delivery_payer, requester_role, package_uid, package_name, delivery_types, package_in_calc, derival_city_name';
+    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, derival_time_from, derival_time_to, derival_break_from, derival_break_to, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_juridical_address, sender_opf_name, freight_name, delivery_payer, requester_role, package_uid, package_name, delivery_types, package_in_calc, derival_city_name';
 
     public function __construct(private readonly PDO $pdo) {}
 
@@ -119,6 +119,10 @@ SQL;
         $cityKladr = trim((string) ($data['derival_city_kladr'] ?? ''));
         $street = trim((string) ($data['derival_street'] ?? ''));
         $house = trim((string) ($data['derival_house'] ?? ''));
+        $timeFrom  = trim((string) ($data['derival_time_from'] ?? '')) ?: null;
+        $timeTo    = trim((string) ($data['derival_time_to'] ?? '')) ?: null;
+        $breakFrom = trim((string) ($data['derival_break_from'] ?? '')) ?: null;
+        $breakTo   = trim((string) ($data['derival_break_to'] ?? '')) ?: null;
 
         if ($variant === ShopSettings::DERIVAL_TERMINAL) {
             if ($terminalId <= 0) {
@@ -156,6 +160,10 @@ SQL;
               derival_city_kladr    = :city,
               derival_street        = :street,
               derival_house         = :house,
+              derival_time_from     = :time_from,
+              derival_time_to       = :time_to,
+              derival_break_from    = :break_from,
+              derival_break_to      = :break_to,
               requester_email       = :email,
               counteragent_uid      = :uid,
               sender_counteragent_id = :sender_caid,
@@ -192,6 +200,10 @@ SQL;
             ':city'                => $cityKladr !== '' ? $cityKladr : null,
             ':street'              => $street !== '' ? $street : null,
             ':house'               => $house !== '' ? $house : null,
+            ':time_from'           => $timeFrom,
+            ':time_to'             => $timeTo,
+            ':break_from'          => $breakFrom,
+            ':break_to'            => $breakTo,
             ':email'               => $email,
             ':uid'                 => ($data['counteragent_uid'] ?? '') !== '' ? $data['counteragent_uid'] : null,
             ':sender_caid'         => $senderCaid,
@@ -341,23 +353,6 @@ SQL;
         $stmt->execute([':wid' => $widgetId, ':iid' => $insalesId]);
     }
 
-    public function findOrderFieldId(string $insalesId): ?int
-    {
-        $row = $this->fetchRow(
-            'SELECT dellin_order_field_id FROM insales_shops WHERE insales_id = :iid AND uninstalled_at IS NULL LIMIT 1',
-            [':iid' => $insalesId]
-        );
-        if ($row === null || $row['dellin_order_field_id'] === null) {
-            return null;
-        }
-        return (int) $row['dellin_order_field_id'];
-    }
-
-    public function saveOrderFieldId(string $insalesId, int $fieldId): void
-    {
-        $stmt = $this->pdo->prepare('UPDATE insales_shops SET dellin_order_field_id = :fid WHERE insales_id = :iid');
-        $stmt->execute([':fid' => $fieldId, ':iid' => $insalesId]);
-    }
     public function findAccessToken(string $insalesId): ?string
     {
         $row = $this->fetchRow(

@@ -132,6 +132,10 @@ final class AppSettingsHandler
                     'derival_city_kladr'    => trim((string) ($_POST['derival_city_kladr'] ?? '')),
                     'derival_street'        => trim((string) ($_POST['derival_street']     ?? '')),
                     'derival_house'         => trim((string) ($_POST['derival_house']      ?? '')),
+                    'derival_time_from'     => trim((string) ($_POST['derival_time_from']  ?? '')),
+                    'derival_time_to'       => trim((string) ($_POST['derival_time_to']    ?? '')),
+                    'derival_break_from'    => trim((string) ($_POST['derival_break_from'] ?? '')),
+                    'derival_break_to'      => trim((string) ($_POST['derival_break_to']   ?? '')),
                     'requester_email'       => trim((string) ($_POST['requester_email']    ?? '')),
                     'counteragent_uid'      => trim((string) ($_POST['counteragent_uid']   ?? '')) ?: null,
                     'sender_counteragent_id' => (int) ($_POST['sender_counteragent_id'] ?? 0) ?: null,
@@ -754,6 +758,26 @@ final class AppSettingsHandler
                                                             <input type="text" id="derival_house_input" name="derival_house" value="<?= $h($s->derivalHouse ?? '') ?>" placeholder="5">
                                                         </div>
                                                     </div>
+                                                    <div class="g2">
+                                                        <div class="field">
+                                                            <label>Забор с</label>
+                                                            <input type="time" name="derival_time_from" value="<?= $h($s->derivalTimeFrom ?? '') ?>">
+                                                        </div>
+                                                        <div class="field">
+                                                            <label>Забор до</label>
+                                                            <input type="time" name="derival_time_to" value="<?= $h($s->derivalTimeTo ?? '') ?>">
+                                                        </div>
+                                                    </div>
+                                                    <div class="g2">
+                                                        <div class="field">
+                                                            <label>Перерыв с</label>
+                                                            <input type="time" name="derival_break_from" value="<?= $h($s->derivalBreakFrom ?? '') ?>">
+                                                        </div>
+                                                        <div class="field">
+                                                            <label>Перерыв до</label>
+                                                            <input type="time" name="derival_break_to" value="<?= $h($s->derivalBreakTo ?? '') ?>">
+                                                        </div>
+                                                    </div>
                                                     <div class="btn-row" style="border:0;padding-top:8px;margin-top:4px">
                                                         <button type="submit" class="btn-p">Сохранить</button>
                                                         <?php if ($hasDerivalAddr): ?>
@@ -779,6 +803,19 @@ final class AppSettingsHandler
                                                                 Изменить
                                                             </button>
                                                         </div>
+                                                        <?php if (($s->derivalTimeFrom ?? '') !== '' || ($s->derivalBreakFrom ?? '') !== ''): ?>
+                                                            <div style="height:1px;background:var(--line);margin:10px 0"></div>
+                                                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                                                                <div>
+                                                                    <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Время забора</div>
+                                                                    <div style="font-size:12px;color:var(--ink2)"><?= ($s->derivalTimeFrom ?? '') !== '' ? $h($s->derivalTimeFrom . ' – ' . ($s->derivalTimeTo ?? '')) : '—' ?></div>
+                                                                </div>
+                                                                <div>
+                                                                    <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px">Обед</div>
+                                                                    <div style="font-size:12px;color:var(--ink2)"><?= ($s->derivalBreakFrom ?? '') !== '' ? $h($s->derivalBreakFrom . ' – ' . ($s->derivalBreakTo ?? '')) : '—' ?></div>
+                                                                </div>
+                                                            </div>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                             </div>

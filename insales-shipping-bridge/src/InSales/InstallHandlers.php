@@ -163,7 +163,11 @@ body{font-family:'Instrument Sans',system-ui,sans-serif;background:#f5f3f0;color
   </div>
   <div class="field">
     <label>Время приезда экспедитора</label>
-    <select id="derivalTime"><option value="">— выберите дату —</option></select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <input type="time" id="derivalTimeFrom" style="width:100%;padding:7px 10px;background:#f9f8f6;border:1px solid #e4dfd8;border-radius:7px;font-size:13px;font-family:inherit;outline:none">
+      <input type="time" id="derivalTimeTo" style="width:100%;padding:7px 10px;background:#f9f8f6;border:1px solid #e4dfd8;border-radius:7px;font-size:13px;font-family:inherit;outline:none">
+    </div>
+    <div style="font-size:10px;color:#8c8580;margin-top:4px">Минимальный интервал — 4 часа (в Москве и СПб — 2 часа)</div>
   </div>
 </div>
 
@@ -203,43 +207,6 @@ var insalesId = '{$insalesId}';
 var bridgeUrl = '{$url}';
 var currentOrderId = null;
 var previewData = null;
-var defaultTimeFrom = '';
-
-function loadDerivalTimeInterval(date) {
-  var timeSel = document.getElementById('derivalTime');
-  if (!date) { timeSel.innerHTML = '<option value="">— выберите дату —</option>'; return; }
-  timeSel.innerHTML = '<option value="">Загрузка…</option>';
-  fetch(bridgeUrl + '/insales/derival/time_interval?insales_id=' + insalesId + '&date=' + date, {headers: {Accept: 'application/json'}})
-    .then(function(r){ return r.json(); })
-    .then(function(j){
-      if (!j.ok || !j.interval) { timeSel.innerHTML = '<option value="">Недоступно</option>'; return; }
-      var from = j.interval.interval_from || '09:00:00';
-      var to = j.interval.interval_to || '18:00:00';
-      var period = j.interval.min_period || 4;
-      if (period < 1) period = 4;
-      var fromH = parseInt(from.split(':')[0], 10);
-      var toH = parseInt(to.split(':')[0], 10);
-      if (to.startsWith('23:59')) toH = 24;
-      timeSel.innerHTML = '';
-      for (var h = fromH; h + period <= toH; h += period) {
-        var startH = h, endH = h + period;
-        var opt = document.createElement('option');
-        opt.value = String(startH).padStart(2, '0') + ':00-' + String(endH).padStart(2, '0') + ':00';
-        opt.textContent = opt.value;
-        timeSel.appendChild(opt);
-      }
-      if (timeSel.children.length === 0) { timeSel.innerHTML = '<option value="">Недоступно</option>'; return; }
-      // Подставляем дефолтное время из настроек
-      if (defaultTimeFrom) {
-        var defH = parseInt(defaultTimeFrom.substring(0, 2), 10);
-        for (var i = 0; i < timeSel.options.length; i++) {
-          var optH = parseInt(timeSel.options[i].value.substring(0, 2), 10);
-          if (optH >= defH) { timeSel.selectedIndex = i; break; }
-        }
-      }
-    })
-    .catch(function(){ timeSel.innerHTML = '<option value="">Ошибка</option>'; });
-}
 
 function loadDerivalDates() {
   var sel = document.getElementById('derivalDate');
@@ -254,7 +221,6 @@ function loadDerivalDates() {
         opt.textContent = new Date(d).toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit', year: 'numeric', weekday: 'short'});
         sel.appendChild(opt);
       });
-      loadDerivalTimeInterval(sel.value);
     })
     .catch(function(){ sel.innerHTML = '<option value="">Ошибка загрузки</option>'; });
 }
@@ -270,12 +236,15 @@ function initDerivalForm() {
     if (!d.ok) return;
     previewData = d;
     if (d.delivery && d.delivery.derival_variant === 'address') {
-      defaultTimeFrom = (d.delivery.derival_time_from) || '';
       document.getElementById('derivalForm').style.display = 'block';
       loadDerivalDates();
-      document.getElementById('derivalDate').addEventListener('change', function(){
-        loadDerivalTimeInterval(this.value);
-      });
+      // Подставляем дефолтное время из настроек
+      if (d.delivery.derival_time_from) {
+        document.getElementById('derivalTimeFrom').value = d.delivery.derival_time_from;
+      }
+      if (d.delivery.derival_time_to) {
+        document.getElementById('derivalTimeTo').value = d.delivery.derival_time_to;
+      }
     }
   })
   .catch(function(){});
@@ -367,7 +336,12 @@ function submitOrder() {
       insales_id: insalesId,
       insales_order_id: currentOrderId,
       derival_date: derivalDateEl ? (derivalDateEl.value || undefined) : undefined,
-      derival_time: derivalTimeEl ? (derivalTimeEl.value || undefined) : undefined
+      derival_time: (function(){
+        var f = document.getElementById('derivalTimeFrom');
+        var t = document.getElementById('derivalTimeTo');
+        if (f && t && f.value && t.value) return f.value + '-' + t.value;
+        return undefined;
+      })()
     })
   })
   .then(function(r){ return r.json(); })

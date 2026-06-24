@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /insales/
+Disallow: /admin/
+Sitemap: https://receptly.ru/sitemap.xml

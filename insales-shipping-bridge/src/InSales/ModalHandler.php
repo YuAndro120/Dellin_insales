@@ -74,7 +74,7 @@ final class ModalHandler
   display:flex;align-items:center;justify-content:center;transition:all .15s;
 }
 .dl-hdr-x:hover{background:rgba(255,255,255,.15);color:#fff}
-.dl-scroll{max-height:68vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#d4cfc9 transparent}
+.dl-scroll{overflow-y:visible;scrollbar-width:thin;scrollbar-color:#d4cfc9 transparent}
 .dl-scroll::-webkit-scrollbar{width:4px}
 .dl-scroll::-webkit-scrollbar-thumb{background:#d4cfc9;border-radius:4px}
 .dl-sec{padding:15px 20px;border-bottom:1px solid #e8e4df}
@@ -239,6 +239,15 @@ function close(){
           timeSel.appendChild(opt);
         }
         if(timeSel.children.length===0){timeSel.innerHTML='<option value="">Недоступно</option>';}
+        // Подставляем дефолтное время из настроек
+        var defTime=pData&&pData.delivery&&pData.delivery.derival_time_from?pData.delivery.derival_time_from:'';
+        if(defTime){
+          for(var i=0;i<timeSel.options.length;i++){
+            if(timeSel.options[i].value.indexOf(defTime.substring(0,5))===0){
+              timeSel.selectedIndex=i;break;
+            }
+          }
+        }
       })
       .catch(function(){timeSel.innerHTML='<option value="">Ошибка</option>';});
   }

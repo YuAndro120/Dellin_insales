@@ -57,9 +57,9 @@ final class InstallHandlers
       $existingWidgetId = $shops->findWidgetId($insalesId);
 
       if ($existingWidgetId !== null) {
-        $client->updateWidget($shop, $config->insalesAppId ?? '', $apiPassword, $existingWidgetId, $widgetCode);
+        $client->updateWidget($shop, $config->insalesAppId ?? '', $apiPassword, $existingWidgetId, $widgetCode, 300);
       } else {
-        $newWidgetId = $client->registerWidget($shop, $config->insalesAppId ?? '', $apiPassword, $widgetCode);
+        $newWidgetId = $client->registerWidget($shop, $config->insalesAppId ?? '', $apiPassword, $widgetCode, 300);
         if ($newWidgetId > 0) {
           $shops->saveWidgetId($insalesId, $newWidgetId);
         }
@@ -82,8 +82,6 @@ final class InstallHandlers
     }
 
     // Создаём собственное поле заказа под трек-номер ДЛ.
-    // Поле принадлежит нашему приложению, поэтому СДЭК и прочие модули
-    // его не перезаписывают. Если id уже сохранён — пропускаем.
     try {
       if ($shops->findOrderFieldId($insalesId) === null) {
         $field = $client->createOrderField(
@@ -127,55 +125,85 @@ final class InstallHandlers
     $url = rtrim($bridgeUrl, '/');
     return <<<HTML
 <html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-body{font-family:system-ui,sans-serif;margin:0;padding:8px;font-size:13px}
-button{padding:6px 14px;background:#3d5afe;color:#fff;border:0;border-radius:4px;cursor:pointer;font-size:13px;margin-top:6px}
-button:disabled{background:#aaa}
-button.green{background:#2e7d32}
-input,select{padding:4px 6px;font-size:13px;border:1px solid #ccc;border-radius:4px;width:100%;box-sizing:border-box;margin-top:3px}
-label{display:block;margin-top:8px;font-weight:500}
-.ok{color:#0a0;margin-top:6px}
-.err{color:#c00;margin-top:6px}
-.hint{color:#666;font-size:.85em}
-#labelForm{margin-top:12px;border-top:1px solid #eee;padding-top:10px;display:none}
-#derivalForm{margin-top:8px;border-top:1px solid #eee;padding-top:10px;display:none}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Instrument Sans',system-ui,sans-serif;background:#f5f3f0;color:#1a1714;font-size:13px;padding:10px}
+.card{background:#fff;border:1px solid #e4dfd8;border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.card-title{font-size:10px;font-weight:600;color:#8c8580;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.field{margin-bottom:10px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:10px;font-weight:600;color:#4a4540;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.field select,.field input{width:100%;padding:7px 10px;background:#f9f8f6;border:1px solid #e4dfd8;border-radius:7px;font-size:13px;color:#1a1714;font-family:inherit;outline:none;transition:border .15s;-webkit-appearance:none}
+.field select:focus,.field input:focus{border-color:#f5501e;background:#fff}
+.btn{width:100%;padding:10px;background:#f5501e;color:#fff;border:0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.btn:hover{background:#c73e12}
+.btn:disabled{background:#d4cfc9;cursor:not-allowed}
+.btn-grn{background:#14864a}.btn-grn:hover{background:#0f6438}
+.btn-row{display:flex;gap:6px;margin-top:0}
+.btn-row .btn{flex:1}
+.ok{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#edfaf3;border:1px solid #c6f0d8;border-radius:8px;color:#14864a;font-size:12px;font-weight:500}
+.err{padding:9px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#b91c1c;font-size:12px}
+.preview-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f2efeb;font-size:12px}
+.preview-row:last-child{border-bottom:0}
+.preview-lbl{color:#8c8580}
+.preview-val{color:#1a1714;font-weight:500;text-align:right;max-width:60%}
+#labelForm{display:none}
+#derivalForm{display:none}
+#previewBlock{display:none}
+#confirmBlock{display:none}
 </style>
 </head><body>
-<div id="app">
-  <div id="previewBlock" style="display:none;margin-bottom:8px">
-    <p class="hint" style="margin:0 0 4px">Данные для отправки в ДЛ:</p>
-    <div id="previewContent" style="font-size:12px;line-height:1.6;color:#333"></div>
-  </div>
-  <div id="derivalForm">
-    <p class="hint">Забор груза от адреса:</p>
+
+<div id="derivalForm" class="card">
+  <div class="card-title">Забор груза от адреса</div>
+  <div class="field">
     <label>Дата забора</label>
     <select id="derivalDate"><option value="">Загрузка…</option></select>
+  </div>
+  <div class="field">
     <label>Время приезда экспедитора</label>
     <select id="derivalTime"><option value="">— выберите дату —</option></select>
   </div>
-  <button id="btn" onclick="showPreview()">Оформить в Деловые Линии</button>
-  <div id="confirmBlock" style="display:none;margin-top:6px">
-    <button class="green" onclick="submitOrder()">✓ Подтвердить и отправить</button>
-    <button onclick="cancelPreview()" style="background:#888;margin-left:6px">Отмена</button>
-  </div>
-  <div id="status"></div>
-  <div id="labelForm">
-    <p class="hint">Этикетка для груза:</p>
-    <label>Артикул грузового места <span class="hint">(необязательно, до 30 символов)</span></label>
+</div>
+
+<div id="previewBlock" class="card">
+  <div class="card-title">Данные для отправки в ДЛ</div>
+  <div id="previewContent"></div>
+</div>
+
+<div id="status" style="margin-bottom:8px"></div>
+
+<button id="btn" class="btn" onclick="showPreview()">Оформить в Деловые Линии</button>
+
+<div id="confirmBlock" class="btn-row" style="margin-top:8px">
+  <button class="btn btn-grn" onclick="submitOrder()">✓ Подтвердить</button>
+  <button class="btn" style="background:#6b6963" onclick="cancelPreview()">Отмена</button>
+</div>
+
+<div id="labelForm" class="card" style="margin-top:8px">
+  <div class="card-title">Этикетка для груза</div>
+  <div class="field">
+    <label>Артикул грузового места <span style="font-weight:400;text-transform:none;letter-spacing:0">(до 30 симв., необязательно)</span></label>
     <input type="text" id="cargoPlace" maxlength="30" placeholder="Оставьте пустым — ДЛ подставит номер заявки">
+  </div>
+  <div class="field">
     <label>Формат этикетки</label>
     <select id="labelFormat">
       <option value="80x50">80×50 мм</option>
       <option value="a4">A4</option>
     </select>
-    <button class="green" onclick="submitLabels()">Сформировать этикетку</button>
-    <div id="labelStatus"></div>
   </div>
+  <button class="btn btn-grn" onclick="submitLabels()" style="margin-top:4px">Сформировать этикетку</button>
+  <div id="labelStatus" style="margin-top:8px"></div>
 </div>
+
 <script>
 var insalesId = '{$insalesId}';
 var bridgeUrl = '{$url}';
 var currentOrderId = null;
+var previewData = null;
+var defaultTimeFrom = '';
 
 function loadDerivalTimeInterval(date) {
   var timeSel = document.getElementById('derivalTime');
@@ -191,7 +219,6 @@ function loadDerivalTimeInterval(date) {
       if (period < 1) period = 4;
       var fromH = parseInt(from.split(':')[0], 10);
       var toH = parseInt(to.split(':')[0], 10);
-      // Если конец интервала 23:59 — округляем вверх до 24
       if (to.startsWith('23:59')) toH = 24;
       timeSel.innerHTML = '';
       for (var h = fromH; h + period <= toH; h += period) {
@@ -201,7 +228,15 @@ function loadDerivalTimeInterval(date) {
         opt.textContent = opt.value;
         timeSel.appendChild(opt);
       }
-      if (timeSel.children.length === 0) { timeSel.innerHTML = '<option value="">Недоступно</option>'; }
+      if (timeSel.children.length === 0) { timeSel.innerHTML = '<option value="">Недоступно</option>'; return; }
+      // Подставляем дефолтное время из настроек
+      if (defaultTimeFrom) {
+        var defH = parseInt(defaultTimeFrom.substring(0, 2), 10);
+        for (var i = 0; i < timeSel.options.length; i++) {
+          var optH = parseInt(timeSel.options[i].value.substring(0, 2), 10);
+          if (optH >= defH) { timeSel.selectedIndex = i; break; }
+        }
+      }
     })
     .catch(function(){ timeSel.innerHTML = '<option value="">Ошибка</option>'; });
 }
@@ -224,8 +259,6 @@ function loadDerivalDates() {
     .catch(function(){ sel.innerHTML = '<option value="">Ошибка загрузки</option>'; });
 }
 
-var previewData = null;
-
 function initDerivalForm() {
   fetch(bridgeUrl + '/insales/orders/preview', {
     method: 'POST',
@@ -237,6 +270,7 @@ function initDerivalForm() {
     if (!d.ok) return;
     previewData = d;
     if (d.delivery && d.delivery.derival_variant === 'address') {
+      defaultTimeFrom = (d.delivery.derival_time_from) || '';
       document.getElementById('derivalForm').style.display = 'block';
       loadDerivalDates();
       document.getElementById('derivalDate').addEventListener('change', function(){
@@ -250,13 +284,12 @@ function initDerivalForm() {
 function showPreview() {
   var orderId = window.order_info ? window.order_info.id : null;
   if (!orderId) {
-    document.getElementById('status').innerHTML = '<p class="err">Не удалось получить ID заказа</p>';
+    document.getElementById('status').innerHTML = '<div class="err">Не удалось получить ID заказа</div>';
     return;
   }
-
-  // Перезапрашиваем превью чтобы взять актуальные данные (менеджер мог изменить заказ)
-  document.getElementById('btn').disabled = true;
-  document.getElementById('btn').textContent = 'Загрузка…';
+  var btn = document.getElementById('btn');
+  btn.disabled = true;
+  btn.textContent = 'Загрузка…';
 
   fetch(bridgeUrl + '/insales/orders/preview', {
     method: 'POST',
@@ -265,33 +298,37 @@ function showPreview() {
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
-    document.getElementById('btn').disabled = false;
-    document.getElementById('btn').textContent = 'Оформить в Деловые Линии';
+    btn.disabled = false;
+    btn.textContent = 'Оформить в Деловые Линии';
     if (!d.ok) {
-      document.getElementById('status').innerHTML = '<p class="err">Ошибка: ' + (d.error || 'неизвестная ошибка') + '</p>';
+      document.getElementById('status').innerHTML = '<div class="err">Ошибка: ' + (d.error || 'неизвестная ошибка') + '</div>';
       return;
     }
     previewData = d;
     var r = d.receiver || {};
     var c = d.cargo || {};
     var addr = [r.city, r.street, r.house ? 'д.' + r.house : '', r.flat ? 'кв.' + r.flat : ''].filter(Boolean).join(', ');
-    var html = '<b>Получатель:</b> ' + (r.name || '—') + '<br>';
-    html += '<b>Телефон:</b> ' + (r.phone || '—') + '<br>';
-    html += '<b>Адрес:</b> ' + (addr || '—') + '<br>';
-    html += '<b>Вес:</b> ' + (c.weight || '—') + ' кг, ';
-    html += '<b>Объявл. стоимость:</b> ' + (c.stated_value || '—') + ' ₽<br>';
-    if (d.delivery && d.delivery.produce_date) {
-      html += '<b>Дата отгрузки:</b> ' + d.delivery.produce_date + '<br>';
-    }
+    var rows = [
+      ['Получатель', r.name || '—'],
+      ['Телефон', r.phone || '—'],
+      ['Адрес', addr || '—'],
+      ['Вес', (c.weight || '—') + ' кг'],
+      ['Объявл. стоимость', (c.stated_value ? c.stated_value + ' ₽' : '—')],
+    ];
+    if (d.delivery && d.delivery.produce_date) rows.push(['Дата отгрузки', d.delivery.produce_date]);
+    var html = rows.map(function(row){
+      return '<div class="preview-row"><span class="preview-lbl">' + row[0] + '</span><span class="preview-val">' + row[1] + '</span></div>';
+    }).join('');
     document.getElementById('previewContent').innerHTML = html;
     document.getElementById('previewBlock').style.display = 'block';
-    document.getElementById('confirmBlock').style.display = 'block';
-    document.getElementById('btn').style.display = 'none';
+    document.getElementById('confirmBlock').style.display = 'flex';
+    document.getElementById('status').innerHTML = '';
+    btn.style.display = 'none';
   })
   .catch(function(){
-    document.getElementById('btn').disabled = false;
-    document.getElementById('btn').textContent = 'Оформить в Деловые Линии';
-    document.getElementById('status').innerHTML = '<p class="err">Ошибка сети</p>';
+    btn.disabled = false;
+    btn.textContent = 'Оформить в Деловые Линии';
+    document.getElementById('status').innerHTML = '<div class="err">Ошибка сети</div>';
   });
 }
 
@@ -311,7 +348,7 @@ if (window.order_info && window.order_info.id) {
 function submitOrder() {
   var orderId = window.order_info ? window.order_info.id : null;
   if (!orderId) {
-    document.getElementById('status').innerHTML = '<p class="err">Не удалось получить ID заказа</p>';
+    document.getElementById('status').innerHTML = '<div class="err">Не удалось получить ID заказа</div>';
     return;
   }
   currentOrderId = String(orderId);
@@ -319,7 +356,7 @@ function submitOrder() {
   document.getElementById('previewBlock').style.display = 'none';
   var btn = document.getElementById('btn');
   btn.disabled = true;
-  btn.textContent = 'Отправка...';
+  btn.textContent = 'Отправка…';
   btn.style.display = '';
   var derivalDateEl = document.getElementById('derivalDate');
   var derivalTimeEl = document.getElementById('derivalTime');
@@ -336,18 +373,17 @@ function submitOrder() {
   .then(function(r){ return r.json(); })
   .then(function(data) {
     if (data.ok) {
-      document.getElementById('status').innerHTML =
-        '<p class="ok">✓ Заявка #' + data.request_id + ' создана</p>';
+      document.getElementById('status').innerHTML = '<div class="ok">✓ Заявка #' + data.request_id + ' создана</div>';
       btn.textContent = 'Оформлено';
       document.getElementById('labelForm').style.display = 'block';
     } else {
-      document.getElementById('status').innerHTML = '<p class="err">Ошибка: ' + data.error + '</p>';
+      document.getElementById('status').innerHTML = '<div class="err">Ошибка: ' + data.error + '</div>';
       btn.disabled = false;
       btn.textContent = 'Оформить в Деловые Линии';
     }
   })
   .catch(function() {
-    document.getElementById('status').innerHTML = '<p class="err">Ошибка сети</p>';
+    document.getElementById('status').innerHTML = '<div class="err">Ошибка сети</div>';
     btn.disabled = false;
     btn.textContent = 'Оформить в Деловые Линии';
   });
@@ -357,7 +393,7 @@ function submitLabels() {
   var cp = document.getElementById('cargoPlace').value.trim();
   var fmt = document.getElementById('labelFormat').value;
   var st = document.getElementById('labelStatus');
-  st.innerHTML = '<p class="hint">Формируем этикетку…</p>';
+  st.innerHTML = '<p style="font-size:12px;color:#8c8580">Формируем этикетку…</p>';
   fetch(bridgeUrl + '/insales/orders/labels', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -372,37 +408,28 @@ function submitLabels() {
   .then(function(r){ return r.json(); })
   .then(function(data) {
     if (!data.ok) throw new Error(data.error || 'Ошибка');
-    st.innerHTML = '<p class="hint">Ожидаем готовности этикетки…</p>';
-    return pollLabels(0);
+    st.innerHTML = '<p style="font-size:12px;color:#8c8580">Ожидаем готовности этикетки…</p>';
+    setTimeout(function(){ pollLabels(0); }, 3000);
   })
   .catch(function(e) {
-    st.innerHTML = '<p class="err">Ошибка: ' + e.message + '</p>';
+    st.innerHTML = '<div class="err">Ошибка: ' + e.message + '</div>';
   });
 }
 
 function pollLabels(attempt) {
-  if (attempt > 10) {
-    document.getElementById('labelStatus').innerHTML = '<p class="err">Этикетка не готова. Попробуйте позже.</p>';
-    return;
-  }
+  var st = document.getElementById('labelStatus');
+  if (attempt > 10) { st.innerHTML = '<div class="err">Этикетка не готова. Попробуйте позже.</div>'; return; }
   setTimeout(function() {
     fetch(bridgeUrl + '/insales/orders/labels', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        insales_id: insalesId,
-        insales_order_id: currentOrderId,
-        action: 'get'
-      })
+      body: JSON.stringify({insales_id: insalesId, insales_order_id: currentOrderId, action: 'get'})
     })
     .then(function(r){ return r.json(); })
     .then(function(data) {
       if (data.ok && data.ready && data.files && data.files.length > 0) {
-        var html = '<p class="ok">✓ Этикетка готова:</p>';
-        data.files.forEach(function(f) {
-          html += '<p><a href="' + f + '" target="_blank">Скачать этикетку</a></p>';
-        });
-        document.getElementById('labelStatus').innerHTML = html;
+        var links = data.files.map(function(f){ return '<a href="' + (f.url||f) + '" target="_blank" style="color:#f5501e;font-size:12px">' + (f.name||'Скачать этикетку') + '</a>'; }).join(' · ');
+        st.innerHTML = '<div class="ok">✓ Готово: ' + links + '</div>';
       } else {
         pollLabels(attempt + 1);
       }

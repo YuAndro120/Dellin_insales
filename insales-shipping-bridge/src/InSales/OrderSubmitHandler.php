@@ -89,11 +89,15 @@ final class OrderSubmitHandler
                 'freight_uid'  => $settings->freightUid ?? '',
             ],
             'delivery' => [
-                'interval'        => $order['delivery_interval'] ?? null,
-                'produce_date'    => (new \DateTimeImmutable())
+                'interval'            => $order['delivery_interval'] ?? null,
+                'produce_date'        => (new \DateTimeImmutable())
                     ->modify('+' . $settings->produceDaysOffset . ' days')
                     ->format('d.m.Y'),
-                'derival_variant' => $settings->derivalVariant,
+                'derival_variant'     => $settings->derivalVariant,
+                'derival_time_from'   => $settings->derivalTimeFrom ?? '',
+                'derival_time_to'     => $settings->derivalTimeTo ?? '',
+                'derival_break_from'  => $settings->derivalBreakFrom ?? '',
+                'derival_break_to'    => $settings->derivalBreakTo ?? '',
             ],
         ], 200, $cors);
     }

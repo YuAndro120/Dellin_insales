@@ -530,10 +530,11 @@ final class AppSettingsHandler
                                                     <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="1234567890" class="<?= (($s->senderInn ?? '') === '' && $s->senderType !== 'person') ? 'field-err' : '' ?>">
                                                     <div class="field-err-msg" id="innErrMsg">Введите ИНН — обязательное поле для организаций</div>
                                                 </div>
+                                                <!-- временно скрываем из UI юр. адрес
                                                 <div class="field">
                                                     <label>Юридический адрес</label>
                                                     <input type="text" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>" placeholder="г. Москва, ул. Примерная, д. 1">
-                                                </div>
+                                                </div> -->
                                             </div>
                                         </div>
                                     </div>

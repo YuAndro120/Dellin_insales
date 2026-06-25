@@ -634,7 +634,7 @@ final class AppSettingsHandler
                             <div class="pg-title">Параметры доставки</div>
                             <div class="pg-sub">Настройки расчёта и оформления заказов</div>
                         </div>
-                        <form method="post" action="/insales/app">
+                        <form method="post" action="/insales/app" id="form-shipping">
                             <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                             <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
                             <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
@@ -970,6 +970,7 @@ final class AppSettingsHandler
 
                             <div class="btn-row" style="justify-content:flex-start">
                                 <button type="submit" class="btn-p js-save-btn">Сохранить изменения</button>
+                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>&atk=<?= $h($accessToken) ?>" class="btn-g btn-cancel" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
                             </div>
                         </form>
                     </div>
@@ -1010,7 +1011,7 @@ final class AppSettingsHandler
                                 </div>
                             </div>
                             <div class="card-body">
-                                <form method="post" action="/insales/app">
+                                <form method="post" action="/insales/app" id="form-shipping">
                                     <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                                     <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
                                     <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
@@ -1887,10 +1888,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
   position:relative;
   border-radius:var(--r3);
   box-shadow:0 0 0 1px var(--amber),0 0 24px -4px rgba(245,80,30,.25);
-  transition:box-shadow .3s ease
+  transition:box-shadow .3s ease;
+  padding:16px;
+  margin:-16px
 }
 .form-dirty .btn-row{margin-top:24px;padding-bottom:4px}
-.form-dirty{padding-bottom:8px}
 .btn-cancel{display:none}
 .form-dirty .btn-cancel{display:inline-flex}
 .btn-g{padding:8px 16px;background:transparent;border:1px solid var(--line2);border-radius:var(--r2);color:var(--ink2);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s}

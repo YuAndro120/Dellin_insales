@@ -621,7 +621,7 @@ final class AppSettingsHandler
                             </div><!-- /page-grid -->
 
                             <div class="btn-row" style="justify-content:flex-start">
-                                <button type="submit" class="btn-p">Сохранить изменения</button>
+                                <button type="submit" class="btn-p js-save-btn">Сохранить изменения</button>
                                 <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>&atk=<?= $h($accessToken) ?>" class="btn-g btn-cancel" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
                             </div>
                         </form>
@@ -969,7 +969,7 @@ final class AppSettingsHandler
                             </div><!-- /page-grid -->
 
                             <div class="btn-row" style="justify-content:flex-start">
-                                <button type="submit" class="btn-p">Сохранить изменения</button>
+                                <button type="submit" class="btn-p js-save-btn">Сохранить изменения</button>
                             </div>
                         </form>
                     </div>
@@ -1661,8 +1661,8 @@ final class AppSettingsHandler
                 var dirtyForm = null;
                 var forms = document.querySelectorAll('form[method="post"]');
                 forms.forEach(function(form) {
-                    var submitBtn = form.querySelector('button[type="submit"].btn-p');
-                    if (!submitBtn || submitBtn.textContent.trim() !== 'Сохранить изменения') return;
+                    var submitBtn = form.querySelector('button.js-save-btn');
+                    if (!submitBtn) return;
                     submitBtn.disabled = true;
 
                     function markDirty() {
@@ -1889,7 +1889,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
   box-shadow:0 0 0 1px var(--amber),0 0 24px -4px rgba(245,80,30,.25);
   transition:box-shadow .3s ease
 }
-.form-dirty .btn-row{margin-top:24px}
+.form-dirty .btn-row{margin-top:24px;padding-bottom:4px}
+.form-dirty{padding-bottom:8px}
 .btn-cancel{display:none}
 .form-dirty .btn-cancel{display:inline-flex}
 .btn-g{padding:8px 16px;background:transparent;border:1px solid var(--line2);border-radius:var(--r2);color:var(--ink2);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s}

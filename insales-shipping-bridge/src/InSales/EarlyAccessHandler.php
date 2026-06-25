@@ -36,8 +36,8 @@ final class EarlyAccessHandler
 
         try {
             $pdo = Db::pdo($config);
-            $stmt = $pdo->prepare('INSERT INTO early_access_leads (email, insales_id) VALUES (:email, :iid)');
-            $stmt->execute([':email' => $email, ':iid' => $insalesId]);
+            $stmt = $pdo->prepare('INSERT INTO early_access_leads (email, inn, company_name, plan, insales_id) VALUES (:email, :inn, :company, :plan, :iid)');
+            $stmt->execute([':email' => $email, ':inn' => $inn, ':company' => $companyName, ':plan' => $plan, ':iid' => $insalesId]);
 
             \ShippingBridge\Logger::info($insalesId ?? '-', null, 'early_access.lead', ['email' => \ShippingBridge\Logger::maskEmail($email)]);
 

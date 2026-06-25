@@ -569,7 +569,7 @@ final class AppSettingsHandler
                                         <div class="card">
                                             <div class="card-hdr">
                                                 <div>
-                                                    <div class="card-title">Контрагент ДЛ</div>
+                                                    <div class="card-title">Ваш аккаунт в системе ДЛ — выберите от чьего имени создаются заявки</div>
                                                 </div>
                                             </div>
                                             <div class="card-body sm">
@@ -585,8 +585,8 @@ final class AppSettingsHandler
                                     <div class="card">
                                         <div class="card-hdr">
                                             <div>
-                                                <div class="card-title">Контактное лицо</div>
-                                                <div class="card-sub">Для связи при отправке груза</div>
+                                                <div class="card-title">Контактное лицо отправителя</div>
+                                                <div class="card-sub">Человек, которому ДЛ позвонит при заборе груза или если возникнут вопросы по перевозке</div>
                                             </div>
                                         </div>
                                         <div class="card-body">

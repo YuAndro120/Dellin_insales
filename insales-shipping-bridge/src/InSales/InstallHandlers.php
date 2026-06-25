@@ -412,6 +412,12 @@ function pollLabels(attempt) {
   }, 3000);
 }
 </script>
+<div class="card" style="margin-top:8px;background:#f9f8f6;border-color:#e4dfd8">
+  <div style="font-size:11px;color:#8c8580;line-height:1.6">
+    <div style="margin-bottom:6px">⚙️ <strong style="color:#4a4540">Параметры отправителя и терминал</strong> — настраиваются в разделе «Приложения → ДЛ Коннект» в панели управления магазином.</div>
+    <div>📦 <strong style="color:#4a4540">Адрес и данные получателя</strong> — берутся из заказа. Для изменения откройте страницу заказа.</div>
+  </div>
+</div>
 </body></html>
 HTML;
   }

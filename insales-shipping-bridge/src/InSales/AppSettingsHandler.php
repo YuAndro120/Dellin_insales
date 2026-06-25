@@ -622,7 +622,7 @@ final class AppSettingsHandler
 
                             <div class="btn-row" style="justify-content:flex-start">
                                 <button type="submit" class="btn-p js-save-btn">Сохранить изменения</button>
-                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>&atk=<?= $h($accessToken) ?>" class="btn-g btn-cancel" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
+                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>&atk=<?= $h($accessToken) ?>" class="btn-g btn-cancel" style="text-decoration:none;align-items:center">Отмена</a>
                             </div>
                         </form>
                     </div><!-- /page-sender -->
@@ -970,7 +970,7 @@ final class AppSettingsHandler
 
                             <div class="btn-row" style="justify-content:flex-start">
                                 <button type="submit" class="btn-p js-save-btn">Сохранить изменения</button>
-                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>&atk=<?= $h($accessToken) ?>" class="btn-g btn-cancel" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
+                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>&atk=<?= $h($accessToken) ?>" class="btn-g btn-cancel" style="text-decoration:none;align-items:center">Отмена</a>
                             </div>
                         </form>
                     </div>

@@ -1202,6 +1202,8 @@ final class AppSettingsHandler
                         innMsg = $('innErrMsg');
                     if (innEl) innEl.classList.remove('field-err');
                     if (innMsg) innMsg.style.display = 'none';
+                    var form = document.querySelector('#settingsForm');
+                    if (form && form._markDirty) form._markDirty();
 
                     // Trigger dirty
                     var form = document.querySelector('#form-shipping');
@@ -1492,6 +1494,8 @@ final class AppSettingsHandler
                                         freightSearchWrap.style.display = 'none';
                                         fl.style.display = 'none';
                                         fi.value = '';
+                                        var form = document.querySelector('#form-shipping');
+                                        if (form && form._markDirty) form._markDirty();
                                     });
                                     fl.appendChild(li);
                                 });
@@ -1544,12 +1548,13 @@ final class AppSettingsHandler
                             var li = document.createElement('li');
                             li.className = 'opf-item';
                             li.innerHTML = '<div>' + pkg.name + '</div>';
-                            li.addEventListener('click', function() {
-                                document.getElementById('package_uid').value = pkg.uid;
-                                document.getElementById('package_name').value = pkg.name;
-                                document.getElementById('pkgSavedName').textContent = pkg.name;
-                                pkgSaved.style.display = 'flex';
+                            pkgClearBtn.addEventListener('click', function() {
+                                document.getElementById('package_uid').value = '';
+                                document.getElementById('package_name').value = '';
+                                pkgSaved.style.display = 'none';
                                 pkgSearchWrap.style.display = 'none';
+                                var form = document.querySelector('#form-shipping');
+                                if (form && form._markDirty) form._markDirty();
                             });
                             pkgList.appendChild(li);
                         });

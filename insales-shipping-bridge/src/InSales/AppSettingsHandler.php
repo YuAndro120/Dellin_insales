@@ -622,7 +622,7 @@ final class AppSettingsHandler
 
                             <div class="btn-row" style="justify-content:flex-start">
                                 <button type="submit" class="btn-p">Сохранить изменения</button>
-                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>&atk=<?= $h($accessToken) ?>" class="btn-g" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
+                                <a href="/insales/app?shop=<?= $h($s->shopHost) ?>&insales_id=<?= $h($s->insalesId) ?>&atk=<?= $h($accessToken) ?>" class="btn-g btn-cancel" style="text-decoration:none;display:inline-flex;align-items:center">Отмена</a>
                             </div>
                         </form>
                     </div><!-- /page-sender -->
@@ -1696,14 +1696,43 @@ final class AppSettingsHandler
                         if (!dirtyForm) return;
                         e.preventDefault();
                         var href = link.getAttribute('href');
-                        var confirmed = confirm('У вас есть несохранённые изменения.\n\nНажмите OK чтобы уйти без сохранения, или Отмена чтобы вернуться и сохранить.');
-                        if (confirmed) {
-                            dirtyForm = null;
-                            window.location.href = href;
-                        }
+                        showDirtyModal(function(confirmed) {
+                            if (confirmed) {
+                                dirtyForm = null;
+                                window.location.href = href;
+                            }
+                        });
                     });
                 });
             })();
+            // Кастомная модалка
+            var _modalCallback = null;
+            var _modalEl = (function() {
+                var el = document.createElement('div');
+                el.innerHTML = '<div id="dirty-overlay" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.45);backdrop-filter:blur(2px)">' +
+                    '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--s1);border:1px solid var(--line2);border-radius:var(--r3);padding:28px 32px;max-width:380px;width:90%;box-shadow:0 24px 48px rgba(0,0,0,.4)">' +
+                    '<div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:10px">Несохранённые изменения</div>' +
+                    '<div style="font-size:13.5px;color:var(--ink2);line-height:1.6;margin-bottom:24px">Вы внесли изменения, которые ещё не сохранены. Уйти без сохранения?</div>' +
+                    '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+                    '<button id="dirty-cancel" class="btn-g">Остаться</button>' +
+                    '<button id="dirty-ok" style="padding:9px 20px;background:var(--err);border:0;border-radius:var(--r2);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)">Уйти без сохранения</button>' +
+                    '</div></div></div>';
+                document.body.appendChild(el.firstChild);
+                document.getElementById('dirty-cancel').addEventListener('click', function() {
+                    document.getElementById('dirty-overlay').style.display = 'none';
+                    _modalCallback && _modalCallback(false);
+                });
+                document.getElementById('dirty-ok').addEventListener('click', function() {
+                    document.getElementById('dirty-overlay').style.display = 'none';
+                    _modalCallback && _modalCallback(true);
+                });
+                return document.getElementById('dirty-overlay');
+            })();
+
+            function showDirtyModal(cb) {
+                _modalCallback = cb;
+                _modalEl.style.display = 'block';
+            }
         </script>
 <?php
         echo '</body></html>';
@@ -1860,6 +1889,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
   box-shadow:0 0 0 1px var(--amber),0 0 24px -4px rgba(245,80,30,.25);
   transition:box-shadow .3s ease
 }
+.form-dirty .btn-row{margin-top:24px}
+.btn-cancel{display:none}
+.form-dirty .btn-cancel{display:inline-flex}
 .btn-g{padding:8px 16px;background:transparent;border:1px solid var(--line2);border-radius:var(--r2);color:var(--ink2);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s}
 .btn-g:hover{border-color:var(--ink3);color:var(--ink);background:var(--s3)}
 .btn-sub{padding:7px 12px;background:var(--s3);border:1px solid var(--line);border-radius:var(--r2);color:var(--ink3);font-size:12px;cursor:pointer;font-family:var(--sans);transition:all .15s}

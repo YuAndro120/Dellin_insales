@@ -1202,12 +1202,8 @@ final class AppSettingsHandler
                         innMsg = $('innErrMsg');
                     if (innEl) innEl.classList.remove('field-err');
                     if (innMsg) innMsg.style.display = 'none';
-                    var form = document.querySelector('#settingsForm');
-                    if (form && form._markDirty) form._markDirty();
-
-                    // Trigger dirty
-                    var form = document.querySelector('#form-shipping');
-                    if (form && form._markDirty) form._markDirty();
+                    var f = document.querySelector('#settingsForm');
+                    if (f && f._markDirty) f._markDirty();
                 }
 
                 segBtns.forEach(function(btn) {
@@ -1550,13 +1546,14 @@ final class AppSettingsHandler
                             var li = document.createElement('li');
                             li.className = 'opf-item';
                             li.innerHTML = '<div>' + pkg.name + '</div>';
-                            pkgClearBtn.addEventListener('click', function() {
-                                document.getElementById('package_uid').value = '';
-                                document.getElementById('package_name').value = '';
-                                pkgSaved.style.display = 'none';
+                            li.addEventListener('click', function() {
+                                document.getElementById('package_uid').value = pkg.uid;
+                                document.getElementById('package_name').value = pkg.name;
+                                document.getElementById('pkgSavedName').textContent = pkg.name;
+                                pkgSaved.style.display = 'flex';
                                 pkgSearchWrap.style.display = 'none';
-                                var form = document.querySelector('#form-shipping');
-                                if (form && form._markDirty) form._markDirty();
+                                var f = document.querySelector('#form-shipping');
+                                if (f && f._markDirty) f._markDirty();
                             });
                             pkgList.appendChild(li);
                         });
@@ -1572,8 +1569,8 @@ final class AppSettingsHandler
                         pkgSaved.style.display = 'none';
                         pkgSearchWrap.style.display = '';
                         loadPackages();
-                        var form = document.querySelector('#form-shipping');
-                        if (form && form._markDirty) form._markDirty();
+                        var f = document.querySelector('#form-shipping');
+                        if (f && f._markDirty) f._markDirty();
                     });
                 }
 
@@ -1642,6 +1639,8 @@ final class AppSettingsHandler
                 btn.classList.add('on');
                 var el = document.getElementById('requester_role');
                 if (el) el.value = val;
+                var f = btn.closest('form');
+                if (f && f._markDirty) f._markDirty();
             };
             window.setDerivalVariant = function(btn, val) {
                 btn.parentNode.querySelectorAll('.seg-btn').forEach(function(b) {
@@ -1651,6 +1650,8 @@ final class AppSettingsHandler
                 document.getElementById('derival_variant').value = val;
                 document.getElementById('derivalTerminalBlock').style.display = val === 'terminal' ? '' : 'none';
                 document.getElementById('derivalAddressBlock').style.display = val === 'address' ? '' : 'none';
+                var f = btn.closest('form');
+                if (f && f._markDirty) f._markDirty();
             };
             // ── Derival address card / edit ──
             var derivalAddrEditBtn = document.getElementById('derivalAddrEditBtn');

@@ -452,7 +452,6 @@ final class AppSettingsHandler
                                                 <div class="card-title">Организация</div>
                                                 <div class="card-sub">Юридические данные отправителя</div>
                                             </div>
-                                            <button type="button" id="btnLoadFromInsales" class="btn-sub">⬇ Из inSales</button>
                                         </div>
                                         <div class="card-body">
                                             <div class="sec-lbl">Тип отправителя</div>
@@ -1507,44 +1506,7 @@ final class AppSettingsHandler
                     freightSaved.style.display = 'none';
                     freightSearchWrap.style.display = '';
                 };
-                // ── Load from inSales ──
-                var btnLoad = document.getElementById('btnLoadFromInsales');
-                if (btnLoad) {
-                    btnLoad.addEventListener('click', function() {
-                        var btn = this;
-                        btn.disabled = true;
-                        btn.textContent = 'Загрузка…';
-                        fetch('/insales/account?shop=' + shopQ + '&insales_id=' + iidQ)
-                            .then(function(r) {
-                                return r.json();
-                            })
-                            .then(function(d) {
-                                if (!d.ok) throw new Error(d.error || 'Ошибка');
-                                if (d.organization && $('sender_name')) $('sender_name').value = d.organization;
-                                if (d.phone && $('sender_contact_phone')) $('sender_contact_phone').value = d.phone.replace(/\D/g, '');
-                                if (d.email && $('requester_email')) $('requester_email').value = d.email;
-                                var name = (d.organization || '').toLowerCase();
-                                var typeInput = $('sender_type');
-                                var newType = 'person';
-                                if (name.indexOf('ип ') === 0 || name.indexOf('ип"') === 0) {
-                                    newType = 'ip';
-                                } else if (name.indexOf('ооо') !== -1 || name.indexOf(' ао ') !== -1 || name.indexOf('зао') !== -1) {
-                                    newType = 'company';
-                                }
-                                if (typeInput) typeInput.value = newType;
-                                document.querySelectorAll('#segSenderType .seg-btn').forEach(function(b) {
-                                    b.classList.toggle('on', b.dataset.val === newType);
-                                });
-                                btn.textContent = '✓ Загружено';
-                                btn.disabled = false;
-                            })
-                            .catch(function(e) {
-                                alert('Ошибка: ' + e.message);
-                                btn.disabled = false;
-                                btn.textContent = '⬇ Из inSales';
-                            });
-                    });
-                }
+
                 // ── Package ──
                 var pkgEditBtn = document.getElementById('pkgEditBtn');
                 var pkgSearchWrap = document.getElementById('pkgSearchWrap');
@@ -1694,6 +1656,54 @@ final class AppSettingsHandler
                     derivalAddressCard.style.display = '';
                 });
             }
+
+            (function() {
+                var dirtyForm = null;
+                var forms = document.querySelectorAll('form[method="post"]');
+                forms.forEach(function(form) {
+                    var submitBtn = form.querySelector('button[type="submit"].btn-p');
+                    if (!submitBtn || submitBtn.textContent.trim() !== 'Сохранить изменения') return;
+                    submitBtn.disabled = true;
+
+                    function markDirty() {
+                        if (dirtyForm === form) return;
+                        dirtyForm = form;
+                        form.classList.add('form-dirty');
+                        submitBtn.disabled = false;
+                    }
+
+                    function markClean() {
+                        dirtyForm = null;
+                        form.classList.remove('form-dirty');
+                        submitBtn.disabled = true;
+                    }
+                    form.querySelectorAll('input, select, textarea').forEach(function(input) {
+                        input.addEventListener('change', markDirty);
+                        input.addEventListener('input', markDirty);
+                    });
+                    form.addEventListener('submit', function() {
+                        markClean();
+                    });
+                });
+                window.addEventListener('beforeunload', function(e) {
+                    if (dirtyForm) {
+                        e.preventDefault();
+                        e.returnValue = '';
+                    }
+                });
+                document.querySelectorAll('.nav-item, .nav-link').forEach(function(link) {
+                    link.addEventListener('click', function(e) {
+                        if (!dirtyForm) return;
+                        e.preventDefault();
+                        var href = link.getAttribute('href');
+                        var confirmed = confirm('У вас есть несохранённые изменения.\n\nНажмите OK чтобы уйти без сохранения, или Отмена чтобы вернуться и сохранить.');
+                        if (confirmed) {
+                            dirtyForm = null;
+                            window.location.href = href;
+                        }
+                    });
+                });
+            })();
         </script>
 <?php
         echo '</body></html>';
@@ -1842,6 +1852,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .btn-p{padding:9px 22px;background:var(--amber);border:0;border-radius:var(--r2);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s}
 .btn-p:hover{background:var(--amb2)}
 .btn-p:active{transform:translateY(1px)}
+.btn-p:disabled{background:var(--s3);color:var(--ink3);cursor:not-allowed;transform:none}
+.btn-p:disabled:hover{background:var(--s3)}
+.form-dirty{
+  position:relative;
+  border-radius:var(--r3);
+  box-shadow:0 0 0 1px var(--amber),0 0 24px -4px rgba(245,80,30,.25);
+  transition:box-shadow .3s ease
+}
 .btn-g{padding:8px 16px;background:transparent;border:1px solid var(--line2);border-radius:var(--r2);color:var(--ink2);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s}
 .btn-g:hover{border-color:var(--ink3);color:var(--ink);background:var(--s3)}
 .btn-sub{padding:7px 12px;background:var(--s3);border:1px solid var(--line);border-radius:var(--r2);color:var(--ink3);font-size:12px;cursor:pointer;font-family:var(--sans);transition:all .15s}

@@ -1466,6 +1466,8 @@ final class AppSettingsHandler
                         freightSaved.style.display = 'none';
                         freightSearchWrap.style.display = '';
                         if (fi) fi.focus();
+                        var form = document.querySelector('#form-shipping');
+                        if (form && form._markDirty) form._markDirty();
                     });
                 }
 
@@ -1570,6 +1572,8 @@ final class AppSettingsHandler
                         pkgSaved.style.display = 'none';
                         pkgSearchWrap.style.display = '';
                         loadPackages();
+                        var form = document.querySelector('#form-shipping');
+                        if (form && form._markDirty) form._markDirty();
                     });
                 }
 

@@ -634,7 +634,7 @@ final class AppSettingsHandler
                             <div class="pg-title">Параметры доставки</div>
                             <div class="pg-sub">Настройки расчёта и оформления заказов</div>
                         </div>
-                        <form method="post" action="/insales/app" id="form-shipping">
+                        <form method="post" action="/insales/app" id="form-connection">
                             <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                             <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
                             <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
@@ -1204,7 +1204,7 @@ final class AppSettingsHandler
                     if (innMsg) innMsg.style.display = 'none';
 
                     // Trigger dirty
-                    var form = document.querySelector('#form-sender');
+                    var form = document.querySelector('#form-shipping');
                     if (form && form._markDirty) form._markDirty();
                 }
 

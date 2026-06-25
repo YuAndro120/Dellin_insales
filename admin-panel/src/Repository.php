@@ -187,4 +187,22 @@ final class Repository
         );
         $stmt->execute([':s' => $status, ':id' => $id]);
     }
+
+    public function addLeadComment(int $leadId, string $comment): void
+    {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO crm_comments (lead_id, comment) VALUES (:lid, :c)'
+        );
+        $stmt->execute([':lid' => $leadId, ':c' => $comment]);
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function leadComments(int $leadId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT comment, created_at FROM crm_comments WHERE lead_id = :lid ORDER BY created_at ASC'
+        );
+        $stmt->execute([':lid' => $leadId]);
+        return $stmt->fetchAll();
+    }
 }

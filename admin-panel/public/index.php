@@ -67,6 +67,14 @@ if ($uri === '/alerts') {
 }
 
 if ($uri === '/crm') {
+    // AJAX: загрузка комментариев
+    if ($method === 'GET' && isset($_GET['comments'])) {
+        header('Content-Type: application/json; charset=utf-8');
+        $leadId = (int) ($_GET['lead_id'] ?? 0);
+        $comments = $leadId > 0 ? $repo->leadComments($leadId) : [];
+        echo json_encode(['ok' => true, 'comments' => $comments]);
+        exit;
+    }
     \AdminPanel\Pages\CrmPage::handle($repo, $method);
     exit;
 }

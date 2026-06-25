@@ -724,7 +724,7 @@
       "operatingSystem": "Web",
       "offers": {
         "@type": "Offer",
-        "price": "999",
+        "price": "399",
         "priceCurrency": "RUB",
         "priceValidUntil": "2027-01-01"
       },
@@ -872,20 +872,30 @@
       <div class="pricing-grid">
         <div class="price-card">
           <div class="price-name">Старт</div>
-          <div class="price-amount">999 ₽<span> / мес</span></div>
+          <div class="price-amount">499 ₽<span> / мес</span></div>
           <div class="price-trial">14 дней пробного периода</div>
           <ul class="price-features">
             <li><span class="price-check">✓</span>Расчёт стоимости со скидками ДЛ в корзине</li>
             <li><span class="price-check">✓</span>Сроки доставки для покупателя</li>
             <li><span class="price-check">✓</span>Все типы доставки ДЛ</li>
           </ul>
-          <a class="price-btn plan-submit js-checkout-link" data-plan="calc_only"
-            href="/checkout?plan=calc_only">Подключить</a>
+          <form class="plan-form early-access-form" data-plan="calc_only">
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="text" name="inn" placeholder="ИНН компании или ИП" maxlength="12">
+            <input type="text" name="company_name" placeholder="Название компании">
+            <input type="hidden" name="plan" value="calc_only">
+            <input type="hidden" name="insales_id" class="js-insales-id">
+            <button type="submit" class="price-btn plan-submit">Оставить заявку</button>
+          </form>
+          <div class="early-access-thanks"
+            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо! Свяжемся
+            с вамиdocument.querySelectorAll('.plan-form:not(#early-access-form)').forEach(function (form) {
+            в ближайшее время.</div>
         </div>
         <div class="price-card featured">
           <div class="price-tag">Популярный</div>
           <div class="price-name">Полный</div>
-          <div class="price-amount">1999 ₽<span> / мес</span></div>
+          <div class="price-amount">999 ₽<span> / мес</span></div>
           <div class="price-trial">14 дней пробного периода</div>
           <ul class="price-features">
             <li><span class="price-check">✓</span>Всё из тарифа «Старт»</li>
@@ -893,11 +903,22 @@
             <li><span class="price-check">✓</span>Терминалы, забор от адреса, расписание</li>
             <li><span class="price-check">✓</span>Полные настройки отправителя</li>
           </ul>
-          <a class="price-btn plan-submit js-checkout-link" data-plan="full" href="/checkout?plan=full">Подключить</a>
+          <form class="plan-form early-access-form" data-plan="full">
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="text" name="inn" placeholder="ИНН компании или ИП" maxlength="12">
+            <input type="text" name="company_name" placeholder="Название компании">
+            <input type="hidden" name="plan" value="full">
+            <input type="hidden" name="insales_id" class="js-insales-id">
+            <button type="submit" class="price-btn plan-submit">Оставить заявку</button>
+          </form>
+          <div class="early-access-thanks"
+            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо! Свяжемся
+            с вами
+            в ближайшее время.</div>
         </div>
         <div class="price-card" style="opacity:.85">
           <div class="price-name">Автоматизация</div>
-          <div class="price-amount">4999 ₽<span> / мес</span></div>
+          <div class="price-amount">1499 ₽<span> / мес</span></div>
           <div class="price-trial" style="color:var(--ink-faint)">Скоро — собираем ранний доступ</div>
           <ul class="price-features">
             <li><span class="price-check">✓</span>Всё из тарифа «Полный»</li>
@@ -905,24 +926,21 @@
             <li><span class="price-check">✓</span>Отчёты по затратам на логистику</li>
             <li><span class="price-check">✓</span>Счета и платёжные ссылки</li>
           </ul>
-          <form class="plan-form" id="early-access-form">
-            <input type="email" name="email" placeholder="Ваш email" required
-              style="padding:9px 12px;background:var(--bg3);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-size:13px;margin-bottom:8px">
+          <form class="plan-form early-access-form" data-plan="automation">
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="text" name="inn" placeholder="ИНН компании или ИП" maxlength="12">
+            <input type="text" name="company_name" placeholder="Название компании">
+            <input type="hidden" name="plan" value="automation">
             <input type="hidden" name="insales_id" class="js-insales-id">
             <button type="submit" class="price-btn plan-submit"
-              style="background:transparent;border:1px solid var(--amber);color:var(--amber)">Хочу в ранний
-              доступ</button>
+              style="background:transparent;border:1px solid var(--amber);color:var(--amber)">Оставить заявку</button>
           </form>
-          <div id="early-access-thanks"
-            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо! Напишем,
-            когда откроем доступ.</div>
+          <div class="early-access-thanks"
+            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо! Свяжемся
+            с вами
+            в ближайшее время.</div>
         </div>
       </div>
-      <p id="no-shop-notice"
-        style="display:none;margin-top:18px;font-size:13px;color:var(--ink-faint);font-family:var(--mono)">
-        Чтобы подключить тариф, откройте эту страницу по ссылке «Тариф» из настроек приложения в вашем магазине inSales.
-      </p>
-    </div>
   </section>
 
   <section id="faq">
@@ -1027,35 +1045,34 @@
         if (notice) notice.style.display = 'block';
       }
 
-      var earlyForm = document.getElementById('early-access-form');
-      if (earlyForm) {
-        earlyForm.addEventListener('submit', function (e) {
+      document.querySelectorAll('.early-access-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
           e.preventDefault();
-          var btn = earlyForm.querySelector('button');
-          var emailInput = earlyForm.querySelector('input[name="email"]');
+          var btn = form.querySelector('button');
+          var thanks = form.nextElementSibling;
+          var originalText = btn.textContent;
           btn.disabled = true;
           btn.textContent = 'Отправляем…';
-
-          var formData = new FormData(earlyForm);
+          var formData = new FormData(form);
           fetch('/insales/early-access', { method: 'POST', body: formData })
             .then(function (r) { return r.json(); })
             .then(function (data) {
               if (data.ok) {
-                earlyForm.style.display = 'none';
-                document.getElementById('early-access-thanks').style.display = 'block';
+                form.style.display = 'none';
+                if (thanks) thanks.style.display = 'block';
               } else {
                 btn.disabled = false;
-                btn.textContent = 'Хочу в ранний доступ';
+                btn.textContent = originalText;
                 alert(data.error || 'Не удалось отправить заявку');
               }
             })
             .catch(function () {
               btn.disabled = false;
-              btn.textContent = 'Хочу в ранний доступ';
+              btn.textContent = originalText;
               alert('Ошибка сети, попробуйте ещё раз');
             });
         });
-      }
+      });
     })();
   </script>
 </body>

@@ -66,5 +66,10 @@ if ($uri === '/alerts') {
     exit;
 }
 
+if ($uri === '/crm') {
+    \AdminPanel\Pages\CrmPage::handle($repo, $method);
+    exit;
+}
+
 http_response_code(404);
 echo '404 — страница не найдена. <a href="/" style="color:#5fb4ff">На главную</a>';

@@ -22,8 +22,11 @@ final class EarlyAccessHandler
             return;
         }
 
-        $email = trim((string) ($_POST['email'] ?? ''));
-        $insalesId = trim((string) ($_POST['insales_id'] ?? '')) ?: null;
+        $email       = trim((string) ($_POST['email']        ?? ''));
+        $inn         = trim((string) ($_POST['inn']          ?? '')) ?: null;
+        $companyName = trim((string) ($_POST['company_name'] ?? '')) ?: null;
+        $plan        = trim((string) ($_POST['plan']         ?? '')) ?: null;
+        $insalesId   = trim((string) ($_POST['insales_id']   ?? '')) ?: null;
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             http_response_code(422);

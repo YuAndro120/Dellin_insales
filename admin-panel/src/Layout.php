@@ -6,10 +6,10 @@ namespace AdminPanel;
 
 final class Layout
 {
-    public static function head(string $title): void
-    {
-        $t = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
-        echo <<<HTML
+  public static function head(string $title): void
+  {
+    $t = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    echo <<<HTML
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -127,35 +127,36 @@ a.tlink:hover{text-decoration:underline}
 </head>
 <body>
 HTML;
+  }
+
+  public static function sidebar(string $activePage, string $userEmail, int $unreadAlerts): void
+  {
+    $items = [
+      'dashboard' => ['/', 'Дашборд'],
+      'shops' => ['/shops', 'Магазины'],
+      'crm' => ['/crm', 'CRM'],
+      'logs' => ['/logs', 'Логи'],
+      'alerts' => ['/alerts', 'Алерты'],
+    ];
+    $email = htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8');
+
+    echo '<div class="topbar"><div class="burger" id="burger"><span></span><span></span><span></span></div><div class="topbar-title">Bridge Admin</div></div>';
+    echo '<div class="overlay" id="overlay"></div>';
+    echo '<div class="app"><aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-name">Dellin Bridge</div><div class="brand-sub">admin panel</div></div><nav class="nav">';
+    foreach ($items as $key => [$href, $label]) {
+      $active = $key === $activePage ? ' active' : '';
+      $badge = '';
+      if ($key === 'alerts' && $unreadAlerts > 0) {
+        $badge = '<span class="nav-badge">' . $unreadAlerts . '</span>';
+      }
+      echo '<a class="nav-item' . $active . '" href="' . $href . '"><span>' . $label . '</span>' . $badge . '</a>';
     }
+    echo '</nav><div class="sidebar-footer"><div class="user-email">' . $email . '</div><a class="logout-link" href="/logout">Выйти</a></div></aside><main class="main"><div class="content">';
+  }
 
-    public static function sidebar(string $activePage, string $userEmail, int $unreadAlerts): void
-    {
-        $items = [
-            'dashboard' => ['/', 'Дашборд'],
-            'shops' => ['/shops', 'Магазины'],
-            'logs' => ['/logs', 'Логи'],
-            'alerts' => ['/alerts', 'Алерты'],
-        ];
-        $email = htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8');
-
-        echo '<div class="topbar"><div class="burger" id="burger"><span></span><span></span><span></span></div><div class="topbar-title">Bridge Admin</div></div>';
-        echo '<div class="overlay" id="overlay"></div>';
-        echo '<div class="app"><aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-name">Dellin Bridge</div><div class="brand-sub">admin panel</div></div><nav class="nav">';
-        foreach ($items as $key => [$href, $label]) {
-            $active = $key === $activePage ? ' active' : '';
-            $badge = '';
-            if ($key === 'alerts' && $unreadAlerts > 0) {
-                $badge = '<span class="nav-badge">' . $unreadAlerts . '</span>';
-            }
-            echo '<a class="nav-item' . $active . '" href="' . $href . '"><span>' . $label . '</span>' . $badge . '</a>';
-        }
-        echo '</nav><div class="sidebar-footer"><div class="user-email">' . $email . '</div><a class="logout-link" href="/logout">Выйти</a></div></aside><main class="main"><div class="content">';
-    }
-
-    public static function footer(): void
-    {
-        echo '</div></main></div><script>
+  public static function footer(): void
+  {
+    echo '</div></main></div><script>
 (function(){
   var burger=document.getElementById("burger"),
       sidebar=document.getElementById("sidebar"),
@@ -167,5 +168,5 @@ HTML;
   document.addEventListener("keydown",function(e){if(e.key==="Escape")close()});
 })();
 </script></body></html>';
-    }
+  }
 }

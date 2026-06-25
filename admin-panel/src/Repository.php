@@ -168,4 +168,23 @@ final class Repository
         $row = $stmt->fetch(\PDO::FETCH_NUM);
         return $row !== false ? $row[0] : null;
     }
+
+    /** @return list<array<string,mixed>> */
+    public function leadsList(): array
+    {
+        $stmt = $this->pdo->query(
+            'SELECT id, email, inn, company_name, plan, crm_status, created_at
+             FROM early_access_leads
+             ORDER BY created_at DESC'
+        );
+        return $stmt->fetchAll();
+    }
+
+    public function updateLeadStatus(int $id, string $status): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE early_access_leads SET crm_status = :s WHERE id = :id'
+        );
+        $stmt->execute([':s' => $status, ':id' => $id]);
+    }
 }

@@ -1202,6 +1202,10 @@ final class AppSettingsHandler
                         innMsg = $('innErrMsg');
                     if (innEl) innEl.classList.remove('field-err');
                     if (innMsg) innMsg.style.display = 'none';
+
+                    // Trigger dirty
+                    var form = document.querySelector('#form-sender');
+                    if (form && form._markDirty) form._markDirty();
                 }
 
                 segBtns.forEach(function(btn) {

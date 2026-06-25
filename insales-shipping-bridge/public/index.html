@@ -578,6 +578,30 @@
       font-family: inherit
     }
 
+    .plan-form input[type="email"],
+    .plan-form input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      color: var(--ink);
+      font-size: 13.5px;
+      font-family: var(--sans);
+      outline: none;
+      transition: border-color .15s
+    }
+
+    .plan-form input[type="email"]:focus,
+    .plan-form input[type="text"]:focus {
+      border-color: var(--amber)
+    }
+
+    .plan-form input[type="email"]::placeholder,
+    .plan-form input[type="text"]::placeholder {
+      color: var(--ink-faint)
+    }
+
     /* HOW */
     .steps {
       display: grid;

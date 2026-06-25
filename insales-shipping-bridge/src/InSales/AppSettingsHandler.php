@@ -546,8 +546,8 @@ final class AppSettingsHandler
                                         <div class="card">
                                             <div class="card-hdr">
                                                 <div>
-                                                    <div class="card-title">Контрагент ДЛ</div>
-                                                    <div class="card-sub">Выберите контрагента для оформления заявок</div>
+                                                    <div class="card-title">Контрагент в Деловых Линиях</div>
+                                                    <div class="card-sub">Выберите Ваш аккаунт в системе перевозчика - тот от чьего имени создаются заявки</div>
                                                 </div>
                                             </div>
                                             <div class="card-body">

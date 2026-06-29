@@ -670,31 +670,31 @@ final class AppSettingsHandler
                                                     <button type="button" onclick="showPhone2()" style="font-size:11px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ доп. номер</button>
                                                 </div>
                                                 <div class="field" style="grid-column:1/-1;margin-bottom:0"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
-                                            </div>
-                                            <div id="phone2Block" style="<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:8px;padding-top:8px;border-top:1px solid var(--s3)">
-                                                <div class="g2" style="gap:10px">
-                                                    <div class="field" style="margin-bottom:0">
-                                                        <label>Доп. номер</label>
-                                                        <div class="phone-wrap" id="phoneWrap2">
-                                                            <button type="button" class="phone-flag" id="phoneFlag2" title="Выбор страны">
-                                                                <span class="flag-code" id="flagCode2">+7</span>
-                                                            </button>
-                                                            <input type="text" id="sender_contact_phone2" name="sender_contact_phone2"
-                                                                value="<?= $h($ph2num) ?>"
-                                                                placeholder="495 990-12-34"
-                                                                inputmode="tel" autocomplete="tel" class="phone-input">
-                                                            <div class="phone-flag-dropdown" id="phoneDropdown2" style="display:none"></div>
+                                                <div id="phone2Block" style="grid-column:1/-1;<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:2px;padding-top:10px;border-top:1px solid var(--s3)">
+                                                    <div class="g2" style="gap:10px">
+                                                        <div class="field" style="margin-bottom:0">
+                                                            <label>Доп. номер</label>
+                                                            <div class="phone-wrap" id="phoneWrap2">
+                                                                <button type="button" class="phone-flag" id="phoneFlag2" title="Выбор страны">
+                                                                    <span class="flag-code" id="flagCode2">+7</span>
+                                                                </button>
+                                                                <input type="text" id="sender_contact_phone2" name="sender_contact_phone2"
+                                                                    value="<?= $h($ph2num) ?>"
+                                                                    placeholder="495 990-12-34"
+                                                                    inputmode="tel" autocomplete="tel" class="phone-input">
+                                                                <div class="phone-flag-dropdown" id="phoneDropdown2" style="display:none"></div>
+                                                            </div>
+                                                            <div class="phone-valid-hint" id="phoneHint2"></div>
                                                         </div>
-                                                        <div class="phone-valid-hint" id="phoneHint2"></div>
+                                                        <div class="field" style="margin-bottom:0">
+                                                            <label>Добавочный</label>
+                                                            <input type="text" id="sender_contact_ext" name="sender_contact_ext"
+                                                                value="<?= $h($ph2ext) ?>"
+                                                                placeholder="123" inputmode="numeric" maxlength="6">
+                                                        </div>
                                                     </div>
-                                                    <div class="field" style="margin-bottom:0">
-                                                        <label>Добавочный</label>
-                                                        <input type="text" id="sender_contact_ext" name="sender_contact_ext"
-                                                            value="<?= $h($ph2ext) ?>"
-                                                            placeholder="123" inputmode="numeric" maxlength="6">
-                                                    </div>
+                                                    <button type="button" id="removePhone2Btn" style="font-size:11px;color:var(--ink3);background:none;border:0;cursor:pointer;padding:0;margin-top:6px">✕ Убрать доп. номер</button>
                                                 </div>
-                                                <button type="button" id="removePhone2Btn" style="font-size:11px;color:var(--ink3);background:none;border:0;cursor:pointer;padding:0;margin-top:6px">✕ Убрать доп. номер</button>
                                             </div>
                                         </div>
                                     </div>
@@ -2491,8 +2491,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .field{margin-bottom:14px}
 .field:last-child{margin-bottom:0}
 .field>label{display:block;font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.03em;text-transform:uppercase;margin-bottom:5px}
-.field input:not([type="checkbox"]),.field select{width:100%;padding:9px 12px;background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);font-size:13px;color:var(--ink);font-family:var(--sans);transition:border .15s,box-shadow .15s,background .15s;-webkit-appearance:none;outline:none}
-.field input:focus,.field select:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
+.field input:not([type="checkbox"]):not(.phone-input),.field select{width:100%;padding:9px 12px;background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);font-size:13px;color:var(--ink);font-family:var(--sans);transition:border .15s,box-shadow .15s,background .15s;-webkit-appearance:none;outline:none}
+.field input:not(.phone-input):focus,.field select:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
 .field .hint{font-size:11px;color:var(--ink3);margin-top:4px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}

@@ -643,10 +643,10 @@ final class AppSettingsHandler
                                                 <div class="card-sub">Человек, которому ДЛ позвонит при заборе груза или если возникнут вопросы по перевозке</div>
                                             </div>
                                         </div>
-                                        <div class="card-body">
-                                            <div class="g2">
-                                                <div class="field"><label>Имя</label><input type="text" id="sender_contact_name" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>" placeholder="Иванов Иван"></div>
-                                                <div class="field">
+                                        <div class="card-body" style="padding:14px 16px">
+                                            <div class="g2" style="gap:10px">
+                                                <div class="field" style="margin-bottom:0"><label>Имя</label><input type="text" id="sender_contact_name" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>" placeholder="Иванов Иван"></div>
+                                                <div class="field" style="margin-bottom:0">
                                                     <label>Телефон</label>
                                                     <div class="phone-wrap" id="phoneWrap1">
                                                         <button type="button" class="phone-flag" id="phoneFlag1" title="Выбор страны">
@@ -666,12 +666,12 @@ final class AppSettingsHandler
                                                 $ph2ext = (strpos($ph2raw, ',') !== false) ? substr($ph2raw, strpos($ph2raw, ',') + 1) : '';
                                                 $hasPhone2 = trim($ph2raw) !== '';
                                                 ?>
-                                                <div class="field" style="grid-column:1/-1"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
+                                                <div id="addPhone2Btn" style="grid-column:2;text-align:right;align-self:start;margin-top:2px;<?= $hasPhone2 ? 'display:none;' : '' ?>">
+                                                    <button type="button" onclick="showPhone2()" style="font-size:11px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ доп. номер</button>
+                                                </div>
+                                                <div class="field" style="grid-column:1/-1;margin-bottom:0"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
                                             </div>
-                                            <div id="addPhone2Btn" style="text-align:right;<?= $hasPhone2 ? 'display:none;' : '' ?>margin-top:6px;margin-bottom:2px">
-                                                <button type="button" onclick="showPhone2()" style="font-size:12px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ Добавить дополнительный номер</button>
-                                            </div>
-                                            <div id="phone2Block" style="<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:6px">
+                                            <div id="phone2Block" style="<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:8px;padding-top:8px;border-top:1px solid var(--s3)">
                                                 <div class="g2" style="gap:10px">
                                                     <div class="field" style="margin-bottom:0">
                                                         <label>Доп. номер</label>
@@ -1767,7 +1767,10 @@ final class AppSettingsHandler
                 window.showPhone2 = function() {
                     var block = $('phone2Block');
                     var btn = $('addPhone2Btn');
-                    if (block) block.style.display = '';
+                    if (block) {
+                        block.style.display = '';
+                        block.style.removeProperty('display');
+                    }
                     if (btn) btn.style.display = 'none';
                     var inp = $('sender_contact_phone2');
                     if (inp) inp.focus();

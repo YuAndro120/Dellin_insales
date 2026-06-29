@@ -465,83 +465,130 @@ final class AppSettingsHandler
                                             </div>
                                             <input type="hidden" id="sender_type" name="sender_type" value="<?= $h($s->senderType ?? 'person') ?>">
 
+                                            <?php
+                                            $hasPersonData = ($s->senderName ?? '') !== '' && $s->senderType === 'person';
+                                            $docTypeLabel = $s->senderDocType === 'drivingLicence' ? 'Вод. удостоверение' : 'Паспорт РФ';
+                                            ?>
+
                                             <!-- ФИЗЛИЦО -->
                                             <div id="blockPerson" class="type-block<?= $s->senderType !== 'person' ? ' hidden' : '' ?>">
-                                                <div class="field">
-                                                    <label>ФИО</label>
-                                                    <input type="text" id="sender_name" name="sender_name" value="<?= $h($s->senderName ?? '') ?>" placeholder="Иванов Иван Иванович">
+
+                                                <!-- Карточка просмотра -->
+                                                <div id="personCard" <?= !$hasPersonData ? ' style="display:none"' : '' ?>>
+                                                    <div class="term-saved">
+                                                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+                                                            <div>
+                                                                <div class="term-name" id="personCardName"><?= $h($s->senderName ?? '') ?></div>
+                                                                <div class="term-addr" id="personCardDoc"><?= $h($docTypeLabel) ?><?= ($s->senderDocSerial ?? '') !== '' ? ' · ' . $h($s->senderDocSerial) . ' ' . $h($s->senderDocNumber ?? '') : '' ?></div>
+                                                            </div>
+                                                            <button type="button" id="personEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
+                                                                    <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                                </svg>
+                                                                Изменить
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div class="field">
-                                                    <label>Тип документа</label>
-                                                    <select id="sender_doc_type" name="sender_doc_type">
-                                                        <option value="passport" <?= $s->senderDocType === 'passport'       ? ' selected' : '' ?>>Паспорт РФ</option>
-                                                        <option value="drivingLicence" <?= $s->senderDocType === 'drivingLicence' ? ' selected' : '' ?>>Водительское удостоверение</option>
-                                                    </select>
-                                                </div>
-                                                <div class="g2">
+
+                                                <!-- Форма редактирования -->
+                                                <div id="personForm" <?= $hasPersonData ? ' style="display:none"' : '' ?>>
                                                     <div class="field">
-                                                        <label>Серия</label>
-                                                        <input type="text" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>" placeholder="5222">
+                                                        <label>ФИО</label>
+                                                        <input type="text" id="sender_name_person" name="sender_name" value="<?= $h($s->senderName ?? '') ?>" placeholder="Иванов Иван Иванович">
                                                     </div>
                                                     <div class="field">
-                                                        <label>Номер</label>
-                                                        <input type="text" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>" placeholder="191652">
+                                                        <label>Тип документа</label>
+                                                        <select id="sender_doc_type" name="sender_doc_type">
+                                                            <option value="passport" <?= $s->senderDocType === 'passport' ? ' selected' : '' ?>>Паспорт РФ</option>
+                                                            <option value="drivingLicence" <?= $s->senderDocType === 'drivingLicence' ? ' selected' : '' ?>>Водительское удостоверение</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="g2">
+                                                        <div class="field">
+                                                            <label>Серия</label>
+                                                            <input type="text" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>" placeholder="5222">
+                                                        </div>
+                                                        <div class="field">
+                                                            <label>Номер</label>
+                                                            <input type="text" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>" placeholder="191652">
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <!-- ОРГАНИЗАЦИЯ -->
+                                            <?php
+                                            $hasOrgData = ($s->senderName ?? '') !== '' && $s->senderType !== 'person';
+                                            $hasOpf = ($s->senderOpfUid ?? '') !== '';
+                                            $orgCardTitle = ($s->senderOpfName ? $s->senderOpfName . ' ' : '') . ($s->senderName ?? '');
+                                            ?>
                                             <div id="blockOrg" class="type-block<?= $s->senderType === 'person' ? ' hidden' : '' ?>">
-                                                <div class="field">
-                                                    <label>Название организации</label>
-                                                    <input type="text" id="sender_name" name="sender_name" value="<?= $h($s->senderName ?? '') ?>" placeholder="ИП Иванов / ООО Ромашка">
-                                                </div>
-                                                <div class="field">
-                                                    <label>ОПФ из справочника ДЛ</label>
-                                                    <?php $hasOpf = ($s->senderOpfUid ?? '') !== ''; ?>
-                                                    <div id="opfSaved" <?= !$hasOpf ? ' style="display:none"' : '' ?> class="opf-saved">
-                                                        <div>
-                                                            <div class="opf-name" id="opfSavedName"><?= $h($s->senderOpfName !== '' ? $s->senderOpfName : 'Сохранено') ?></div>
-                                                            <div class="opf-country" id="opfSavedCountry">из справочника ДЛ</div>
+
+                                                <!-- Карточка просмотра -->
+                                                <div id="orgCard" <?= !$hasOrgData ? ' style="display:none"' : '' ?>>
+                                                    <div class="term-saved">
+                                                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+                                                            <div>
+                                                                <div class="term-name" id="orgCardName"><?= $h($orgCardTitle) ?></div>
+                                                                <div class="term-addr" id="orgCardInn"><?= ($s->senderInn ?? '') !== '' ? 'ИНН ' . $h($s->senderInn) : 'ИНН не указан' ?></div>
+                                                            </div>
+                                                            <button type="button" id="orgEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
+                                                                    <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                                </svg>
+                                                                Изменить
+                                                            </button>
                                                         </div>
-                                                        <button type="button" id="opfEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
-                                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
-                                                                <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-                                                            </svg>
-                                                            Изменить
-                                                        </button>
                                                     </div>
-                                                    <div id="opfSearchWrap" <?= $hasOpf ? ' style="display:none"' : '' ?> class="opf-search-wrap">
-                                                        <input class="opf-search-input" type="text" id="opfSearchInput" autocomplete="off" placeholder="Начните вводить — ИП, ООО, АО…">
-                                                        <div style="font-size:11px;color:var(--ink3);margin-top:5px">Поиск по справочнику Деловых Линий</div>
-                                                        <ul id="opfList" class="opf-list"></ul>
-                                                    </div>
-                                                    <input type="hidden" id="sender_opf_uid" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
-                                                    <input type="hidden" id="sender_opf_name" name="sender_opf_name" value="<?= $h($s->senderOpfName) ?>">
-                                                    <input type="hidden" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
-                                                    <input type="hidden" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
-                                                    <input type="hidden" name="package_uid" value="<?= $h($s->packageUid  ?? '') ?>">
-                                                    <input type="hidden" name="package_name" value="<?= $h($s->packageName ?? '') ?>">
-                                                    <input type="checkbox" name="package_in_calc" value="1" <?= $s->packageInCalc ? ' checked' : '' ?> style="display:none">
-                                                    <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
-                                                    <?php foreach ($s->deliveryTypes as $dt): ?>
-                                                        <input type="hidden" name="delivery_types[]" value="<?= $h($dt) ?>">
-                                                    <?php endforeach; ?>
                                                 </div>
-                                                <div class="field">
-                                                    <label>ИНН</label>
-                                                    <div style="position:relative">
-                                                        <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="1234567890 — начните вводить…" class="<?= (($s->senderInn ?? '') === '' && $s->senderType !== 'person') ? 'field-err' : '' ?>" autocomplete="off" inputmode="numeric" maxlength="12">
-                                                        <ul id="innSuggestions" class="suggestions" style="position:absolute;top:100%;left:0;right:0;z-index:50"></ul>
+
+                                                <!-- Форма редактирования -->
+                                                <div id="orgForm" <?= $hasOrgData ? ' style="display:none"' : '' ?>>
+                                                    <div class="field">
+                                                        <label>Название организации</label>
+                                                        <input type="text" id="sender_name_org" name="sender_name" value="<?= $h($s->senderName ?? '') ?>" placeholder="Андронов Юрий Витальевич">
                                                     </div>
-                                                    <div class="field-err-msg" id="innErrMsg">Введите ИНН — обязательное поле для организаций</div>
-                                                    <div id="innStatus" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
+                                                    <div id="opfFieldWrap" style="display:none">
+                                                        <div class="field">
+                                                            <label>ОПФ из справочника ДЛ</label>
+                                                            <div id="opfSaved" <?= !$hasOpf ? ' style="display:none"' : '' ?> class="opf-saved">
+                                                                <div>
+                                                                    <div class="opf-name" id="opfSavedName"><?= $h($s->senderOpfName !== '' ? $s->senderOpfName : 'Сохранено') ?></div>
+                                                                    <div class="opf-country" id="opfSavedCountry">из справочника ДЛ</div>
+                                                                </div>
+                                                                <button type="button" id="opfEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">Изменить вручную</button>
+                                                            </div>
+                                                            <div id="opfSearchWrap" <?= $hasOpf ? ' style="display:none"' : '' ?> class="opf-search-wrap">
+                                                                <input class="opf-search-input" type="text" id="opfSearchInput" autocomplete="off" placeholder="Начните вводить — ИП, ООО, АО…">
+                                                                <div style="font-size:11px;color:var(--ink3);margin-top:5px">Поиск по справочнику Деловых Линий</div>
+                                                                <ul id="opfList" class="opf-list"></ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="opfAutoStatus" style="font-size:11px;color:var(--ink3);margin-bottom:10px;display:none"></div>
+                                                    <div class="field">
+                                                        <label>ИНН</label>
+                                                        <div style="position:relative">
+                                                            <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="1234567890 — начните вводить…" class="<?= (($s->senderInn ?? '') === '' && $s->senderType !== 'person') ? 'field-err' : '' ?>" autocomplete="off" inputmode="numeric" maxlength="12">
+                                                            <ul id="innSuggestions" class="suggestions" style="position:absolute;top:100%;left:0;right:0;z-index:50"></ul>
+                                                        </div>
+                                                        <div class="field-err-msg" id="innErrMsg">Введите ИНН — обязательное поле для организаций</div>
+                                                        <div id="innStatus" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
+                                                    </div>
                                                 </div>
-                                                <!-- временно скрываем из UI юр. адрес
-                                                <div class="field">
-                                                    <label>Юридический адрес</label>
-                                                    <input type="text" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>" placeholder="г. Москва, ул. Примерная, д. 1">
-                                                </div> -->
+
+                                                <input type="hidden" id="sender_opf_uid" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
+                                                <input type="hidden" id="sender_opf_name" name="sender_opf_name" value="<?= $h($s->senderOpfName) ?>">
+                                                <input type="hidden" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
+                                                <input type="hidden" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
+                                                <input type="hidden" name="package_uid" value="<?= $h($s->packageUid  ?? '') ?>">
+                                                <input type="hidden" name="package_name" value="<?= $h($s->packageName ?? '') ?>">
+                                                <input type="checkbox" name="package_in_calc" value="1" <?= $s->packageInCalc ? ' checked' : '' ?> style="display:none">
+                                                <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
+                                                <?php foreach ($s->deliveryTypes as $dt): ?>
+                                                    <input type="hidden" name="delivery_types[]" value="<?= $h($dt) ?>">
+                                                <?php endforeach; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -619,16 +666,15 @@ final class AppSettingsHandler
                                                 $ph2ext = (strpos($ph2raw, ',') !== false) ? substr($ph2raw, strpos($ph2raw, ',') + 1) : '';
                                                 $hasPhone2 = trim($ph2raw) !== '';
                                                 ?>
-                                                <div id="addPhone2Btn" style="grid-column:1/-1;<?= $hasPhone2 ? 'display:none' : '' ?>;margin-top:-4px">
-                                                    <button type="button" onclick="showPhone2()" style="font-size:12px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ Добавить дополнительный номер</button>
-                                                </div>
                                                 <div class="field" style="grid-column:1/-1"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
                                             </div>
-                                            <div id="phone2Block" style="<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:12px">
-                                                <div style="height:1px;background:var(--s3);margin-bottom:14px"></div>
-                                                <div class="g2">
-                                                    <div class="field">
-                                                        <label>Дополнительный номер</label>
+                                            <div id="addPhone2Btn" style="text-align:right;<?= $hasPhone2 ? 'display:none;' : '' ?>margin-top:6px;margin-bottom:2px">
+                                                <button type="button" onclick="showPhone2()" style="font-size:12px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ Добавить дополнительный номер</button>
+                                            </div>
+                                            <div id="phone2Block" style="<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:6px">
+                                                <div class="g2" style="gap:10px">
+                                                    <div class="field" style="margin-bottom:0">
+                                                        <label>Доп. номер</label>
                                                         <div class="phone-wrap" id="phoneWrap2">
                                                             <button type="button" class="phone-flag" id="phoneFlag2" title="Выбор страны">
                                                                 <span class="flag-code" id="flagCode2">+7</span>
@@ -641,15 +687,14 @@ final class AppSettingsHandler
                                                         </div>
                                                         <div class="phone-valid-hint" id="phoneHint2"></div>
                                                     </div>
-                                                    <div class="field">
-                                                        <label>Добавочный (необязательно)</label>
+                                                    <div class="field" style="margin-bottom:0">
+                                                        <label>Добавочный</label>
                                                         <input type="text" id="sender_contact_ext" name="sender_contact_ext"
                                                             value="<?= $h($ph2ext) ?>"
                                                             placeholder="123" inputmode="numeric" maxlength="6">
-                                                        <div class="hint">Цифры добавочного номера</div>
                                                     </div>
                                                 </div>
-                                                <button type="button" id="removePhone2Btn" style="font-size:11px;color:var(--ink3);background:none;border:0;cursor:pointer;padding:0;margin-top:2px">✕ Убрать дополнительный номер</button>
+                                                <button type="button" id="removePhone2Btn" style="font-size:11px;color:var(--ink3);background:none;border:0;cursor:pointer;padding:0;margin-top:6px">✕ Убрать доп. номер</button>
                                             </div>
                                         </div>
                                     </div>
@@ -1304,6 +1349,7 @@ final class AppSettingsHandler
 
                 function fillOrgFromDaData(suggestion) {
                     var d = suggestion.data;
+
                     // ИНН
                     var innInput = $('sender_inn');
                     if (innInput && d.inn) {
@@ -1312,14 +1358,91 @@ final class AppSettingsHandler
                         var innMsg = $('innErrMsg');
                         if (innMsg) innMsg.style.display = 'none';
                     }
-                    // Название
+
+                    // Краткое ОПФ из DaData: "ИП", "ООО", "АО" и т.д.
+                    var opfShort = (d.opf && d.opf.short) ? d.opf.short.trim() : '';
+
+                    // Наименование без ОПФ-префикса
+                    var fullName = (d.name && d.name.short) ? d.name.short.trim() : (suggestion.value || '');
+                    var nameOnly = fullName;
+                    if (opfShort && nameOnly.toUpperCase().startsWith(opfShort.toUpperCase())) {
+                        nameOnly = nameOnly.slice(opfShort.length).trim();
+                    }
+
+                    // Подставляем в поле названия только имя без ОПФ
                     var nameInput = document.querySelector('#blockOrg input[name="sender_name"]');
-                    if (nameInput && suggestion.value) nameInput.value = suggestion.value;
-                    // ОПФ — попробуем найти в списке ОПФ ДЛ по короткому названию
-                    if (innStatus) innStatus.textContent = '✓ ' + (suggestion.value || '') + ' заполнено из DaData';
-                    // Триггерим dirty
-                    var f = document.querySelector('#settingsForm');
-                    if (f && f._markDirty) f._markDirty();
+                    if (nameInput && nameOnly) nameInput.value = nameOnly;
+
+                    // Статус под ИНН
+                    if (innStatus) innStatus.textContent = 'Подбираем ОПФ из справочника ДЛ…';
+
+                    // Ищем ОПФ в справочнике ДЛ
+                    if (opfShort) {
+                        fetchJ(opfBase + encodeURIComponent(opfShort)).then(function(j) {
+                            var items = j.items || [];
+                            var matched = null;
+
+                            // Точное совпадение
+                            for (var i = 0; i < items.length; i++) {
+                                if (items[i].title.toUpperCase() === opfShort.toUpperCase()) {
+                                    matched = items[i];
+                                    break;
+                                }
+                            }
+                            // Частичное совпадение
+                            if (!matched) {
+                                for (var i = 0; i < items.length; i++) {
+                                    if (items[i].title.toUpperCase().indexOf(opfShort.toUpperCase()) !== -1) {
+                                        matched = items[i];
+                                        break;
+                                    }
+                                }
+                            }
+
+                            var opfStatus = $('opfAutoStatus');
+                            if (matched) {
+                                // Автоматически заполняем ОПФ
+                                $('sender_opf_uid').value = matched.uid;
+                                $('sender_opf_name').value = matched.title;
+                                $('opfSavedName').textContent = matched.title;
+                                $('opfSavedCountry').textContent = 'из справочника ДЛ';
+                                var opfSavedEl = $('opfSaved');
+                                var opfSearchWrapEl = $('opfSearchWrap');
+                                if (opfSavedEl) opfSavedEl.style.display = 'flex';
+                                if (opfSearchWrapEl) opfSearchWrapEl.style.display = 'none';
+                                var opfWrap = $('opfFieldWrap');
+                                if (opfWrap) opfWrap.style.display = 'none';
+                                if (opfStatus) {
+                                    opfStatus.style.display = 'block';
+                                    opfStatus.textContent = '✓ ОПФ определён автоматически: ' + matched.title;
+                                }
+                                if (innStatus) innStatus.textContent = '✓ ' + opfShort + ' ' + nameOnly;
+                                window.updateOrgCard(matched.title, nameOnly, d.inn || '');
+                                var f = document.querySelector('#settingsForm');
+                                if (f && f._markDirty) f._markDirty();
+                            } else {
+                                // Не нашли — показываем поле выбора вручную
+                                var opfWrap = $('opfFieldWrap');
+                                if (opfWrap) opfWrap.style.display = '';
+                                var opfSearchWrapEl = $('opfSearchWrap');
+                                if (opfSearchWrapEl) opfSearchWrapEl.style.display = '';
+                                if (opfStatus) {
+                                    opfStatus.style.display = 'block';
+                                    opfStatus.textContent = 'ОПФ не найден автоматически — выберите вручную';
+                                }
+                                if (innStatus) innStatus.textContent = nameOnly + ' — выберите ОПФ';
+                                var f = document.querySelector('#settingsForm');
+                                if (f && f._markDirty) f._markDirty();
+                            }
+                        });
+                    } else {
+                        // DaData не вернула ОПФ — показываем поле
+                        var opfWrap = $('opfFieldWrap');
+                        if (opfWrap) opfWrap.style.display = '';
+                        if (innStatus) innStatus.textContent = nameOnly ? '✓ ' + nameOnly : '';
+                        var f = document.querySelector('#settingsForm');
+                        if (f && f._markDirty) f._markDirty();
+                    }
                 }
 
                 if (innEl) {
@@ -1693,6 +1816,44 @@ final class AppSettingsHandler
                         }
                     });
                 }
+
+                // ── Person card / edit ──
+                var personEditBtn = $('personEditBtn');
+                var personCard = $('personCard');
+                var personForm = $('personForm');
+                if (personEditBtn) {
+                    personEditBtn.addEventListener('click', function() {
+                        personCard.style.display = 'none';
+                        personForm.style.display = '';
+                        var inp = document.getElementById('sender_name_person');
+                        if (inp) inp.focus();
+                    });
+                }
+                // При изменении полей физлица — обновляем карточку при сохранении
+                // (карточка обновится после reload, это нормально)
+
+                // ── Org card / edit ──
+                var orgEditBtn = $('orgEditBtn');
+                var orgCard = $('orgCard');
+                var orgForm = $('orgForm');
+                if (orgEditBtn) {
+                    orgEditBtn.addEventListener('click', function() {
+                        orgCard.style.display = 'none';
+                        orgForm.style.display = '';
+                        var inp = $('sender_inn');
+                        if (inp) inp.focus();
+                    });
+                }
+                // После fillOrgFromDaData — обновляем карточку организации
+                // (вызывается из fillOrgFromDaData ниже)
+                window.updateOrgCard = function(opfName, name, inn) {
+                    var cardName = $('orgCardName');
+                    var cardInn = $('orgCardInn');
+                    if (cardName) cardName.textContent = (opfName ? opfName + ' ' : '') + name;
+                    if (cardInn) cardInn.textContent = inn ? 'ИНН ' + inn : 'ИНН не указан';
+                    if (orgCard) orgCard.style.display = '';
+                    if (orgForm) orgForm.style.display = 'none';
+                };
 
                 // ── OPF saved/search ──
                 var opfEditBtn = $('opfEditBtn');
@@ -2438,19 +2599,18 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .field-err-msg{font-size:11px;color:#b91c1c;margin-top:4px;display:none}
 
 /* PHONE WIDGET */
-.phone-wrap{position:relative;display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);transition:border .15s,box-shadow .15s;overflow:hidden}
+.phone-wrap{position:relative;display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);transition:border .15s,box-shadow .15s;overflow:hidden;min-height:36px}
 .phone-wrap:focus-within{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
-.phone-flag{display:flex;align-items:center;gap:3px;padding:0 8px;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;color:var(--ink2);font-family:var(--sans);transition:background .12s;border-radius:var(--r2) 0 0 var(--r2);height:100%}
+.phone-flag{display:flex;align-items:center;gap:3px;padding:0 8px;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;color:var(--ink2);font-family:var(--sans);transition:background .12s;border-radius:0;height:100%}
 .phone-flag:hover{background:var(--s3)}
 .flag-cc{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink);line-height:1;font-family:var(--mono)}
 .flag-code{font-size:11px;font-weight:600;color:var(--ink3)}
-.phone-input{flex:1;padding:9px 12px;background:transparent;border:0;font-size:13px;color:var(--ink);font-family:var(--sans);outline:none;min-width:0;border-radius:0;height:38px}
-.phone-wrap{min-height:38px}
+.phone-input{flex:1;padding:8px 10px;background:transparent;border:0;font-size:13px;color:var(--ink);font-family:var(--sans);outline:none;min-width:0;border-radius:0;height:36px}
 .phone-flag-dropdown{position:fixed;z-index:9999;background:var(--s1);border:1px solid var(--line);border-radius:var(--r2);box-shadow:0 8px 24px rgba(26,23,20,.16);min-width:220px;max-height:220px;overflow-y:auto;padding:4px}
-.pflag-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s}
+.pflag-item{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s}
 .pflag-cc{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink);font-family:var(--mono);min-width:28px}
 .pflag-item:hover{background:var(--ambl)}
-.phone-valid-hint{font-size:11px;margin-top:4px;min-height:16px;transition:color .15s}
+.phone-valid-hint{font-size:11px;margin-top:3px;min-height:14px;transition:color .15s}
 .phone-valid-hint.valid{color:var(--grn)}
 .phone-valid-hint.pending{color:var(--ink3)}
 .phone-valid-hint.invalid{color:#b91c1c}

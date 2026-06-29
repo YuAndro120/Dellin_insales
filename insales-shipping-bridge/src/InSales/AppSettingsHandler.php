@@ -2373,12 +2373,27 @@ final class AppSettingsHandler
                         fetchJ(opfBase + encodeURIComponent(opfShort)).then(function(j) {
                             var items = j.items || [],
                                 matched = null;
+                            // Точное совпадение по name (краткое) или title
                             for (var i = 0; i < items.length; i++) {
-                                if (items[i].title.toUpperCase() === opfShort.toUpperCase()) {
+                                var t = items[i].title.toUpperCase(),
+                                    n = (items[i].name || '').toUpperCase(),
+                                    q = opfShort.toUpperCase();
+                                if (n === q || t === q) {
                                     matched = items[i];
                                     break;
                                 }
                             }
+                            // Частичное по title или name
+                            if (!matched)
+                                for (var i = 0; i < items.length; i++) {
+                                    var t = items[i].title.toUpperCase(),
+                                        n = (items[i].name || '').toUpperCase(),
+                                        q = opfShort.toUpperCase();
+                                    if (t.indexOf(q) !== -1 || n.indexOf(q) !== -1) {
+                                        matched = items[i];
+                                        break;
+                                    }
+                                }
                             if (!matched)
                                 for (var i = 0; i < items.length; i++) {
                                     if (items[i].title.toUpperCase().indexOf(opfShort.toUpperCase()) !== -1) {
@@ -2386,6 +2401,15 @@ final class AppSettingsHandler
                                         break;
                                     }
                                 }
+                            // Приоритет — Россия если ещё не нашли
+                            if (!matched) {
+                                for (var i = 0; i < items.length; i++) {
+                                    if ((items[i].country_name || '').indexOf('Росс') !== -1) {
+                                        matched = items[i];
+                                        break;
+                                    }
+                                }
+                            }
                             var opfStatus = $('opfAutoStatus');
                             if (matched) {
                                 $('sender_opf_uid').value = matched.uid;

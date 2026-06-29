@@ -395,7 +395,7 @@ final class AppSettingsHandler
                                     Создайте токен доступа (PAT) и вставьте ниже
                                 </div>
                             </div>
-                            <a href="https://dellin.ru" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--amber);text-decoration:none;font-weight:600;padding:6px 10px;background:var(--ambl);border:1px solid #f5c4b3;border-radius:var(--r)">
+                            <a href="https://www.dellin.ru/cabinet/account/pat/" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--amber);text-decoration:none;font-weight:600;padding:6px 10px;background:var(--ambl);border:1px solid #f5c4b3;border-radius:var(--r)">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
                                     <polyline points="15 3 21 3 21 9" />

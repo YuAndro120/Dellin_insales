@@ -209,6 +209,10 @@ if (str_starts_with($uri, '/insales/')) {
             \ShippingBridge\InSales\InvoicingPage::handle($config, $shops, $method);
             exit;
         }
+        if ($uri === '/insales/consent' && $method === 'POST') {
+            \ShippingBridge\InSales\ConsentHandler::handle($config, $method);
+            exit;
+        }
         if ($uri === '/insales/early-access' && $method === 'POST') {
             \ShippingBridge\InSales\EarlyAccessHandler::handle($config, $method);
             exit;

@@ -909,6 +909,11 @@
             <input type="text" name="company_name" placeholder="Название компании">
             <input type="hidden" name="plan" value="calc_only">
             <input type="hidden" name="insales_id" class="js-insales-id">
+            <label class="recurrent-label consent-label">
+              <input type="checkbox" name="consent_pd" value="1" required class="consent-pd-check">
+              <span>Согласен на <a href="/privacy.html" target="_blank" style="color:var(--amber)">обработку
+                  персональных данных</a></span>
+            </label>
             <button type="submit" class="price-btn plan-submit">Оставить заявку</button>
           </form>
           <div class="early-access-thanks"
@@ -933,6 +938,11 @@
             <input type="text" name="company_name" placeholder="Название компании">
             <input type="hidden" name="plan" value="full">
             <input type="hidden" name="insales_id" class="js-insales-id">
+            <label class="recurrent-label consent-label">
+              <input type="checkbox" name="consent_pd" value="1" required class="consent-pd-check">
+              <span>Согласен на <a href="/privacy.html" target="_blank" style="color:var(--amber)">обработку
+                  персональных данных</a></span>
+            </label>
             <button type="submit" class="price-btn plan-submit">Оставить заявку</button>
           </form>
           <div class="early-access-thanks"
@@ -956,6 +966,11 @@
             <input type="text" name="company_name" placeholder="Название компании">
             <input type="hidden" name="plan" value="automation">
             <input type="hidden" name="insales_id" class="js-insales-id">
+            <label class="recurrent-label consent-label">
+              <input type="checkbox" name="consent_pd" value="1" required class="consent-pd-check">
+              <span>Согласен на <a href="/privacy.html" target="_blank" style="color:var(--amber)">обработку
+                  персональных данных</a></span>
+            </label>
             <button type="submit" class="price-btn plan-submit"
               style="background:transparent;border:1px solid var(--amber);color:var(--amber)">Оставить заявку</button>
           </form>
@@ -1044,6 +1059,21 @@
     </div>
   </footer>
 
+
+  <!-- Cookie banner -->
+  <div id="cookieBanner"
+    style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:#1c1f24;border-top:1px solid #2c3038;padding:14px 24px">
+    <div
+      style="max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div style="font-size:13px;color:#a8a59d;line-height:1.5">
+        Мы используем куки для корректной работы сайта.
+        <a href="/privacy.html" style="color:#e8742c;text-decoration:none">Политика конфиденциальности</a>
+      </div>
+      <button id="cookieAccept"
+        style="background:#e8742c;color:#1a1208;border:0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Принять</button>
+    </div>
+  </div>
+
   <script>
     (function () {
       var params = new URLSearchParams(window.location.search);
@@ -1078,6 +1108,9 @@
           btn.disabled = true;
           btn.textContent = 'Отправляем…';
           var formData = new FormData(form);
+          formData.append('source', 'landing');
+          fetch('/insales/consent', { method: 'POST', body: formData })
+            .catch(function () { });
           fetch('/insales/early-access', { method: 'POST', body: formData })
             .then(function (r) { return r.json(); })
             .then(function (data) {
@@ -1097,6 +1130,22 @@
             });
         });
       });
+    })();
+
+    // Cookie banner
+    (function () {
+      if (!document.cookie.includes('cookie_ok=1')) {
+        var banner = document.getElementById('cookieBanner');
+        if (banner) banner.style.display = 'block';
+      }
+      var btn = document.getElementById('cookieAccept');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          document.cookie = 'cookie_ok=1;max-age=' + (365 * 24 * 3600) + ';path=/;samesite=lax';
+          var banner = document.getElementById('cookieBanner');
+          if (banner) banner.style.display = 'none';
+        });
+      }
     })();
   </script>
 </body>

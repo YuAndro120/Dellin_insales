@@ -156,11 +156,7 @@ final class AppSettingsHandler
                     'sender_doc_serial'     => trim((string) ($_POST['sender_doc_serial']     ?? '')),
                     'sender_doc_number'     => trim((string) ($_POST['sender_doc_number']     ?? '')),
                     'sender_contact_name'   => trim((string) ($_POST['sender_contact_name']   ?? '')),
-                    'sender_contact_phone'  => self::buildContactPhoneField(
-                        trim((string) ($_POST['sender_contact_phone']  ?? '')),
-                        trim((string) ($_POST['sender_contact_phone2'] ?? '')),
-                        trim((string) ($_POST['sender_contact_ext']    ?? ''))
-                    ),
+                    'sender_contact_phone'  => trim((string) ($_POST['sender_contact_phone']  ?? '')),
                     'sender_opf_uid'        => trim((string) ($_POST['sender_opf_uid']        ?? '')),
                     'sender_opf_name' => trim((string) ($_POST['sender_opf_name'] ?? '')),
                     'sender_juridical_address' => trim((string) ($_POST['sender_juridical_address'] ?? '')),
@@ -337,7 +333,218 @@ final class AppSettingsHandler
         $iidQ  = rawurlencode($s->insalesId);
 
         self::renderHtmlHead('Настройки — Деловые Линии');
+
+        $consentGiven = !empty($_COOKIE['consent_given']);
+        $hasDellinAuth = $settings->hasDellinAuth ?? false;
+        $showOnboarding = !$consentGiven || !$hasDellinAuth;
     ?>
+
+        <?php if ($showOnboarding): ?>
+            <div id="onboardingOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(26,23,20,.6);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px">
+                <div style="background:var(--s1);border:1px solid var(--line2);border-radius:var(--r3);padding:28px;max-width:440px;width:100%;box-shadow:0 24px 64px rgba(26,23,20,.3)">
+
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+                        <div style="width:34px;height:34px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:5px">
+                            <svg viewBox="0 0 1000 880" xmlns="http://www.w3.org/2000/svg">
+                                <polygon fill="#1a1714" points="574,713 190,544 108,688 540,772" />
+                                <polygon fill="#1a1714" points="739,422 499,0 409,159 697,497" />
+                                <polygon fill="#1a1714" points="678,531 390,193 308,336 644,589" />
+                                <polygon fill="#1a1714" points="626,621 290,368 208,513 592,681" />
+                                <polygon fill="#1a1714" points="90,721 0,880 479,880 521,805" />
+                                <polygon fill="#1a1714" points="520,880 648,880 760,682 872,880 1000,880 760,457" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div style="font-size:13px;font-weight:600;color:var(--ink)">Деловые Линии</div>
+                            <div style="font-size:10px;color:var(--ink3);font-family:var(--mono)">Добро пожаловать</div>
+                        </div>
+                        <div style="margin-left:auto;font-size:10px;font-weight:600;font-family:var(--mono);background:var(--grnl);color:var(--grn);border:1px solid var(--grnb);padding:3px 9px;border-radius:20px">Первый вход</div>
+                    </div>
+
+                    <div style="height:1px;background:var(--s3);margin-bottom:18px"></div>
+
+                    <?php if (!$consentGiven): ?>
+                        <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;display:flex;align-items:center;gap:8px">Согласие на обработку данных<span style="flex:1;height:1px;background:var(--s3)"></span></div>
+
+                        <label id="consentPdRow" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid #f5c4b3;border-radius:var(--r2);background:var(--ambl);margin-bottom:8px">
+                            <input type="checkbox" id="consentPd" style="margin-top:2px;accent-color:var(--amber);flex-shrink:0;width:14px;height:14px">
+                            <span style="font-size:12px;color:var(--ink2);line-height:1.5">Согласен на обработку персональных данных согласно <a href="/privacy.html" target="_blank" style="color:var(--amber);text-decoration:none">Политике конфиденциальности</a> ИП Андронов Ю. В. <span style="color:var(--amber)">*</span></span>
+                        </label>
+                        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);margin-bottom:18px">
+                            <input type="checkbox" id="consentCookies" style="margin-top:2px;accent-color:var(--amber);flex-shrink:0;width:14px;height:14px">
+                            <span style="font-size:12px;color:var(--ink2);line-height:1.5">Согласен на использование файлов cookie для работы сервиса</span>
+                        </label>
+                        <div style="height:1px;background:var(--s3);margin-bottom:18px"></div>
+                    <?php endif; ?>
+
+                    <?php if (!$hasDellinAuth): ?>
+                        <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;display:flex;align-items:center;gap:8px">Подключение к Деловым Линиям<span style="flex:1;height:1px;background:var(--s3)"></span></div>
+
+                        <div style="background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);padding:12px 14px;margin-bottom:12px">
+                            <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px">
+                                <div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--ink2)">
+                                    <span style="width:18px;height:18px;border-radius:50%;background:var(--ambl);border:1px solid #f5c4b3;color:var(--amber);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">1</span>
+                                    Войдите в личный кабинет Деловых Линий
+                                </div>
+                                <div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--ink2)">
+                                    <span style="width:18px;height:18px;border-radius:50%;background:var(--ambl);border:1px solid #f5c4b3;color:var(--amber);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">2</span>
+                                    Перейдите в Настройки → Интеграция API
+                                </div>
+                                <div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--ink2)">
+                                    <span style="width:18px;height:18px;border-radius:50%;background:var(--ambl);border:1px solid #f5c4b3;color:var(--amber);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">3</span>
+                                    Создайте токен доступа (PAT) и вставьте ниже
+                                </div>
+                            </div>
+                            <a href="https://lk.dellin.ru" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--amber);text-decoration:none;font-weight:600;padding:6px 10px;background:var(--ambl);border:1px solid #f5c4b3;border-radius:var(--r)">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                                    <polyline points="15 3 21 3 21 9" />
+                                    <line x1="10" y1="14" x2="21" y2="3" />
+                                </svg>
+                                Открыть ЛК Деловых Линий
+                            </a>
+                        </div>
+
+                        <div style="margin-bottom:12px">
+                            <div style="font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.03em;text-transform:uppercase;margin-bottom:5px">Персональный токен (PAT)</div>
+                            <input type="password" id="onboardingPat" placeholder="dl-api-…" autocomplete="off"
+                                style="width:100%;padding:9px 12px;background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);font-size:13px;color:var(--ink);font-family:var(--sans);outline:none;box-sizing:border-box">
+                            <div style="font-size:11px;color:var(--ink3);margin-top:4px">Найти в ЛК ДЛ → Настройки → Интеграция API</div>
+                        </div>
+                    <?php endif; ?>
+
+                    <div id="onboardingErr" style="font-size:12px;color:#b91c1c;margin-bottom:10px;display:none"></div>
+
+                    <button id="onboardingSubmit" disabled
+                        style="width:100%;padding:11px;background:var(--s3);border:0;border-radius:var(--r2);color:var(--ink3);font-size:13px;font-weight:600;cursor:not-allowed;font-family:var(--sans);transition:all .2s">
+                        Подключить и начать работу
+                    </button>
+                    <div style="margin-top:10px;font-size:11px;color:var(--ink3);text-align:center">* Обязательное поле. Без согласия использование приложения невозможно.</div>
+                </div>
+            </div>
+
+            <script>
+                (function() {
+                    var consentGiven = <?= json_encode($consentGiven) ?>;
+                    var hasAuth = <?= json_encode($hasDellinAuth) ?>;
+                    var insalesId = <?= json_encode($s->insalesId) ?>;
+                    var shop = <?= json_encode($s->shopHost) ?>;
+                    var atk = <?= json_encode($accessToken) ?>;
+
+                    var cbPd = document.getElementById('consentPd');
+                    var cbCk = document.getElementById('consentCookies');
+                    var patInput = document.getElementById('onboardingPat');
+                    var btn = document.getElementById('onboardingSubmit');
+                    var errEl = document.getElementById('onboardingErr');
+
+                    function updateBtn() {
+                        var pdOk = consentGiven || (cbPd && cbPd.checked);
+                        var patOk = hasAuth || (patInput && patInput.value.trim().length > 4);
+                        var ok = pdOk && patOk;
+                        btn.disabled = !ok;
+                        btn.style.background = ok ? 'var(--amber)' : 'var(--s3)';
+                        btn.style.color = ok ? '#fff' : 'var(--ink3)';
+                        btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+                    }
+
+                    if (cbPd) cbPd.addEventListener('change', updateBtn);
+                    if (cbCk) cbCk.addEventListener('change', updateBtn);
+                    if (patInput) patInput.addEventListener('input', updateBtn);
+                    updateBtn();
+
+                    btn.addEventListener('click', function() {
+                        if (btn.disabled) return;
+                        btn.disabled = true;
+                        btn.textContent = 'Сохраняем…';
+                        if (errEl) errEl.style.display = 'none';
+
+                        // Step 1: save consent if needed
+                        function saveConsent(next) {
+                            if (consentGiven) {
+                                next();
+                                return;
+                            }
+                            var fd = new FormData();
+                            fd.append('source', 'app');
+                            fd.append('insales_id', insalesId);
+                            fd.append('consent_pd', cbPd && cbPd.checked ? '1' : '0');
+                            fd.append('consent_cookies', cbCk && cbCk.checked ? '1' : '0');
+                            fetch('/insales/consent', {
+                                    method: 'POST',
+                                    body: fd
+                                })
+                                .then(function(r) {
+                                    return r.json();
+                                })
+                                .then(function(d) {
+                                    if (d.ok) {
+                                        next();
+                                    } else {
+                                        showErr(d.error || 'Ошибка сохранения согласия');
+                                    }
+                                })
+                                .catch(function() {
+                                    showErr('Ошибка сети');
+                                });
+                        }
+
+                        // Step 2: save PAT if needed
+                        function savePat(next) {
+                            if (hasAuth) {
+                                next();
+                                return;
+                            }
+                            var fd = new FormData();
+                            fd.append('shop', shop);
+                            fd.append('insales_id', insalesId);
+                            fd.append('atk', atk);
+                            fd.append('save_dellin_auth', '1');
+                            fd.append('dellin_pat', patInput ? patInput.value.trim() : '');
+                            fetch('/insales/app', {
+                                    method: 'POST',
+                                    body: fd
+                                })
+                                .then(function(r) {
+                                    if (r.ok || r.redirected) {
+                                        next();
+                                    } else {
+                                        showErr('Не удалось сохранить токен');
+                                    }
+                                })
+                                .catch(function() {
+                                    showErr('Ошибка сети');
+                                });
+                        }
+
+                        function finish() {
+                            document.getElementById('onboardingOverlay').style.display = 'none';
+                            window.location.reload();
+                        }
+
+                        function showErr(msg) {
+                            btn.disabled = false;
+                            btn.textContent = 'Подключить и начать работу';
+                            btn.style.background = 'var(--amber)';
+                            btn.style.color = '#fff';
+                            btn.style.cursor = 'pointer';
+                            if (errEl) {
+                                errEl.textContent = msg;
+                                errEl.style.display = 'block';
+                            }
+                        }
+
+                        saveConsent(function() {
+                            savePat(finish);
+                        });
+                    });
+
+                    // Focus PAT input if visible
+                    if (patInput) setTimeout(function() {
+                        patInput.focus();
+                    }, 100);
+                })();
+            </script>
+        <?php endif; ?>
 
         <div class="app">
 
@@ -465,130 +672,79 @@ final class AppSettingsHandler
                                             </div>
                                             <input type="hidden" id="sender_type" name="sender_type" value="<?= $h($s->senderType ?? 'person') ?>">
 
-                                            <?php
-                                            $hasPersonData = ($s->senderName ?? '') !== '' && $s->senderType === 'person';
-                                            $docTypeLabel = $s->senderDocType === 'drivingLicence' ? 'Вод. удостоверение' : 'Паспорт РФ';
-                                            ?>
-
                                             <!-- ФИЗЛИЦО -->
                                             <div id="blockPerson" class="type-block<?= $s->senderType !== 'person' ? ' hidden' : '' ?>">
-
-                                                <!-- Карточка просмотра -->
-                                                <div id="personCard" <?= !$hasPersonData ? ' style="display:none"' : '' ?>>
-                                                    <div class="term-saved">
-                                                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
-                                                            <div>
-                                                                <div class="term-name" id="personCardName"><?= $h($s->senderName ?? '') ?></div>
-                                                                <div class="term-addr" id="personCardDoc"><?= $h($docTypeLabel) ?><?= ($s->senderDocSerial ?? '') !== '' ? ' · ' . $h($s->senderDocSerial) . ' ' . $h($s->senderDocNumber ?? '') : '' ?></div>
-                                                            </div>
-                                                            <button type="button" id="personEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
-                                                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
-                                                                    <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-                                                                </svg>
-                                                                Изменить
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                <div class="field">
+                                                    <label>ФИО</label>
+                                                    <input type="text" id="sender_name" name="sender_name" value="<?= $h($s->senderName ?? '') ?>" placeholder="Иванов Иван Иванович">
                                                 </div>
-
-                                                <!-- Форма редактирования -->
-                                                <div id="personForm" <?= $hasPersonData ? ' style="display:none"' : '' ?>>
+                                                <div class="field">
+                                                    <label>Тип документа</label>
+                                                    <select id="sender_doc_type" name="sender_doc_type">
+                                                        <option value="passport" <?= $s->senderDocType === 'passport'       ? ' selected' : '' ?>>Паспорт РФ</option>
+                                                        <option value="drivingLicence" <?= $s->senderDocType === 'drivingLicence' ? ' selected' : '' ?>>Водительское удостоверение</option>
+                                                    </select>
+                                                </div>
+                                                <div class="g2">
                                                     <div class="field">
-                                                        <label>ФИО</label>
-                                                        <input type="text" id="sender_name_person" name="sender_name" value="<?= $h($s->senderName ?? '') ?>" placeholder="Иванов Иван Иванович">
+                                                        <label>Серия</label>
+                                                        <input type="text" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>" placeholder="5222">
                                                     </div>
                                                     <div class="field">
-                                                        <label>Тип документа</label>
-                                                        <select id="sender_doc_type" name="sender_doc_type">
-                                                            <option value="passport" <?= $s->senderDocType === 'passport' ? ' selected' : '' ?>>Паспорт РФ</option>
-                                                            <option value="drivingLicence" <?= $s->senderDocType === 'drivingLicence' ? ' selected' : '' ?>>Водительское удостоверение</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="g2">
-                                                        <div class="field">
-                                                            <label>Серия</label>
-                                                            <input type="text" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>" placeholder="5222">
-                                                        </div>
-                                                        <div class="field">
-                                                            <label>Номер</label>
-                                                            <input type="text" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>" placeholder="191652">
-                                                        </div>
+                                                        <label>Номер</label>
+                                                        <input type="text" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>" placeholder="191652">
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <!-- ОРГАНИЗАЦИЯ -->
-                                            <?php
-                                            $hasOrgData = ($s->senderName ?? '') !== '' && $s->senderType !== 'person';
-                                            $hasOpf = ($s->senderOpfUid ?? '') !== '';
-                                            $orgCardTitle = ($s->senderOpfName ? $s->senderOpfName . ' ' : '') . ($s->senderName ?? '');
-                                            ?>
                                             <div id="blockOrg" class="type-block<?= $s->senderType === 'person' ? ' hidden' : '' ?>">
-
-                                                <!-- Карточка просмотра -->
-                                                <div id="orgCard" <?= !$hasOrgData ? ' style="display:none"' : '' ?>>
-                                                    <div class="term-saved">
-                                                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
-                                                            <div>
-                                                                <div class="term-name" id="orgCardName"><?= $h($orgCardTitle) ?></div>
-                                                                <div class="term-addr" id="orgCardInn"><?= ($s->senderInn ?? '') !== '' ? 'ИНН ' . $h($s->senderInn) : 'ИНН не указан' ?></div>
-                                                            </div>
-                                                            <button type="button" id="orgEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
-                                                                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
-                                                                    <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
-                                                                </svg>
-                                                                Изменить
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                <div class="field">
+                                                    <label>Название организации</label>
+                                                    <input type="text" id="sender_name" name="sender_name" value="<?= $h($s->senderName ?? '') ?>" placeholder="ИП Иванов / ООО Ромашка">
                                                 </div>
-
-                                                <!-- Форма редактирования -->
-                                                <div id="orgForm" <?= $hasOrgData ? ' style="display:none"' : '' ?>>
-                                                    <div class="field">
-                                                        <label>Название организации</label>
-                                                        <input type="text" id="sender_name_org" name="sender_name" value="<?= $h($s->senderName ?? '') ?>" placeholder="Андронов Юрий Витальевич">
-                                                    </div>
-                                                    <div id="opfFieldWrap" style="display:none">
-                                                        <div class="field">
-                                                            <label>ОПФ из справочника ДЛ</label>
-                                                            <div id="opfSaved" <?= !$hasOpf ? ' style="display:none"' : '' ?> class="opf-saved">
-                                                                <div>
-                                                                    <div class="opf-name" id="opfSavedName"><?= $h($s->senderOpfName !== '' ? $s->senderOpfName : 'Сохранено') ?></div>
-                                                                    <div class="opf-country" id="opfSavedCountry">из справочника ДЛ</div>
-                                                                </div>
-                                                                <button type="button" id="opfEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">Изменить вручную</button>
-                                                            </div>
-                                                            <div id="opfSearchWrap" <?= $hasOpf ? ' style="display:none"' : '' ?> class="opf-search-wrap">
-                                                                <input class="opf-search-input" type="text" id="opfSearchInput" autocomplete="off" placeholder="Начните вводить — ИП, ООО, АО…">
-                                                                <div style="font-size:11px;color:var(--ink3);margin-top:5px">Поиск по справочнику Деловых Линий</div>
-                                                                <ul id="opfList" class="opf-list"></ul>
-                                                            </div>
+                                                <div class="field">
+                                                    <label>ОПФ из справочника ДЛ</label>
+                                                    <?php $hasOpf = ($s->senderOpfUid ?? '') !== ''; ?>
+                                                    <div id="opfSaved" <?= !$hasOpf ? ' style="display:none"' : '' ?> class="opf-saved">
+                                                        <div>
+                                                            <div class="opf-name" id="opfSavedName"><?= $h($s->senderOpfName !== '' ? $s->senderOpfName : 'Сохранено') ?></div>
+                                                            <div class="opf-country" id="opfSavedCountry">из справочника ДЛ</div>
                                                         </div>
+                                                        <button type="button" id="opfEditBtn" class="btn-g" style="font-size:11px;padding:5px 10px;flex-shrink:0">
+                                                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="vertical-align:-1px;margin-right:3px" aria-hidden="true">
+                                                                <path d="M11.333 2a1.886 1.886 0 012.667 2.667L5.333 13.333 2 14l.667-3.333L11.333 2z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                            </svg>
+                                                            Изменить
+                                                        </button>
                                                     </div>
-                                                    <div id="opfAutoStatus" style="font-size:11px;color:var(--ink3);margin-bottom:10px;display:none"></div>
-                                                    <div class="field">
-                                                        <label>ИНН</label>
-                                                        <div style="position:relative">
-                                                            <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="1234567890 — начните вводить…" class="<?= (($s->senderInn ?? '') === '' && $s->senderType !== 'person') ? 'field-err' : '' ?>" autocomplete="off" inputmode="numeric" maxlength="12">
-                                                            <ul id="innSuggestions" class="suggestions" style="position:absolute;top:100%;left:0;right:0;z-index:50"></ul>
-                                                        </div>
-                                                        <div class="field-err-msg" id="innErrMsg">Введите ИНН — обязательное поле для организаций</div>
-                                                        <div id="innStatus" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
+                                                    <div id="opfSearchWrap" <?= $hasOpf ? ' style="display:none"' : '' ?> class="opf-search-wrap">
+                                                        <input class="opf-search-input" type="text" id="opfSearchInput" autocomplete="off" placeholder="Начните вводить — ИП, ООО, АО…">
+                                                        <div style="font-size:11px;color:var(--ink3);margin-top:5px">Поиск по справочнику Деловых Линий</div>
+                                                        <ul id="opfList" class="opf-list"></ul>
                                                     </div>
+                                                    <input type="hidden" id="sender_opf_uid" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
+                                                    <input type="hidden" id="sender_opf_name" name="sender_opf_name" value="<?= $h($s->senderOpfName) ?>">
+                                                    <input type="hidden" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
+                                                    <input type="hidden" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
+                                                    <input type="hidden" name="package_uid" value="<?= $h($s->packageUid  ?? '') ?>">
+                                                    <input type="hidden" name="package_name" value="<?= $h($s->packageName ?? '') ?>">
+                                                    <input type="checkbox" name="package_in_calc" value="1" <?= $s->packageInCalc ? ' checked' : '' ?> style="display:none">
+                                                    <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
+                                                    <?php foreach ($s->deliveryTypes as $dt): ?>
+                                                        <input type="hidden" name="delivery_types[]" value="<?= $h($dt) ?>">
+                                                    <?php endforeach; ?>
                                                 </div>
-
-                                                <input type="hidden" id="sender_opf_uid" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
-                                                <input type="hidden" id="sender_opf_name" name="sender_opf_name" value="<?= $h($s->senderOpfName) ?>">
-                                                <input type="hidden" name="freight_name" value="<?= $h($s->freightName ?? '') ?>">
-                                                <input type="hidden" name="freight_uid" value="<?= $h($s->freightUid ?? '') ?>">
-                                                <input type="hidden" name="package_uid" value="<?= $h($s->packageUid  ?? '') ?>">
-                                                <input type="hidden" name="package_name" value="<?= $h($s->packageName ?? '') ?>">
-                                                <input type="checkbox" name="package_in_calc" value="1" <?= $s->packageInCalc ? ' checked' : '' ?> style="display:none">
-                                                <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
-                                                <?php foreach ($s->deliveryTypes as $dt): ?>
-                                                    <input type="hidden" name="delivery_types[]" value="<?= $h($dt) ?>">
-                                                <?php endforeach; ?>
+                                                <div class="field">
+                                                    <label>ИНН</label>
+                                                    <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="1234567890" class="<?= (($s->senderInn ?? '') === '' && $s->senderType !== 'person') ? 'field-err' : '' ?>">
+                                                    <div class="field-err-msg" id="innErrMsg">Введите ИНН — обязательное поле для организаций</div>
+                                                </div>
+                                                <!-- временно скрываем из UI юр. адрес
+                                                <div class="field">
+                                                    <label>Юридический адрес</label>
+                                                    <input type="text" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>" placeholder="г. Москва, ул. Примерная, д. 1">
+                                                </div> -->
                                             </div>
                                         </div>
                                     </div>
@@ -643,58 +799,11 @@ final class AppSettingsHandler
                                                 <div class="card-sub">Человек, которому ДЛ позвонит при заборе груза или если возникнут вопросы по перевозке</div>
                                             </div>
                                         </div>
-                                        <div class="card-body" style="padding:14px 16px">
-                                            <div class="g2" style="gap:10px">
-                                                <div class="field" style="margin-bottom:0"><label>Имя</label><input type="text" id="sender_contact_name" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>" placeholder="Иванов Иван"></div>
-                                                <div class="field" style="margin-bottom:0">
-                                                    <label>Телефон</label>
-                                                    <div class="phone-wrap" id="phoneWrap1">
-                                                        <button type="button" class="phone-flag" id="phoneFlag1" title="Выбор страны">
-                                                            <span class="flag-code" id="flagCode1">+7</span>
-                                                        </button>
-                                                        <input type="text" id="sender_contact_phone" name="sender_contact_phone"
-                                                            value="<?= $h(explode(';', $s->senderContactPhone ?? '')[0]) ?>"
-                                                            placeholder="912 345-67-89"
-                                                            inputmode="tel" autocomplete="tel" class="phone-input">
-                                                        <div class="phone-flag-dropdown" id="phoneDropdown1" style="display:none;position:fixed"></div>
-                                                    </div>
-                                                    <div class="phone-valid-hint" id="phoneHint1"></div>
-                                                </div>
-                                                <?php
-                                                $ph2raw = explode(';', $s->senderContactPhone ?? '')[1] ?? '';
-                                                $ph2num = preg_replace('/,.*$/', '', $ph2raw);
-                                                $ph2ext = (strpos($ph2raw, ',') !== false) ? substr($ph2raw, strpos($ph2raw, ',') + 1) : '';
-                                                $hasPhone2 = trim($ph2raw) !== '';
-                                                ?>
-                                                <div id="addPhone2Btn" style="grid-column:1/-1;text-align:right;align-self:start;margin-top:-20px;<?= $hasPhone2 ? 'display:none;' : '' ?>">
-                                                    <button type="button" onclick="showPhone2()" style="font-size:11px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ доп. номер</button>
-                                                </div>
-                                                <div class="field" style="grid-column:1/-1;margin-bottom:0"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
-                                                <div id="phone2Block" style="grid-column:1/-1;<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:2px;padding-top:10px;border-top:1px solid var(--s3)">
-                                                    <div class="g2" style="gap:10px">
-                                                        <div class="field" style="margin-bottom:0">
-                                                            <label>Доп. номер</label>
-                                                            <div class="phone-wrap" id="phoneWrap2">
-                                                                <button type="button" class="phone-flag" id="phoneFlag2" title="Выбор страны">
-                                                                    <span class="flag-code" id="flagCode2">+7</span>
-                                                                </button>
-                                                                <input type="text" id="sender_contact_phone2" name="sender_contact_phone2"
-                                                                    value="<?= $h($ph2num) ?>"
-                                                                    placeholder="495 990-12-34"
-                                                                    inputmode="tel" autocomplete="tel" class="phone-input">
-                                                                <div class="phone-flag-dropdown" id="phoneDropdown2" style="display:none"></div>
-                                                            </div>
-                                                            <div class="phone-valid-hint" id="phoneHint2"></div>
-                                                        </div>
-                                                        <div class="field" style="margin-bottom:0">
-                                                            <label>Добавочный</label>
-                                                            <input type="text" id="sender_contact_ext" name="sender_contact_ext"
-                                                                value="<?= $h($ph2ext) ?>"
-                                                                placeholder="123" inputmode="numeric" maxlength="6">
-                                                        </div>
-                                                    </div>
-                                                    <button type="button" id="removePhone2Btn" style="font-size:11px;color:var(--ink3);background:none;border:0;cursor:pointer;padding:0;margin-top:6px">✕ Убрать доп. номер</button>
-                                                </div>
+                                        <div class="card-body">
+                                            <div class="g2">
+                                                <div class="field"><label>Имя</label><input type="text" id="sender_contact_name" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>" placeholder="Иванов Иван"></div>
+                                                <div class="field"><label>Телефон</label><input type="text" id="sender_contact_phone" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>" placeholder="79131409995"></div>
+                                                <div class="field" style="grid-column:1/-1"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
                                             </div>
                                         </div>
                                     </div>
@@ -750,15 +859,7 @@ final class AppSettingsHandler
                             <input type="hidden" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>">
                             <input type="hidden" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>">
                             <input type="hidden" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>">
-                            <?php
-                            $_ph1h = explode(';', $s->senderContactPhone ?? '')[0];
-                            $_ph2raw_h = explode(';', $s->senderContactPhone ?? '')[1] ?? '';
-                            $_ph2num_h = preg_replace('/,.*$/', '', $_ph2raw_h);
-                            $_ph2ext_h = (strpos($_ph2raw_h, ',') !== false) ? substr($_ph2raw_h, strpos($_ph2raw_h, ',') + 1) : '';
-                            ?>
-                            <input type="hidden" name="sender_contact_phone" value="<?= $h($_ph1h) ?>">
-                            <input type="hidden" name="sender_contact_phone2" value="<?= $h($_ph2num_h) ?>">
-                            <input type="hidden" name="sender_contact_ext" value="<?= $h($_ph2ext_h) ?>">
+                            <input type="hidden" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>">
                             <input type="hidden" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
                             <input type="hidden" name="sender_opf_name" value="<?= $h($s->senderOpfName ?? '') ?>">
                             <input type="hidden" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>">
@@ -1322,129 +1423,8 @@ final class AppSettingsHandler
                     });
                 });
 
-                // INN live validation + DaData autocomplete
+                // INN live validation
                 var innEl = $('sender_inn');
-                var innSugg = $('innSuggestions');
-                var innStatus = $('innStatus');
-                var dadataKey = <?= json_encode(getenv('DADATA_API_KEY') ?: '') ?>;
-                var innTimer;
-
-                function dadataPartySearch(query, cb) {
-                    if (!dadataKey) return;
-                    fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/party', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Token ' + dadataKey,
-                        },
-                        body: JSON.stringify({
-                            query: query,
-                            count: 5,
-                            status: ['ACTIVE']
-                        }),
-                    }).then(function(r) {
-                        return r.json();
-                    }).then(cb).catch(function() {});
-                }
-
-                function fillOrgFromDaData(suggestion) {
-                    var d = suggestion.data;
-
-                    // ИНН
-                    var innInput = $('sender_inn');
-                    if (innInput && d.inn) {
-                        innInput.value = d.inn;
-                        innInput.classList.remove('field-err');
-                        var innMsg = $('innErrMsg');
-                        if (innMsg) innMsg.style.display = 'none';
-                    }
-
-                    // Краткое ОПФ из DaData: "ИП", "ООО", "АО" и т.д.
-                    var opfShort = (d.opf && d.opf.short) ? d.opf.short.trim() : '';
-
-                    // Наименование без ОПФ-префикса
-                    var fullName = (d.name && d.name.short) ? d.name.short.trim() : (suggestion.value || '');
-                    var nameOnly = fullName;
-                    if (opfShort && nameOnly.toUpperCase().startsWith(opfShort.toUpperCase())) {
-                        nameOnly = nameOnly.slice(opfShort.length).trim();
-                    }
-
-                    // Подставляем в поле названия только имя без ОПФ
-                    var nameInput = document.querySelector('#blockOrg input[name="sender_name"]');
-                    if (nameInput && nameOnly) nameInput.value = nameOnly;
-
-                    // Статус под ИНН
-                    if (innStatus) innStatus.textContent = 'Подбираем ОПФ из справочника ДЛ…';
-
-                    // Ищем ОПФ в справочнике ДЛ
-                    if (opfShort) {
-                        fetchJ(opfBase + encodeURIComponent(opfShort)).then(function(j) {
-                            var items = j.items || [];
-                            var matched = null;
-
-                            // Точное совпадение
-                            for (var i = 0; i < items.length; i++) {
-                                if (items[i].title.toUpperCase() === opfShort.toUpperCase()) {
-                                    matched = items[i];
-                                    break;
-                                }
-                            }
-                            // Частичное совпадение
-                            if (!matched) {
-                                for (var i = 0; i < items.length; i++) {
-                                    if (items[i].title.toUpperCase().indexOf(opfShort.toUpperCase()) !== -1) {
-                                        matched = items[i];
-                                        break;
-                                    }
-                                }
-                            }
-
-                            var opfStatus = $('opfAutoStatus');
-                            if (matched) {
-                                // Автоматически заполняем ОПФ
-                                $('sender_opf_uid').value = matched.uid;
-                                $('sender_opf_name').value = matched.title;
-                                $('opfSavedName').textContent = matched.title;
-                                $('opfSavedCountry').textContent = 'из справочника ДЛ';
-                                var opfSavedEl = $('opfSaved');
-                                var opfSearchWrapEl = $('opfSearchWrap');
-                                if (opfSavedEl) opfSavedEl.style.display = 'flex';
-                                if (opfSearchWrapEl) opfSearchWrapEl.style.display = 'none';
-                                var opfWrap = $('opfFieldWrap');
-                                if (opfWrap) opfWrap.style.display = 'none';
-                                if (opfStatus) {
-                                    opfStatus.style.display = 'block';
-                                    opfStatus.textContent = '✓ ОПФ определён автоматически: ' + matched.title;
-                                }
-                                if (innStatus) innStatus.textContent = '✓ ' + opfShort + ' ' + nameOnly;
-                                window.updateOrgCard(matched.title, nameOnly, d.inn || '');
-                                var f = document.querySelector('#settingsForm');
-                                if (f && f._markDirty) f._markDirty();
-                            } else {
-                                // Не нашли — показываем поле выбора вручную
-                                var opfWrap = $('opfFieldWrap');
-                                if (opfWrap) opfWrap.style.display = '';
-                                var opfSearchWrapEl = $('opfSearchWrap');
-                                if (opfSearchWrapEl) opfSearchWrapEl.style.display = '';
-                                if (opfStatus) {
-                                    opfStatus.style.display = 'block';
-                                    opfStatus.textContent = 'ОПФ не найден автоматически — выберите вручную';
-                                }
-                                if (innStatus) innStatus.textContent = nameOnly + ' — выберите ОПФ';
-                                var f = document.querySelector('#settingsForm');
-                                if (f && f._markDirty) f._markDirty();
-                            }
-                        });
-                    } else {
-                        // DaData не вернула ОПФ — показываем поле
-                        var opfWrap = $('opfFieldWrap');
-                        if (opfWrap) opfWrap.style.display = '';
-                        if (innStatus) innStatus.textContent = nameOnly ? '✓ ' + nameOnly : '';
-                        var f = document.querySelector('#settingsForm');
-                        if (f && f._markDirty) f._markDirty();
-                    }
-                }
-
                 if (innEl) {
                     innEl.addEventListener('input', function() {
                         if (this.value.trim()) {
@@ -1452,349 +1432,6 @@ final class AppSettingsHandler
                             var msg = $('innErrMsg');
                             if (msg) msg.style.display = 'none';
                         }
-                        clearTimeout(innTimer);
-                        var q = this.value.trim();
-                        if (innSugg) innSugg.style.display = 'none';
-                        if (innStatus) innStatus.textContent = '';
-                        if (!dadataKey || q.length < 4) return;
-                        innTimer = setTimeout(function() {
-                            if (innStatus) innStatus.textContent = 'Поиск…';
-                            dadataPartySearch(q, function(res) {
-                                if (!innSugg) return;
-                                if (innStatus) innStatus.textContent = '';
-                                innSugg.innerHTML = '';
-                                var suggestions = (res && res.suggestions) ? res.suggestions : [];
-                                if (!suggestions.length) {
-                                    innSugg.style.display = 'none';
-                                    return;
-                                }
-                                suggestions.forEach(function(s) {
-                                    var li = document.createElement('li');
-                                    var inn = s.data.inn || '';
-                                    var ogrn = s.data.ogrn || '';
-                                    li.innerHTML = '<strong>' + s.value + '</strong>' +
-                                        (inn ? ' <span style="color:var(--ink3);font-size:11px">ИНН ' + inn + '</span>' : '') +
-                                        (s.data.address && s.data.address.value ? '<br><span style="font-size:11px;color:var(--ink3)">' + s.data.address.value + '</span>' : '');
-                                    li.addEventListener('click', function() {
-                                        innSugg.style.display = 'none';
-                                        fillOrgFromDaData(s);
-                                    });
-                                    innSugg.appendChild(li);
-                                });
-                                innSugg.style.display = 'block';
-                            });
-                        }, 400);
-                    });
-                    innEl.addEventListener('blur', function() {
-                        setTimeout(function() {
-                            if (innSugg) innSugg.style.display = 'none';
-                        }, 200);
-                    });
-                    document.addEventListener('click', function(e) {
-                        if (innEl && innSugg && !innEl.contains(e.target) && !innSugg.contains(e.target))
-                            innSugg.style.display = 'none';
-                    });
-                }
-
-                // ── Phone widget ─────────────────────────────────────────────────────────
-                var PHONE_COUNTRIES = [{
-                        code: 'RU',
-                        dial: '7',
-                        flag: '🇷🇺',
-                        name: 'Россия',
-                        len: 11,
-                        prefix: '7',
-                        mask: '### ###-##-##'
-                    },
-                    {
-                        code: 'KZ',
-                        dial: '7',
-                        flag: '🇰🇿',
-                        name: 'Казахстан',
-                        len: 11,
-                        prefix: '7',
-                        mask: '### ###-##-##'
-                    },
-                    {
-                        code: 'BY',
-                        dial: '375',
-                        flag: '🇧🇾',
-                        name: 'Беларусь',
-                        len: 12,
-                        prefix: '375',
-                        mask: '## ###-##-##'
-                    },
-                    {
-                        code: 'UA',
-                        dial: '380',
-                        flag: '🇺🇦',
-                        name: 'Украина',
-                        len: 12,
-                        prefix: '380',
-                        mask: '## ###-##-##'
-                    },
-                    {
-                        code: 'KG',
-                        dial: '996',
-                        flag: '🇰🇬',
-                        name: 'Кыргызстан',
-                        len: 12,
-                        prefix: '996',
-                        mask: '### ##-##-##'
-                    },
-                    {
-                        code: 'AM',
-                        dial: '374',
-                        flag: '🇦🇲',
-                        name: 'Армения',
-                        len: 11,
-                        prefix: '374',
-                        mask: '## ##-##-##'
-                    },
-                    {
-                        code: 'GE',
-                        dial: '995',
-                        flag: '🇬🇪',
-                        name: 'Грузия',
-                        len: 12,
-                        prefix: '995',
-                        mask: '### ##-##-##'
-                    },
-                    {
-                        code: 'AZ',
-                        dial: '994',
-                        flag: '🇦🇿',
-                        name: 'Азербайджан',
-                        len: 12,
-                        prefix: '994',
-                        mask: '## ###-##-##'
-                    },
-                    {
-                        code: 'UZ',
-                        dial: '998',
-                        flag: '🇺🇿',
-                        name: 'Узбекистан',
-                        len: 12,
-                        prefix: '998',
-                        mask: '## ###-##-##'
-                    },
-                    {
-                        code: 'TJ',
-                        dial: '992',
-                        flag: '🇹🇯',
-                        name: 'Таджикистан',
-                        len: 12,
-                        prefix: '992',
-                        mask: '## ###-##-##'
-                    },
-                    {
-                        code: 'MD',
-                        dial: '373',
-                        flag: '🇲🇩',
-                        name: 'Молдова',
-                        len: 11,
-                        prefix: '373',
-                        mask: '### ##-##-##'
-                    },
-                ];
-
-                function detectCountry(digits) {
-                    if (!digits) return PHONE_COUNTRIES[0];
-                    // 8xxx → RU
-                    if (digits[0] === '8') return PHONE_COUNTRIES[0];
-                    // Check by prefix length 3 → 2 → 1
-                    for (var pl = 3; pl >= 1; pl--) {
-                        var pref = digits.slice(0, pl);
-                        for (var i = 0; i < PHONE_COUNTRIES.length; i++) {
-                            if (PHONE_COUNTRIES[i].dial === pref) return PHONE_COUNTRIES[i];
-                        }
-                    }
-                    return PHONE_COUNTRIES[0];
-                }
-
-                function applyPhoneMask(digits, country) {
-                    // For RU/KZ starting with 7 or 8: show without country code in display
-                    var prefix = country.dial;
-                    var local = digits.startsWith(prefix) ? digits.slice(prefix.length) : digits;
-                    if ((country.code === 'RU' || country.code === 'KZ') && digits.startsWith('8')) {
-                        local = digits.slice(1);
-                    }
-                    var mask = country.mask;
-                    var out = '';
-                    var di = 0;
-                    for (var mi = 0; mi < mask.length && di < local.length; mi++) {
-                        if (mask[mi] === '#') {
-                            out += local[di++];
-                        } else {
-                            out += mask[mi];
-                        }
-                    }
-                    return out;
-                }
-
-                function phoneIsValid(digits, country) {
-                    if (!digits) return false;
-                    var prefix = country.dial;
-                    if ((country.code === 'RU' || country.code === 'KZ') && digits[0] === '8') {
-                        digits = '7' + digits.slice(1);
-                    }
-                    return digits.startsWith(prefix) && digits.length === country.len;
-                }
-
-                function initPhoneWidget(inputId, flagId, codeId, dropdownId, hintId, wrapId) {
-                    var input = $(inputId);
-                    var flagEl = $(flagId);
-                    var codeEl = $(codeId);
-                    var dropdown = $(dropdownId);
-                    var hintEl = $(hintId);
-                    if (!input) return;
-
-                    var currentCountry = PHONE_COUNTRIES[0];
-
-                    // Build dropdown HTML
-                    if (dropdown) {
-                        PHONE_COUNTRIES.forEach(function(c) {
-                            var item = document.createElement('div');
-                            item.className = 'pflag-item';
-                            item.innerHTML = '<span class="pflag-cc">' + c.code + '</span>' +
-                                '<span style="font-size:13px;color:var(--ink)">' + c.name + '</span>' +
-                                '<span style="font-size:11px;color:var(--ink3);margin-left:auto">+' + c.dial + '</span>';
-                            item.addEventListener('click', function(e) {
-                                e.stopPropagation();
-                                selectCountry(c);
-                                dropdown.style.display = 'none';
-                                input.focus();
-                            });
-                            dropdown.appendChild(item);
-                        });
-                    }
-
-                    function selectCountry(c) {
-                        currentCountry = c;
-                        if (flagEl) flagEl.textContent = c.code;
-                        if (codeEl) codeEl.textContent = '+' + c.dial;
-                        updateHint();
-                        var f = input.closest('form');
-                        if (f && f._markDirty) f._markDirty();
-                    }
-
-                    var flagBtn = $(flagId.replace('flagEmoji', 'phoneFlag'));
-                    // Actually flag btn is separate — find by structure
-                    var wrap = $(wrapId);
-                    if (wrap) {
-                        var btn = wrap.querySelector('.phone-flag');
-                        if (btn) {
-                            btn.addEventListener('click', function(e) {
-                                e.stopPropagation();
-                                if (!dropdown) return;
-                                var isOpen = dropdown.style.display !== 'none';
-                                document.querySelectorAll('.phone-flag-dropdown').forEach(function(d) {
-                                    d.style.display = 'none';
-                                });
-                                if (isOpen) return;
-                                // Position with fixed: under button, or above if not enough space
-                                var rect = btn.getBoundingClientRect();
-                                var spaceBelow = window.innerHeight - rect.bottom;
-                                var dropH = 220;
-                                dropdown.style.display = 'block';
-                                dropdown.style.width = '240px';
-                                dropdown.style.left = rect.left + 'px';
-                                if (spaceBelow >= dropH || spaceBelow >= 120) {
-                                    dropdown.style.top = (rect.bottom + 4) + 'px';
-                                    dropdown.style.bottom = 'auto';
-                                } else {
-                                    dropdown.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
-                                    dropdown.style.top = 'auto';
-                                }
-                            });
-                        }
-                    }
-                    document.addEventListener('click', function() {
-                        if (dropdown) dropdown.style.display = 'none';
-                    });
-
-                    function updateHint() {
-                        if (!hintEl) return;
-                        var digits = input.value.replace(/\D/g, '');
-                        if (!digits) {
-                            hintEl.textContent = '';
-                            hintEl.className = 'phone-valid-hint';
-                            return;
-                        }
-                        if (phoneIsValid(digits, currentCountry)) {
-                            hintEl.textContent = '✓ Номер корректен';
-                            hintEl.className = 'phone-valid-hint valid';
-                        } else {
-                            var missing = currentCountry.len - digits.length;
-                            if (missing > 0) {
-                                hintEl.textContent = 'Ещё ' + missing + ' ' + (missing === 1 ? 'цифра' : missing < 5 ? 'цифры' : 'цифр');
-                                hintEl.className = 'phone-valid-hint pending';
-                            } else {
-                                hintEl.textContent = '✗ Неверный формат';
-                                hintEl.className = 'phone-valid-hint invalid';
-                            }
-                        }
-                    }
-
-                    input.addEventListener('input', function() {
-                        var raw = this.value;
-                        var digits = raw.replace(/\D/g, '');
-                        // Detect country from prefix
-                        var detected = detectCountry(digits);
-                        if (detected.code !== currentCountry.code) selectCountry(detected);
-                        // Update flag visually
-                        if (flagEl) flagEl.textContent = currentCountry.code;
-                        if (codeEl) codeEl.textContent = '+' + currentCountry.dial;
-                        updateHint();
-                        var f = this.closest('form');
-                        if (f && f._markDirty) f._markDirty();
-                    });
-
-                    // Init on load
-                    var initVal = input.value.replace(/\D/g, '');
-                    var initC = initVal ? detectCountry(initVal) : PHONE_COUNTRIES[0];
-                    // Silent init (no markDirty)
-                    currentCountry = initC;
-                    if (flagEl) flagEl.textContent = initC.code;
-                    if (codeEl) codeEl.textContent = '+' + initC.dial;
-                    updateHint();
-                }
-
-                initPhoneWidget('sender_contact_phone', null, 'flagCode1', 'phoneDropdown1', 'phoneHint1', 'phoneWrap1');
-                initPhoneWidget('sender_contact_phone2', null, 'flagCode2', 'phoneDropdown2', 'phoneHint2', 'phoneWrap2');
-
-                // ── Phone 2 toggle ───────────────────────────────────────────
-                window.showPhone2 = function() {
-                    var block = $('phone2Block');
-                    var btn = $('addPhone2Btn');
-                    if (block) {
-                        block.style.display = '';
-                        block.style.removeProperty('display');
-                    }
-                    if (btn) btn.style.display = 'none';
-                    var inp = $('sender_contact_phone2');
-                    if (inp) inp.focus();
-                    var f = document.querySelector('#settingsForm');
-                    if (f && f._markDirty) f._markDirty();
-                };
-                var removePhone2 = $('removePhone2Btn');
-                if (removePhone2) {
-                    removePhone2.addEventListener('click', function() {
-                        var block = $('phone2Block');
-                        var btn = $('addPhone2Btn');
-                        if (block) block.style.display = 'none';
-                        if (btn) btn.style.display = '';
-                        var inp2 = $('sender_contact_phone2');
-                        var ext = $('sender_contact_ext');
-                        if (inp2) inp2.value = '';
-                        if (ext) ext.value = '';
-                        var h2 = $('phoneHint2');
-                        if (h2) {
-                            h2.textContent = '';
-                            h2.className = 'phone-valid-hint';
-                        }
-                        var f = document.querySelector('#settingsForm');
-                        if (f && f._markDirty) f._markDirty();
                     });
                 }
 
@@ -1819,44 +1456,6 @@ final class AppSettingsHandler
                         }
                     });
                 }
-
-                // ── Person card / edit ──
-                var personEditBtn = $('personEditBtn');
-                var personCard = $('personCard');
-                var personForm = $('personForm');
-                if (personEditBtn) {
-                    personEditBtn.addEventListener('click', function() {
-                        personCard.style.display = 'none';
-                        personForm.style.display = '';
-                        var inp = document.getElementById('sender_name_person');
-                        if (inp) inp.focus();
-                    });
-                }
-                // При изменении полей физлица — обновляем карточку при сохранении
-                // (карточка обновится после reload, это нормально)
-
-                // ── Org card / edit ──
-                var orgEditBtn = $('orgEditBtn');
-                var orgCard = $('orgCard');
-                var orgForm = $('orgForm');
-                if (orgEditBtn) {
-                    orgEditBtn.addEventListener('click', function() {
-                        orgCard.style.display = 'none';
-                        orgForm.style.display = '';
-                        var inp = $('sender_inn');
-                        if (inp) inp.focus();
-                    });
-                }
-                // После fillOrgFromDaData — обновляем карточку организации
-                // (вызывается из fillOrgFromDaData ниже)
-                window.updateOrgCard = function(opfName, name, inn) {
-                    var cardName = $('orgCardName');
-                    var cardInn = $('orgCardInn');
-                    if (cardName) cardName.textContent = (opfName ? opfName + ' ' : '') + name;
-                    if (cardInn) cardInn.textContent = inn ? 'ИНН ' + inn : 'ИНН не указан';
-                    if (orgCard) orgCard.style.display = '';
-                    if (orgForm) orgForm.style.display = 'none';
-                };
 
                 // ── OPF saved/search ──
                 var opfEditBtn = $('opfEditBtn');
@@ -1896,8 +1495,6 @@ final class AppSettingsHandler
                                         opfSaved.style.display = 'flex';
                                         opfSearchWrap.style.display = 'none';
                                         opfListEl.style.display = 'none';
-                                        var f = document.querySelector('#settingsForm');
-                                        if (f && f._markDirty) f._markDirty();
                                     });
                                 })(it);
                                 opfListEl.appendChild(li);
@@ -1936,8 +1533,6 @@ final class AppSettingsHandler
                                         var fld = $('derival_city_kladr');
                                         if (fld) fld.value = code;
                                         loadTerminals(code);
-                                        var f = cityInput.closest('form');
-                                        if (f && f._markDirty) f._markDirty();
                                     });
                                     citySugg.appendChild(li);
                                 });
@@ -1990,11 +1585,7 @@ final class AppSettingsHandler
                 if (termSel) {
                     termSel.addEventListener('change', function() {
                         var opt = this.options[this.selectedIndex];
-                        if (opt.value) {
-                            showTermCard(opt);
-                            var f = this.closest('form');
-                            if (f && f._markDirty) f._markDirty();
-                        }
+                        if (opt.value) showTermCard(opt);
                     });
                 }
 
@@ -2236,10 +1827,9 @@ final class AppSettingsHandler
                                         derivalCityInput.value = li.textContent;
                                         derivalCitySugg.style.display = 'none';
                                         if (derivalCityKladr) derivalCityKladr.value = code;
+                                        // Сохраняем название города
                                         var nameField = document.getElementById('derival_city_name_hidden');
                                         if (nameField) nameField.value = li.textContent;
-                                        var f = derivalCityInput.closest('form');
-                                        if (f && f._markDirty) f._markDirty();
                                     });
                                     derivalCitySugg.appendChild(li);
                                 });
@@ -2328,8 +1918,6 @@ final class AppSettingsHandler
                         input.addEventListener('change', markDirty);
                         input.addEventListener('input', markDirty);
                     });
-                    // Expose _markDirty on form element so any custom control can call form._markDirty()
-                    form._markDirty = markDirty;
                     form.addEventListener('submit', function() {
                         markClean();
                     });
@@ -2491,8 +2079,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .field{margin-bottom:14px}
 .field:last-child{margin-bottom:0}
 .field>label{display:block;font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.03em;text-transform:uppercase;margin-bottom:5px}
-.field input:not([type="checkbox"]):not(.phone-input),.field select{width:100%;padding:9px 12px;background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);font-size:13px;color:var(--ink);font-family:var(--sans);transition:border .15s,box-shadow .15s,background .15s;-webkit-appearance:none;outline:none}
-.field input:not(.phone-input):focus,.field select:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
+.field input:not([type="checkbox"]),.field select{width:100%;padding:9px 12px;background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);font-size:13px;color:var(--ink);font-family:var(--sans);transition:border .15s,box-shadow .15s,background .15s;-webkit-appearance:none;outline:none}
+.field input:focus,.field select:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
 .field .hint{font-size:11px;color:var(--ink3);margin-top:4px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
@@ -2600,41 +2188,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .opf-item-sub{font-size:11px;color:var(--ink3);margin-top:1px}
 .field input.field-err{border-color:#ef4444;box-shadow:0 0 0 3px #fef2f2;background:var(--s1)}
 .field-err-msg{font-size:11px;color:#b91c1c;margin-top:4px;display:none}
-
-/* PHONE WIDGET */
-.phone-wrap{position:relative;display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);transition:border .15s,box-shadow .15s;overflow:hidden;min-height:36px}
-.phone-wrap:focus-within{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
-.phone-flag{display:flex;align-items:center;justify-content:center;width:48px;padding:0;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;color:var(--ink2);font-family:var(--sans);transition:background .12s;border-radius:0;height:100%}
-.phone-flag:hover{background:var(--s3)}
-.flag-cc{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink);line-height:1;font-family:var(--mono)}
-.flag-code{font-size:12px;font-weight:700;color:var(--ink)}
-.phone-input{flex:1;padding:8px 10px;background:transparent;border:0;font-size:13px;color:var(--ink);font-family:var(--sans);outline:none;min-width:0;border-radius:0;height:36px}
-.phone-flag-dropdown{position:fixed;z-index:9999;background:var(--s1);border:1px solid var(--line);border-radius:var(--r2);box-shadow:0 8px 24px rgba(26,23,20,.16);min-width:220px;max-height:220px;overflow-y:auto;padding:4px}
-.pflag-item{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s}
-.pflag-cc{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink);font-family:var(--mono);min-width:28px}
-.pflag-item:hover{background:var(--ambl)}
-.phone-valid-hint{font-size:11px;margin-top:3px;min-height:14px;transition:color .15s}
-.phone-valid-hint.valid{color:var(--grn)}
-.phone-valid-hint.pending{color:var(--ink3)}
-.phone-valid-hint.invalid{color:#b91c1c}
 </style>
 </head>
 <body>
 HTML;
-    }
-
-    /** Объединяет два телефонных поля (мобильный + городской с добавочным) через ';' для хранения в одном поле БД. */
-    private static function buildContactPhoneField(string $phone1, string $phone2, string $ext = ''): string
-    {
-        $phone1 = trim($phone1);
-        $phone2 = trim($phone2);
-        $ext    = trim($ext);
-        $parts = [];
-        if ($phone1 !== '') $parts[] = $phone1;
-        if ($phone2 !== '') {
-            $parts[] = $ext !== '' ? $phone2 . ',' . $ext : $phone2;
-        }
-        return implode(';', $parts);
     }
 
     private static function renderError(string $message): void

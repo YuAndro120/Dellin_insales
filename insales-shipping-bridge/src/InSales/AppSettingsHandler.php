@@ -270,7 +270,7 @@ final class AppSettingsHandler
                 </div>
                 <div class="auth-title">Подключение к Деловым Линиям</div>
                 <div class="auth-sub">Магазин: <strong><?= $h($s->shopHost) ?></strong></div>
-                <p class="auth-desc">Укажите API-ключ и персональный токен (PAT) из личного кабинета ДЛ → Настройки → Интеграция.</p>
+                <p class="auth-desc">Укажите персональный токен (PAT) из личного кабинета ДЛ → Настройки → Интеграция.</p>
                 <?php if ($error !== null): ?>
                     <div class="alert-err"><?= $h($error) ?></div>
                 <?php endif; ?>
@@ -283,9 +283,9 @@ final class AppSettingsHandler
                         <label>Персональный токен (PAT)</label>
                         <input type="password" name="dellin_pat" required autocomplete="off" placeholder="dl-api-…">
                     </div>
-                    <button type="submit" class="btn-p" style="width:100%;margin-top:8px">Подключить →</button>
+                    <button type="submit" class="btn-p" style="width:100%;margin-top:8px">Подключить</button>
                 </form>
-                <a href="https://dev.dellin.ru/api/swagger/" target="_blank" class="auth-link">Документация API ДЛ ↗</a>
+                <a href="https://www.dellin.ru/cabinet/account/pat/" target="_blank" class="auth-link">Получить PAT</a>
             </div>
         </div>
     <?php
@@ -878,10 +878,10 @@ final class AppSettingsHandler
                                                 $ph2ext = (strpos($ph2raw, ',') !== false) ? substr($ph2raw, strpos($ph2raw, ',') + 1) : '';
                                                 $hasPhone2 = trim($ph2raw) !== '';
                                                 ?>
-                                                <div id="addPhone2Btn" style="grid-column:1/-1;text-align:right;align-self:start;margin-top:-20px;<?= $hasPhone2 ? 'display:none;' : '' ?>">
+                                                <div class="field" style="grid-column:1/-1;margin-bottom:0"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
+                                                <div id="addPhone2Btn" style="grid-column:1/-1;text-align:right;<?= $hasPhone2 ? 'display:none;' : '' ?>margin-top:4px">
                                                     <button type="button" onclick="showPhone2()" style="font-size:11px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ доп. номер</button>
                                                 </div>
-                                                <div class="field" style="grid-column:1/-1;margin-bottom:0"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
                                                 <div id="phone2Block" style="grid-column:1/-1;<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:2px;padding-top:10px;border-top:1px solid var(--s3)">
                                                     <div class="g2" style="gap:10px">
                                                         <div class="field" style="margin-bottom:0">
@@ -2246,6 +2246,22 @@ final class AppSettingsHandler
                         });
                     });
                 });
+
+                // Кнопка Отмена — тоже показывает модалку если есть несохранённые изменения
+                document.querySelectorAll('.btn-cancel').forEach(function(btn) {
+                    btn.addEventListener('click', function(e) {
+                        if (!dirtyForm) return;
+                        e.preventDefault();
+                        var href = btn.getAttribute('href') || btn.dataset.href;
+                        showDirtyModal(function(confirmed) {
+                            if (confirmed) {
+                                dirtyForm = null;
+                                if (href) window.location.href = href;
+                                else window.location.reload();
+                            }
+                        });
+                    });
+                });
             })();
             // Кастомная модалка
             var _modalCallback = null;
@@ -2373,27 +2389,12 @@ final class AppSettingsHandler
                         fetchJ(opfBase + encodeURIComponent(opfShort)).then(function(j) {
                             var items = j.items || [],
                                 matched = null;
-                            // Точное совпадение по name (краткое) или title
                             for (var i = 0; i < items.length; i++) {
-                                var t = items[i].title.toUpperCase(),
-                                    n = (items[i].name || '').toUpperCase(),
-                                    q = opfShort.toUpperCase();
-                                if (n === q || t === q) {
+                                if (items[i].title.toUpperCase() === opfShort.toUpperCase()) {
                                     matched = items[i];
                                     break;
                                 }
                             }
-                            // Частичное по title или name
-                            if (!matched)
-                                for (var i = 0; i < items.length; i++) {
-                                    var t = items[i].title.toUpperCase(),
-                                        n = (items[i].name || '').toUpperCase(),
-                                        q = opfShort.toUpperCase();
-                                    if (t.indexOf(q) !== -1 || n.indexOf(q) !== -1) {
-                                        matched = items[i];
-                                        break;
-                                    }
-                                }
                             if (!matched)
                                 for (var i = 0; i < items.length; i++) {
                                     if (items[i].title.toUpperCase().indexOf(opfShort.toUpperCase()) !== -1) {
@@ -2401,15 +2402,6 @@ final class AppSettingsHandler
                                         break;
                                     }
                                 }
-                            // Приоритет — Россия если ещё не нашли
-                            if (!matched) {
-                                for (var i = 0; i < items.length; i++) {
-                                    if ((items[i].country_name || '').indexOf('Росс') !== -1) {
-                                        matched = items[i];
-                                        break;
-                                    }
-                                }
-                            }
                             var opfStatus = $('opfAutoStatus');
                             if (matched) {
                                 $('sender_opf_uid').value = matched.uid;
@@ -2761,6 +2753,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .content{max-width:1100px;padding:36px 40px}
 .page-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
 .page-grid-3{display:grid;grid-template-columns:1fr 1fr 280px;gap:16px;align-items:start}
+.page-grid-3>.page-col{align-self:stretch}
 .page-col{display:flex;flex-direction:column;gap:0}
 .page-col .card:last-child{flex:1}
 @media(max-width:1100px){.page-grid-3{grid-template-columns:1fr 1fr}}
@@ -2818,8 +2811,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .field{margin-bottom:14px}
 .field:last-child{margin-bottom:0}
 .field>label{display:block;font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.03em;text-transform:uppercase;margin-bottom:5px}
-.field input:not([type="checkbox"]),.field select{width:100%;padding:9px 12px;background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);font-size:13px;color:var(--ink);font-family:var(--sans);transition:border .15s,box-shadow .15s,background .15s;-webkit-appearance:none;outline:none}
-.field input:focus,.field select:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
+/* field input styles moved to PHONE WIDGET section below */
 .field .hint{font-size:11px;color:var(--ink3);margin-top:4px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}

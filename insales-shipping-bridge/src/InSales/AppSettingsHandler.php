@@ -336,7 +336,7 @@ final class AppSettingsHandler
 
         $consentGiven = !empty($_COOKIE['consent_given']);
         $hasDellinAuth = $settings->hasDellinAuth ?? false;
-        $showOnboarding = !$consentGiven || !$hasDellinAuth;
+        $showOnboarding = !$consentGiven;
     ?>
 
         <?php if ($showOnboarding): ?>

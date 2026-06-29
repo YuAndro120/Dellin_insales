@@ -613,14 +613,17 @@ final class AppSettingsHandler
                                                     </div>
                                                     <div class="phone-valid-hint" id="phoneHint1"></div>
                                                 </div>
+                                                <?php
+                                                $ph2raw = explode(';', $s->senderContactPhone ?? '')[1] ?? '';
+                                                $ph2num = preg_replace('/,.*$/', '', $ph2raw);
+                                                $ph2ext = (strpos($ph2raw, ',') !== false) ? substr($ph2raw, strpos($ph2raw, ',') + 1) : '';
+                                                $hasPhone2 = trim($ph2raw) !== '';
+                                                ?>
+                                                <div id="addPhone2Btn" style="grid-column:1/-1;<?= $hasPhone2 ? 'display:none' : '' ?>;margin-top:-4px">
+                                                    <button type="button" onclick="showPhone2()" style="font-size:12px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ Добавить дополнительный номер</button>
+                                                </div>
                                                 <div class="field" style="grid-column:1/-1"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
                                             </div>
-                                            <?php
-                                            $ph2raw = explode(';', $s->senderContactPhone ?? '')[1] ?? '';
-                                            $ph2num = preg_replace('/,.*$/', '', $ph2raw);
-                                            $ph2ext = (strpos($ph2raw, ',') !== false) ? substr($ph2raw, strpos($ph2raw, ',') + 1) : '';
-                                            $hasPhone2 = trim($ph2raw) !== '';
-                                            ?>
                                             <div id="phone2Block" style="<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:12px">
                                                 <div style="height:1px;background:var(--s3);margin-bottom:14px"></div>
                                                 <div class="g2">
@@ -647,9 +650,6 @@ final class AppSettingsHandler
                                                     </div>
                                                 </div>
                                                 <button type="button" id="removePhone2Btn" style="font-size:11px;color:var(--ink3);background:none;border:0;cursor:pointer;padding:0;margin-top:2px">✕ Убрать дополнительный номер</button>
-                                            </div>
-                                            <div id="addPhone2Btn" style="<?= $hasPhone2 ? 'display:none' : '' ?>;margin-top:8px">
-                                                <button type="button" onclick="showPhone2()" style="font-size:12px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ Добавить дополнительный номер</button>
                                             </div>
                                         </div>
                                     </div>
@@ -2438,9 +2438,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .field-err-msg{font-size:11px;color:#b91c1c;margin-top:4px;display:none}
 
 /* PHONE WIDGET */
-.phone-wrap{position:relative;display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);transition:border .15s,box-shadow .15s;overflow:visible}
+.phone-wrap{position:relative;display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);transition:border .15s,box-shadow .15s;overflow:hidden}
 .phone-wrap:focus-within{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
-.phone-flag{display:flex;align-items:center;gap:3px;padding:0 10px 0 11px;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;color:var(--ink2);font-family:var(--sans);transition:background .12s;border-radius:var(--r2) 0 0 var(--r2);height:100%}
+.phone-flag{display:flex;align-items:center;gap:3px;padding:0 8px;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;color:var(--ink2);font-family:var(--sans);transition:background .12s;border-radius:var(--r2) 0 0 var(--r2);height:100%}
 .phone-flag:hover{background:var(--s3)}
 .flag-cc{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink);line-height:1;font-family:var(--mono)}
 .flag-code{font-size:11px;font-weight:600;color:var(--ink3)}

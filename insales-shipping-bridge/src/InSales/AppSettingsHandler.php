@@ -656,7 +656,7 @@ final class AppSettingsHandler
                                                             value="<?= $h(explode(';', $s->senderContactPhone ?? '')[0]) ?>"
                                                             placeholder="912 345-67-89"
                                                             inputmode="tel" autocomplete="tel" class="phone-input">
-                                                        <div class="phone-flag-dropdown" id="phoneDropdown1" style="display:none"></div>
+                                                        <div class="phone-flag-dropdown" id="phoneDropdown1" style="display:none;position:fixed"></div>
                                                     </div>
                                                     <div class="phone-valid-hint" id="phoneHint1"></div>
                                                 </div>
@@ -666,7 +666,7 @@ final class AppSettingsHandler
                                                 $ph2ext = (strpos($ph2raw, ',') !== false) ? substr($ph2raw, strpos($ph2raw, ',') + 1) : '';
                                                 $hasPhone2 = trim($ph2raw) !== '';
                                                 ?>
-                                                <div id="addPhone2Btn" style="grid-column:2;text-align:right;align-self:start;margin-top:2px;<?= $hasPhone2 ? 'display:none;' : '' ?>">
+                                                <div id="addPhone2Btn" style="grid-column:1/-1;text-align:right;align-self:start;margin-top:-20px;<?= $hasPhone2 ? 'display:none;' : '' ?>">
                                                     <button type="button" onclick="showPhone2()" style="font-size:11px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ доп. номер</button>
                                                 </div>
                                                 <div class="field" style="grid-column:1/-1;margin-bottom:0"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>

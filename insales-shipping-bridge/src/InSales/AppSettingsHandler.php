@@ -81,7 +81,7 @@ final class AppSettingsHandler
                 header('Location: /insales/app?' . $q, true, 302);
                 exit;
             }
-        } elseif (!$settings->hasDellinAuth) {
+        } elseif (!$s->hasDellinAuth) {
             self::renderAuthPage($settings, $error, $shops->findAccessToken($settings->insalesId) ?? '');
             return;
         } elseif ($method === 'POST' && isset($_POST['update_pat'])) {
@@ -202,7 +202,7 @@ final class AppSettingsHandler
     /** @return array{0:list<DellinCounteragent>,1:?string} */
     private static function loadCounteragents(ShopRepository $shops, Config $config, ShopSettings $settings): array
     {
-        if (!$settings->hasDellinAuth || $config->bridgeSecret === '') {
+        if (!$s->hasDellinAuth || $config->bridgeSecret === '') {
             return [[], null];
         }
         try {
@@ -339,7 +339,7 @@ final class AppSettingsHandler
         self::renderHtmlHead('Настройки — Деловые Линии');
 
         $consentGiven = !empty($_COOKIE['consent_given']);
-        $hasDellinAuth = $settings->hasDellinAuth ?? false;
+        $hasDellinAuth = $s->hasDellinAuth ?? false;
         $showOnboarding = !$consentGiven;
     ?>
 
@@ -658,7 +658,34 @@ final class AppSettingsHandler
                             <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
                             <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
 
-                            <div class="page-grid">
+                            <?php
+                            // Progress checklist — Отправитель
+                            $chk_type    = ($s->senderType ?? '') !== '';
+                            $chk_name    = ($s->senderName ?? '') !== '';
+                            $chk_inn     = $s->senderType === 'person' || ($s->senderInn ?? '') !== '';
+                            $chk_contact = ($s->senderContactName ?? '') !== '' && ($s->senderContactPhone ?? '') !== '';
+                            $chk_email   = ($s->requesterEmail ?? '') !== '';
+                            $chk_ca      = $counteragentUid !== '';
+                            $checks_sender = [$chk_type, $chk_name, $chk_inn, $chk_contact, $chk_email, $chk_ca];
+                            $done_sender   = count(array_filter($checks_sender));
+                            $total_sender  = count($checks_sender);
+                            // Общий прогресс
+                            $done_conn   = $s->hasDellinAuth ? 1 : 0;
+                            $done_sender_pct = $done_sender;
+                            $done_ship   = (($s->derivalVariant ?? '') !== '' && (($s->senderTerminalId ?? 0) > 0 || ($s->derivalStreet ?? '') !== '')) ? 1 : 0;
+                            $total_prog  = 2 + $total_sender; // conn(1) + sender(6) + ship(1)
+                            $done_prog   = $done_conn + $done_sender_pct + $done_ship;
+                            $pct = (int) round($done_prog / ($total_sender + 2) * 100);
+                            // Next action
+                            $next_action = '';
+                            if (!$chk_name) $next_action = 'Заполните название организации или ФИО.';
+                            elseif (!$chk_inn && $s->senderType !== 'person') $next_action = 'Введите ИНН — он нужен для оформления заявок.';
+                            elseif (!$chk_contact) $next_action = 'Укажите имя и телефон контактного лица.';
+                            elseif (!$chk_email) $next_action = 'Добавьте email для уведомлений от ДЛ.';
+                            elseif (!$chk_ca) $next_action = 'Выберите контрагента в Деловых Линиях.';
+                            else $next_action = 'Всё готово — переходите к настройке доставки.';
+                            ?>
+                            <div class="page-grid-3">
                                 <div class="page-col">
                                     <!-- Организация -->
                                     <div class="card">
@@ -902,7 +929,111 @@ final class AppSettingsHandler
                                     <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
 
                                 </div><!-- /page-col-right -->
-                            </div><!-- /page-grid -->
+
+                                <!-- Колонка прогресса -->
+                                <div>
+                                    <div class="prog-card">
+                                        <!-- Прогресс-бар -->
+                                        <div class="prog-bar-wrap">
+                                            <div class="prog-bar-label">
+                                                <span style="font-size:11px;font-weight:600;color:var(--ink2)">Прогресс настройки</span>
+                                                <span class="prog-bar-pct"><?= $pct ?>%</span>
+                                            </div>
+                                            <div class="prog-bar">
+                                                <div class="prog-bar-fill" style="width:<?= $pct ?>%"></div>
+                                            </div>
+                                        </div>
+                                        <!-- Шаги -->
+                                        <div class="prog-steps">
+                                            <div class="prog-step">
+                                                <div class="prog-step-ico <?= $done_conn ? 'done' : 'todo' ?>">
+                                                    <?php if ($done_conn): ?><svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                                            <path d="M2 5l1.5 1.5 3.5-3.5" stroke="#14864a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                                        </svg><?php else: ?><svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                                                            <circle cx="4" cy="4" r="3" stroke="#ccc5bb" stroke-width="1.2" />
+                                                        </svg><?php endif; ?>
+                                                </div>
+                                                <div>
+                                                    <div class="prog-step-lbl" style="color:<?= $done_conn ? 'var(--grn)' : 'var(--ink3)' ?>">Подключение</div>
+                                                    <div class="prog-step-sub"><?= $done_conn ? 'PAT активен' : 'Требуется PAT' ?></div>
+                                                </div>
+                                            </div>
+                                            <div class="prog-step">
+                                                <div class="prog-step-ico curr">
+                                                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                                                        <circle cx="4" cy="4" r="3" fill="#f5501e" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <div class="prog-step-lbl" style="color:var(--amber)">Отправитель</div>
+                                                    <div class="prog-step-sub"><?= $done_sender ?> из <?= $total_sender ?> заполнено</div>
+                                                </div>
+                                            </div>
+                                            <div class="prog-step">
+                                                <div class="prog-step-ico <?= $done_ship ? 'done' : 'todo' ?>">
+                                                    <?php if ($done_ship): ?><svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                                            <path d="M2 5l1.5 1.5 3.5-3.5" stroke="#14864a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                                        </svg><?php else: ?><svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                                                            <circle cx="4" cy="4" r="3" stroke="#ccc5bb" stroke-width="1.2" />
+                                                        </svg><?php endif; ?>
+                                                </div>
+                                                <div>
+                                                    <div class="prog-step-lbl" style="color:var(--ink3)">Доставка</div>
+                                                    <div class="prog-step-sub"><?= $done_ship ? 'Настроено' : 'Не начато' ?></div>
+                                                </div>
+                                            </div>
+                                            <div class="prog-step">
+                                                <div class="prog-step-ico <?= ($pct >= 100) ? 'done' : 'todo' ?>">
+                                                    <?php if ($pct >= 100): ?><svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                                            <path d="M2 5l1.5 1.5 3.5-3.5" stroke="#14864a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                                        </svg><?php else: ?><svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                                                            <circle cx="4" cy="4" r="3" stroke="#ccc5bb" stroke-width="1.2" />
+                                                        </svg><?php endif; ?>
+                                                </div>
+                                                <div>
+                                                    <div class="prog-step-lbl" style="color:var(--ink3)">Готово</div>
+                                                    <div class="prog-step-sub">Расчёт в корзине</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Чеклист -->
+                                        <div class="prog-checklist">
+                                            <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Эта страница</div>
+                                            <?php
+                                            $cl_sender = [
+                                                [$chk_type,    'Тип отправителя выбран'],
+                                                [$chk_name,    'Название / ФИО заполнено'],
+                                                [$chk_inn,     'ИНН указан'],
+                                                [$chk_ca,      'Контрагент выбран'],
+                                                [$chk_contact, 'Контактное лицо и телефон'],
+                                                [$chk_email,   'Email для уведомлений'],
+                                            ];
+                                            foreach ($cl_sender as [$ok, $label]):
+                                            ?>
+                                                <div class="prog-cl-item <?= $ok ? 'ok' : 'warn' ?>">
+                                                    <div class="prog-cl-ico <?= $ok ? 'ok' : 'warn' ?>">
+                                                        <?php if ($ok): ?><svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                                                                <path d="M1.5 4l1.5 1.5 3.5-3.5" stroke="#14864a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                            </svg><?php else: ?><svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                                                                <circle cx="4" cy="4" r="2.5" stroke="#ccc5bb" stroke-width="1.2" />
+                                                            </svg><?php endif; ?>
+                                                    </div>
+                                                    <?= $h($label) ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <!-- Следующий шаг -->
+                                        <div class="prog-next">
+                                            <div class="prog-next-lbl"><?= $done_sender === $total_sender ? '✓ Готово' : 'Следующий шаг' ?></div>
+                                            <div class="prog-next-txt"><?= $h($next_action) ?></div>
+                                            <?php if ($done_sender === $total_sender): ?>
+                                                <a href="#" onclick="document.querySelector('.nav-item[data-page=shipping]').click();return false;" style="display:inline-block;margin-top:8px;font-size:11px;color:var(--amber);text-decoration:none;font-weight:500">Перейти к доставке →</a>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div><!-- /progress col -->
+
+                            </div><!-- /page-grid-3 -->
 
                             <div class="btn-row" style="justify-content:flex-start">
                                 <button type="submit" class="btn-p js-save-btn">Сохранить изменения</button>
@@ -941,7 +1072,7 @@ final class AppSettingsHandler
                             <input type="hidden" name="package_name" value="<?= $h($s->packageName) ?>">
                             <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">
 
-                            <div class="page-grid">
+                            <div class="page-grid-3">
                                 <div class="page-col">
                                     <!-- Способ отгрузки -->
                                     <div class="card">
@@ -1250,6 +1381,107 @@ final class AppSettingsHandler
                                     </div>
 
                                 </div><!-- /page-col-right -->
+
+                                <!-- Колонка прогресса — Доставка -->
+                                <?php
+                                $ship_terminal = ($s->senderTerminalId ?? 0) > 0;
+                                $ship_addr     = ($s->derivalStreet ?? '') !== '' && ($s->derivalHouse ?? '') !== '';
+                                $ship_route    = $ship_terminal || $ship_addr;
+                                $ship_freight  = ($s->freightUid ?? '') !== '';
+                                $ship_pkg      = $s->packageUid !== '';
+                                $ship_types    = count($s->deliveryTypes) > 0;
+                                $ship_enabled  = $s->isEnabled;
+                                $checks_ship   = [$ship_route, $ship_freight, $ship_pkg, $ship_types, $ship_enabled];
+                                $done_ship2    = count(array_filter($checks_ship));
+                                $total_ship2   = count($checks_ship);
+                                $pct_ship      = (int) round($done_ship2 / $total_ship2 * 100);
+                                $next_ship = '';
+                                if (!$ship_route) $next_ship = 'Выберите терминал отгрузки или укажите адрес забора груза.';
+                                elseif (!$ship_freight) $next_ship = 'Укажите характер груза из справочника ДЛ.';
+                                elseif (!$ship_types) $next_ship = 'Включите хотя бы один тип доставки.';
+                                elseif (!$ship_enabled) $next_ship = 'Включите отображение доставки в корзине.';
+                                else $next_ship = 'Доставка настроена — расчёт доступен в корзине.';
+                                ?>
+                                <div>
+                                    <div class="prog-card">
+                                        <div class="prog-bar-wrap">
+                                            <div class="prog-bar-label">
+                                                <span style="font-size:11px;font-weight:600;color:var(--ink2)">Прогресс настройки</span>
+                                                <span class="prog-bar-pct"><?= $pct_ship ?>%</span>
+                                            </div>
+                                            <div class="prog-bar">
+                                                <div class="prog-bar-fill" style="width:<?= $pct_ship ?>%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="prog-steps">
+                                            <div class="prog-step">
+                                                <div class="prog-step-ico done"><svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                                        <path d="M2 5l1.5 1.5 3.5-3.5" stroke="#14864a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                                    </svg></div>
+                                                <div>
+                                                    <div class="prog-step-lbl" style="color:var(--grn)">Подключение</div>
+                                                    <div class="prog-step-sub">PAT активен</div>
+                                                </div>
+                                            </div>
+                                            <div class="prog-step">
+                                                <div class="prog-step-ico done"><svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                                        <path d="M2 5l1.5 1.5 3.5-3.5" stroke="#14864a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                                    </svg></div>
+                                                <div>
+                                                    <div class="prog-step-lbl" style="color:var(--grn)">Отправитель</div>
+                                                    <div class="prog-step-sub">Заполнено</div>
+                                                </div>
+                                            </div>
+                                            <div class="prog-step">
+                                                <div class="prog-step-ico curr"><svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                                                        <circle cx="4" cy="4" r="3" fill="#f5501e" />
+                                                    </svg></div>
+                                                <div>
+                                                    <div class="prog-step-lbl" style="color:var(--amber)">Доставка</div>
+                                                    <div class="prog-step-sub"><?= $done_ship2 ?> из <?= $total_ship2 ?> настроено</div>
+                                                </div>
+                                            </div>
+                                            <div class="prog-step">
+                                                <div class="prog-step-ico <?= $pct_ship >= 100 ? 'done' : 'todo' ?>"><?php if ($pct_ship >= 100): ?><svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                                            <path d="M2 5l1.5 1.5 3.5-3.5" stroke="#14864a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                                        </svg><?php else: ?><svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                                                            <circle cx="4" cy="4" r="3" stroke="#ccc5bb" stroke-width="1.2" />
+                                                        </svg><?php endif; ?></div>
+                                                <div>
+                                                    <div class="prog-step-lbl" style="color:var(--ink3)">Готово</div>
+                                                    <div class="prog-step-sub">Расчёт в корзине</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="prog-checklist">
+                                            <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Эта страница</div>
+                                            <?php
+                                            $cl_ship = [
+                                                [$ship_route,   'Терминал или адрес выбран'],
+                                                [$ship_freight,  'Характер груза указан'],
+                                                [$ship_pkg,      'Упаковка выбрана'],
+                                                [$ship_types,    'Типы доставки настроены'],
+                                                [$ship_enabled,  'Доставка включена в корзине'],
+                                            ];
+                                            foreach ($cl_ship as [$ok, $label]):
+                                            ?>
+                                                <div class="prog-cl-item <?= $ok ? 'ok' : 'warn' ?>">
+                                                    <div class="prog-cl-ico <?= $ok ? 'ok' : 'warn' ?>"><?php if ($ok): ?><svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                                                                <path d="M1.5 4l1.5 1.5 3.5-3.5" stroke="#14864a" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                                                            </svg><?php else: ?><svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                                                                <circle cx="4" cy="4" r="2.5" stroke="#ccc5bb" stroke-width="1.2" />
+                                                            </svg><?php endif; ?></div>
+                                                    <?= $h($label) ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <div class="prog-next">
+                                            <div class="prog-next-lbl"><?= $done_ship2 === $total_ship2 ? '✓ Готово' : 'Следующий шаг' ?></div>
+                                            <div class="prog-next-txt"><?= $h($next_ship) ?></div>
+                                        </div>
+                                    </div>
+                                </div><!-- /progress col -->
+
                             </div><!-- /page-grid -->
 
                             <div class="btn-row" style="justify-content:flex-start">
@@ -2504,9 +2736,39 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .main::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
 .content{max-width:1100px;padding:36px 40px}
 .page-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+.page-grid-3{display:grid;grid-template-columns:1fr 1fr 280px;gap:16px;align-items:start}
 .page-col{display:flex;flex-direction:column;gap:0}
 .page-col .card:last-child{flex:1}
-@media(max-width:900px){.page-grid{grid-template-columns:1fr}}
+@media(max-width:1100px){.page-grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.page-grid{grid-template-columns:1fr}.page-grid-3{grid-template-columns:1fr}}
+/* PROGRESS CARD */
+.prog-card{background:var(--s1);border:1px solid var(--line);border-radius:var(--r3);overflow:hidden;position:sticky;top:24px}
+.prog-bar-wrap{padding:14px 16px;border-bottom:1px solid var(--s3)}
+.prog-bar-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.prog-bar-pct{font-size:10px;color:var(--ink3);font-family:var(--mono)}
+.prog-bar{height:4px;background:var(--s3);border-radius:4px;overflow:hidden;margin-bottom:0}
+.prog-bar-fill{height:100%;background:var(--grn);border-radius:4px}
+.prog-steps{display:flex;flex-direction:column;padding:12px 16px;gap:0;border-bottom:1px solid var(--s3)}
+.prog-step{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--s3)}
+.prog-step:last-child{border-bottom:0;padding-bottom:0}
+.prog-step:first-child{padding-top:0}
+.prog-step-ico{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.prog-step-ico.done{background:var(--grnl);border:1px solid var(--grnb)}
+.prog-step-ico.curr{background:var(--ambl);border:1px solid #f5c4b3}
+.prog-step-ico.todo{background:var(--s3);border:1px solid var(--line)}
+.prog-step-lbl{font-size:12px;font-weight:600;color:var(--ink);line-height:1.3}
+.prog-step-sub{font-size:11px;color:var(--ink3);margin-top:1px}
+.prog-checklist{padding:12px 16px;border-bottom:1px solid var(--s3)}
+.prog-cl-item{display:flex;align-items:center;gap:7px;font-size:11px;padding:4px 0;border-bottom:1px solid var(--s3)}
+.prog-cl-item:last-child{border-bottom:0}
+.prog-cl-item.ok{color:var(--grn)}
+.prog-cl-item.warn{color:var(--ink3)}
+.prog-cl-ico{width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.prog-cl-ico.ok{background:var(--grnl);border:1px solid var(--grnb)}
+.prog-cl-ico.warn{background:var(--s3);border:1px solid var(--line)}
+.prog-next{padding:10px 16px;background:var(--ambl);border-top:1px solid #f5c4b3}
+.prog-next-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:3px}
+.prog-next-txt{font-size:11px;color:var(--ink2);line-height:1.4}
  
 /* PAGES */
 .pg-hdr{margin-bottom:26px}

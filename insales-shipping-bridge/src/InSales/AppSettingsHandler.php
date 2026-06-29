@@ -2607,7 +2607,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .phone-flag{display:flex;align-items:center;gap:3px;padding:0 10px;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;color:var(--ink2);font-family:var(--sans);transition:background .12s;border-radius:0;height:100%}
 .phone-flag:hover{background:var(--s3)}
 .flag-cc{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink);line-height:1;font-family:var(--mono)}
-.flag-code{font-size:11px;font-weight:600;color:var(--ink3)}
+.flag-code{font-size:12px;font-weight:700;color:var(--ink)}
 .phone-input{flex:1;padding:8px 10px;background:transparent;border:0;font-size:13px;color:var(--ink);font-family:var(--sans);outline:none;min-width:0;border-radius:0;height:36px}
 .phone-flag-dropdown{position:fixed;z-index:9999;background:var(--s1);border:1px solid var(--line);border-radius:var(--r2);box-shadow:0 8px 24px rgba(26,23,20,.16);min-width:220px;max-height:220px;overflow-y:auto;padding:4px}
 .pflag-item{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s}

@@ -1760,8 +1760,8 @@ final class AppSettingsHandler
                     updateHint();
                 }
 
-                initPhoneWidget('sender_contact_phone', 'flagEmoji1', 'flagCode1', 'phoneDropdown1', 'phoneHint1', 'phoneWrap1');
-                initPhoneWidget('sender_contact_phone2', 'flagEmoji2', 'flagCode2', 'phoneDropdown2', 'phoneHint2', 'phoneWrap2');
+                initPhoneWidget('sender_contact_phone', null, 'flagCode1', 'phoneDropdown1', 'phoneHint1', 'phoneWrap1');
+                initPhoneWidget('sender_contact_phone2', null, 'flagCode2', 'phoneDropdown2', 'phoneHint2', 'phoneWrap2');
 
                 // ── Phone 2 toggle ───────────────────────────────────────────
                 window.showPhone2 = function() {
@@ -2604,7 +2604,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 /* PHONE WIDGET */
 .phone-wrap{position:relative;display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);transition:border .15s,box-shadow .15s;overflow:hidden;min-height:36px}
 .phone-wrap:focus-within{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
-.phone-flag{display:flex;align-items:center;gap:3px;padding:0 8px;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;color:var(--ink2);font-family:var(--sans);transition:background .12s;border-radius:0;height:100%}
+.phone-flag{display:flex;align-items:center;gap:3px;padding:0 10px;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;color:var(--ink2);font-family:var(--sans);transition:background .12s;border-radius:0;height:100%}
 .phone-flag:hover{background:var(--s3)}
 .flag-cc{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink);line-height:1;font-family:var(--mono)}
 .flag-code{font-size:11px;font-weight:600;color:var(--ink3)}

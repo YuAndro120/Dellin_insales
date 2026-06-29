@@ -217,7 +217,7 @@ SQL;
             ':sender_contact_phone' => trim((string) ($data['sender_contact_phone'] ?? '')) ?: null,
             ':sender_opf_uid'       => trim((string) ($data['sender_opf_uid'] ?? '')) ?: null,
             ':sender_opf_name' => trim((string) ($data['sender_opf_name'] ?? '')),
-            ':sender_juridical_address' => trim((string) ($data['sender_juridical_address'] ?? '')) ?: null,
+            ':sender_juridical_address' => trim((string) ($data['sender_juridical_address'] ?? '')) ?: '',
             ':freight_uid'         => $freightUid !== '' ? $freightUid : null,
             ':freight_name' => trim((string) ($data['freight_name'] ?? '')),
             ':package_uid'  => trim((string) ($data['package_uid']  ?? '')),

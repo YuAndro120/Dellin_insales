@@ -158,7 +158,8 @@ final class AppSettingsHandler
                     'sender_contact_name'   => trim((string) ($_POST['sender_contact_name']   ?? '')),
                     'sender_contact_phone'  => self::buildContactPhoneField(
                         trim((string) ($_POST['sender_contact_phone']  ?? '')),
-                        trim((string) ($_POST['sender_contact_phone2'] ?? ''))
+                        trim((string) ($_POST['sender_contact_phone2'] ?? '')),
+                        trim((string) ($_POST['sender_contact_ext']    ?? ''))
                     ),
                     'sender_opf_uid'        => trim((string) ($_POST['sender_opf_uid']        ?? '')),
                     'sender_opf_name' => trim((string) ($_POST['sender_opf_name'] ?? '')),
@@ -599,21 +600,58 @@ final class AppSettingsHandler
                                             <div class="g2">
                                                 <div class="field"><label>Имя</label><input type="text" id="sender_contact_name" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>" placeholder="Иванов Иван"></div>
                                                 <div class="field">
-                                                    <label>Мобильный телефон</label>
-                                                    <input type="text" id="sender_contact_phone" name="sender_contact_phone"
-                                                        value="<?= $h(explode(';', $s->senderContactPhone ?? '')[0]) ?>"
-                                                        placeholder="79131409995"
-                                                        pattern="[78]\d{10}" inputmode="tel">
-                                                    <div class="hint">11 цифр, начиная с 7 или 8</div>
-                                                </div>
-                                                <div class="field">
-                                                    <label>Городской телефон (необязательно)</label>
-                                                    <input type="text" id="sender_contact_phone2" name="sender_contact_phone2"
-                                                        value="<?= $h(explode(';', $s->senderContactPhone ?? '')[1] ?? '') ?>"
-                                                        placeholder="84959901234 или 84959901234,123" inputmode="tel">
-                                                    <div class="hint">С кодом города. Добавочный через запятую: 84959901234,123</div>
+                                                    <label>Телефон</label>
+                                                    <div class="phone-wrap" id="phoneWrap1">
+                                                        <button type="button" class="phone-flag" id="phoneFlag1" title="Выбор страны">
+                                                            <span class="flag-emoji" id="flagEmoji1">🇷🇺</span>
+                                                            <span class="flag-code" id="flagCode1">+7</span>
+                                                        </button>
+                                                        <input type="text" id="sender_contact_phone" name="sender_contact_phone"
+                                                            value="<?= $h(explode(';', $s->senderContactPhone ?? '')[0]) ?>"
+                                                            placeholder="912 345-67-89"
+                                                            inputmode="tel" autocomplete="tel" class="phone-input">
+                                                        <div class="phone-flag-dropdown" id="phoneDropdown1" style="display:none"></div>
+                                                    </div>
+                                                    <div class="phone-valid-hint" id="phoneHint1"></div>
                                                 </div>
                                                 <div class="field" style="grid-column:1/-1"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
+                                            </div>
+                                            <?php
+                                            $ph2raw = explode(';', $s->senderContactPhone ?? '')[1] ?? '';
+                                            $ph2num = preg_replace('/,.*$/', '', $ph2raw);
+                                            $ph2ext = (strpos($ph2raw, ',') !== false) ? substr($ph2raw, strpos($ph2raw, ',') + 1) : '';
+                                            $hasPhone2 = trim($ph2raw) !== '';
+                                            ?>
+                                            <div id="phone2Block" style="<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:12px">
+                                                <div style="height:1px;background:var(--s3);margin-bottom:14px"></div>
+                                                <div class="g2">
+                                                    <div class="field">
+                                                        <label>Дополнительный номер</label>
+                                                        <div class="phone-wrap" id="phoneWrap2">
+                                                            <button type="button" class="phone-flag" id="phoneFlag2" title="Выбор страны">
+                                                                <span class="flag-emoji" id="flagEmoji2">🇷🇺</span>
+                                                                <span class="flag-code" id="flagCode2">+7</span>
+                                                            </button>
+                                                            <input type="text" id="sender_contact_phone2" name="sender_contact_phone2"
+                                                                value="<?= $h($ph2num) ?>"
+                                                                placeholder="495 990-12-34"
+                                                                inputmode="tel" autocomplete="tel" class="phone-input">
+                                                            <div class="phone-flag-dropdown" id="phoneDropdown2" style="display:none"></div>
+                                                        </div>
+                                                        <div class="phone-valid-hint" id="phoneHint2"></div>
+                                                    </div>
+                                                    <div class="field">
+                                                        <label>Добавочный (необязательно)</label>
+                                                        <input type="text" id="sender_contact_ext" name="sender_contact_ext"
+                                                            value="<?= $h($ph2ext) ?>"
+                                                            placeholder="123" inputmode="numeric" maxlength="6">
+                                                        <div class="hint">Цифры добавочного номера</div>
+                                                    </div>
+                                                </div>
+                                                <button type="button" id="removePhone2Btn" style="font-size:11px;color:var(--ink3);background:none;border:0;cursor:pointer;padding:0;margin-top:2px">✕ Убрать дополнительный номер</button>
+                                            </div>
+                                            <div id="addPhone2Btn" style="<?= $hasPhone2 ? 'display:none' : '' ?>;margin-top:10px">
+                                                <button type="button" onclick="showPhone2()" style="font-size:12px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ Добавить дополнительный номер</button>
                                             </div>
                                         </div>
                                     </div>
@@ -669,8 +707,15 @@ final class AppSettingsHandler
                             <input type="hidden" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>">
                             <input type="hidden" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>">
                             <input type="hidden" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>">
-                            <input type="hidden" name="sender_contact_phone" value="<?= $h(explode(';', $s->senderContactPhone ?? '')[0]) ?>">
-                            <input type="hidden" name="sender_contact_phone2" value="<?= $h(explode(';', $s->senderContactPhone ?? '')[1] ?? '') ?>">
+                            <?php
+                            $_ph1h = explode(';', $s->senderContactPhone ?? '')[0];
+                            $_ph2raw_h = explode(';', $s->senderContactPhone ?? '')[1] ?? '';
+                            $_ph2num_h = preg_replace('/,.*$/', '', $_ph2raw_h);
+                            $_ph2ext_h = (strpos($_ph2raw_h, ',') !== false) ? substr($_ph2raw_h, strpos($_ph2raw_h, ',') + 1) : '';
+                            ?>
+                            <input type="hidden" name="sender_contact_phone" value="<?= $h($_ph1h) ?>">
+                            <input type="hidden" name="sender_contact_phone2" value="<?= $h($_ph2num_h) ?>">
+                            <input type="hidden" name="sender_contact_ext" value="<?= $h($_ph2ext_h) ?>">
                             <input type="hidden" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
                             <input type="hidden" name="sender_opf_name" value="<?= $h($s->senderOpfName ?? '') ?>">
                             <input type="hidden" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>">
@@ -1330,25 +1375,290 @@ final class AppSettingsHandler
                     });
                 }
 
-                // Phone validation
-                function validatePhone(input) {
-                    var v = input.value.replace(/\D/g, '');
-                    if (v.length === 0) {
-                        input.classList.remove('field-err');
-                        return;
+                // ── Phone widget ─────────────────────────────────────────────────────────
+                var PHONE_COUNTRIES = [{
+                        code: 'RU',
+                        dial: '7',
+                        flag: '🇷🇺',
+                        name: 'Россия',
+                        len: 11,
+                        prefix: '7',
+                        mask: '### ###-##-##'
+                    },
+                    {
+                        code: 'KZ',
+                        dial: '7',
+                        flag: '🇰🇿',
+                        name: 'Казахстан',
+                        len: 11,
+                        prefix: '7',
+                        mask: '### ###-##-##'
+                    },
+                    {
+                        code: 'BY',
+                        dial: '375',
+                        flag: '🇧🇾',
+                        name: 'Беларусь',
+                        len: 12,
+                        prefix: '375',
+                        mask: '## ###-##-##'
+                    },
+                    {
+                        code: 'UA',
+                        dial: '380',
+                        flag: '🇺🇦',
+                        name: 'Украина',
+                        len: 12,
+                        prefix: '380',
+                        mask: '## ###-##-##'
+                    },
+                    {
+                        code: 'KG',
+                        dial: '996',
+                        flag: '🇰🇬',
+                        name: 'Кыргызстан',
+                        len: 12,
+                        prefix: '996',
+                        mask: '### ##-##-##'
+                    },
+                    {
+                        code: 'AM',
+                        dial: '374',
+                        flag: '🇦🇲',
+                        name: 'Армения',
+                        len: 11,
+                        prefix: '374',
+                        mask: '## ##-##-##'
+                    },
+                    {
+                        code: 'GE',
+                        dial: '995',
+                        flag: '🇬🇪',
+                        name: 'Грузия',
+                        len: 12,
+                        prefix: '995',
+                        mask: '### ##-##-##'
+                    },
+                    {
+                        code: 'AZ',
+                        dial: '994',
+                        flag: '🇦🇿',
+                        name: 'Азербайджан',
+                        len: 12,
+                        prefix: '994',
+                        mask: '## ###-##-##'
+                    },
+                    {
+                        code: 'UZ',
+                        dial: '998',
+                        flag: '🇺🇿',
+                        name: 'Узбекистан',
+                        len: 12,
+                        prefix: '998',
+                        mask: '## ###-##-##'
+                    },
+                    {
+                        code: 'TJ',
+                        dial: '992',
+                        flag: '🇹🇯',
+                        name: 'Таджикистан',
+                        len: 12,
+                        prefix: '992',
+                        mask: '## ###-##-##'
+                    },
+                    {
+                        code: 'MD',
+                        dial: '373',
+                        flag: '🇲🇩',
+                        name: 'Молдова',
+                        len: 11,
+                        prefix: '373',
+                        mask: '### ##-##-##'
+                    },
+                ];
+
+                function detectCountry(digits) {
+                    if (!digits) return PHONE_COUNTRIES[0];
+                    // 8xxx → RU
+                    if (digits[0] === '8') return PHONE_COUNTRIES[0];
+                    // Check by prefix length 3 → 2 → 1
+                    for (var pl = 3; pl >= 1; pl--) {
+                        var pref = digits.slice(0, pl);
+                        for (var i = 0; i < PHONE_COUNTRIES.length; i++) {
+                            if (PHONE_COUNTRIES[i].dial === pref) return PHONE_COUNTRIES[i];
+                        }
                     }
-                    var ok = (v.length === 11 && (v[0] === '7' || v[0] === '8')) ||
-                        (v.length === 10 && v[0] !== '7');
-                    input.classList.toggle('field-err', !ok);
+                    return PHONE_COUNTRIES[0];
                 }
-                var ph1 = $('sender_contact_phone');
-                var ph2 = $('sender_contact_phone2');
-                if (ph1) ph1.addEventListener('input', function() {
-                    validatePhone(this);
-                });
-                if (ph2) ph2.addEventListener('input', function() {
-                    validatePhone(this);
-                });
+
+                function applyPhoneMask(digits, country) {
+                    // For RU/KZ starting with 7 or 8: show without country code in display
+                    var prefix = country.dial;
+                    var local = digits.startsWith(prefix) ? digits.slice(prefix.length) : digits;
+                    if ((country.code === 'RU' || country.code === 'KZ') && digits.startsWith('8')) {
+                        local = digits.slice(1);
+                    }
+                    var mask = country.mask;
+                    var out = '';
+                    var di = 0;
+                    for (var mi = 0; mi < mask.length && di < local.length; mi++) {
+                        if (mask[mi] === '#') {
+                            out += local[di++];
+                        } else {
+                            out += mask[mi];
+                        }
+                    }
+                    return out;
+                }
+
+                function phoneIsValid(digits, country) {
+                    if (!digits) return false;
+                    var prefix = country.dial;
+                    if ((country.code === 'RU' || country.code === 'KZ') && digits[0] === '8') {
+                        digits = '7' + digits.slice(1);
+                    }
+                    return digits.startsWith(prefix) && digits.length === country.len;
+                }
+
+                function initPhoneWidget(inputId, flagId, codeId, dropdownId, hintId, wrapId) {
+                    var input = $(inputId);
+                    var flagEl = $(flagId);
+                    var codeEl = $(codeId);
+                    var dropdown = $(dropdownId);
+                    var hintEl = $(hintId);
+                    if (!input) return;
+
+                    var currentCountry = PHONE_COUNTRIES[0];
+
+                    // Build dropdown HTML
+                    if (dropdown) {
+                        PHONE_COUNTRIES.forEach(function(c) {
+                            var item = document.createElement('div');
+                            item.className = 'pflag-item';
+                            item.innerHTML = '<span style="font-size:18px;margin-right:8px">' + c.flag + '</span>' +
+                                '<span style="font-size:13px;color:var(--ink)">' + c.name + '</span>' +
+                                '<span style="font-size:11px;color:var(--ink3);margin-left:auto">+' + c.dial + '</span>';
+                            item.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                selectCountry(c);
+                                dropdown.style.display = 'none';
+                                input.focus();
+                            });
+                            dropdown.appendChild(item);
+                        });
+                    }
+
+                    function selectCountry(c) {
+                        currentCountry = c;
+                        if (flagEl) flagEl.textContent = c.flag;
+                        if (codeEl) codeEl.textContent = '+' + c.dial;
+                        updateHint();
+                        var f = input.closest('form');
+                        if (f && f._markDirty) f._markDirty();
+                    }
+
+                    var flagBtn = $(flagId.replace('flagEmoji', 'phoneFlag'));
+                    // Actually flag btn is separate — find by structure
+                    var wrap = $(wrapId);
+                    if (wrap) {
+                        var btn = wrap.querySelector('.phone-flag');
+                        if (btn) {
+                            btn.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                if (!dropdown) return;
+                                var isOpen = dropdown.style.display !== 'none';
+                                // Close all
+                                document.querySelectorAll('.phone-flag-dropdown').forEach(function(d) {
+                                    d.style.display = 'none';
+                                });
+                                dropdown.style.display = isOpen ? 'none' : 'block';
+                            });
+                        }
+                    }
+                    document.addEventListener('click', function() {
+                        if (dropdown) dropdown.style.display = 'none';
+                    });
+
+                    function updateHint() {
+                        if (!hintEl) return;
+                        var digits = input.value.replace(/\D/g, '');
+                        if (!digits) {
+                            hintEl.textContent = '';
+                            hintEl.className = 'phone-valid-hint';
+                            return;
+                        }
+                        if (phoneIsValid(digits, currentCountry)) {
+                            hintEl.textContent = '✓ Номер корректен';
+                            hintEl.className = 'phone-valid-hint valid';
+                        } else {
+                            var missing = currentCountry.len - digits.length;
+                            if (missing > 0) {
+                                hintEl.textContent = 'Ещё ' + missing + ' ' + (missing === 1 ? 'цифра' : missing < 5 ? 'цифры' : 'цифр');
+                                hintEl.className = 'phone-valid-hint pending';
+                            } else {
+                                hintEl.textContent = '✗ Неверный формат';
+                                hintEl.className = 'phone-valid-hint invalid';
+                            }
+                        }
+                    }
+
+                    input.addEventListener('input', function() {
+                        var raw = this.value;
+                        var digits = raw.replace(/\D/g, '');
+                        // Detect country from prefix
+                        var detected = detectCountry(digits);
+                        if (detected.code !== currentCountry.code) selectCountry(detected);
+                        // Update flag visually
+                        if (flagEl) flagEl.textContent = currentCountry.flag;
+                        if (codeEl) codeEl.textContent = '+' + currentCountry.dial;
+                        updateHint();
+                        var f = this.closest('form');
+                        if (f && f._markDirty) f._markDirty();
+                    });
+
+                    // Init on load
+                    var initVal = input.value.replace(/\D/g, '');
+                    if (initVal) {
+                        var initC = detectCountry(initVal);
+                        selectCountry(initC);
+                    }
+                    updateHint();
+                }
+
+                initPhoneWidget('sender_contact_phone', 'flagEmoji1', 'flagCode1', 'phoneDropdown1', 'phoneHint1', 'phoneWrap1');
+                initPhoneWidget('sender_contact_phone2', 'flagEmoji2', 'flagCode2', 'phoneDropdown2', 'phoneHint2', 'phoneWrap2');
+
+                // ── Phone 2 toggle ───────────────────────────────────────────
+                window.showPhone2 = function() {
+                    var block = $('phone2Block');
+                    var btn = $('addPhone2Btn');
+                    if (block) block.style.display = '';
+                    if (btn) btn.style.display = 'none';
+                    var inp = $('sender_contact_phone2');
+                    if (inp) inp.focus();
+                    var f = document.querySelector('#settingsForm');
+                    if (f && f._markDirty) f._markDirty();
+                };
+                var removePhone2 = $('removePhone2Btn');
+                if (removePhone2) {
+                    removePhone2.addEventListener('click', function() {
+                        var block = $('phone2Block');
+                        var btn = $('addPhone2Btn');
+                        if (block) block.style.display = 'none';
+                        if (btn) btn.style.display = '';
+                        var inp2 = $('sender_contact_phone2');
+                        var ext = $('sender_contact_ext');
+                        if (inp2) inp2.value = '';
+                        if (ext) ext.value = '';
+                        var h2 = $('phoneHint2');
+                        if (h2) {
+                            h2.textContent = '';
+                            h2.className = 'phone-valid-hint';
+                        }
+                        var f = document.querySelector('#settingsForm');
+                        if (f && f._markDirty) f._markDirty();
+                    });
+                }
 
                 // Form submit validation
                 var settingsForm = document.getElementById('settingsForm');
@@ -2114,16 +2424,39 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .opf-item-sub{font-size:11px;color:var(--ink3);margin-top:1px}
 .field input.field-err{border-color:#ef4444;box-shadow:0 0 0 3px #fef2f2;background:var(--s1)}
 .field-err-msg{font-size:11px;color:#b91c1c;margin-top:4px;display:none}
+
+/* PHONE WIDGET */
+.phone-wrap{position:relative;display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);transition:border .15s,box-shadow .15s;overflow:visible}
+.phone-wrap:focus-within{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
+.phone-flag{display:flex;align-items:center;gap:4px;padding:8px 10px 8px 12px;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;font-size:12px;color:var(--ink2);font-family:var(--sans);font-weight:500;transition:background .12s;border-radius:var(--r2) 0 0 var(--r2)}
+.phone-flag:hover{background:var(--s3)}
+.flag-emoji{font-size:18px;line-height:1}
+.flag-code{font-size:12px;font-weight:600;color:var(--ink2)}
+.phone-input{flex:1;padding:9px 12px;background:transparent;border:0;font-size:13px;color:var(--ink);font-family:var(--sans);outline:none;min-width:0;border-radius:0 var(--r2) var(--r2) 0}
+.phone-flag-dropdown{position:absolute;top:calc(100% + 4px);left:0;z-index:100;background:var(--s1);border:1px solid var(--line);border-radius:var(--r2);box-shadow:0 8px 24px rgba(26,23,20,.12);min-width:220px;max-height:260px;overflow-y:auto;padding:4px}
+.pflag-item{display:flex;align-items:center;gap:0;padding:8px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s}
+.pflag-item:hover{background:var(--ambl)}
+.phone-valid-hint{font-size:11px;margin-top:4px;min-height:16px;transition:color .15s}
+.phone-valid-hint.valid{color:var(--grn)}
+.phone-valid-hint.pending{color:var(--ink3)}
+.phone-valid-hint.invalid{color:#b91c1c}
 </style>
 </head>
 <body>
 HTML;
     }
 
-    /** Объединяет два телефонных поля (мобильный + городской) через ';' для хранения в одном поле БД. */
-    private static function buildContactPhoneField(string $phone1, string $phone2): string
+    /** Объединяет два телефонных поля (мобильный + городской с добавочным) через ';' для хранения в одном поле БД. */
+    private static function buildContactPhoneField(string $phone1, string $phone2, string $ext = ''): string
     {
-        $parts = array_filter([trim($phone1), trim($phone2)]);
+        $phone1 = trim($phone1);
+        $phone2 = trim($phone2);
+        $ext    = trim($ext);
+        $parts = [];
+        if ($phone1 !== '') $parts[] = $phone1;
+        if ($phone2 !== '') {
+            $parts[] = $ext !== '' ? $phone2 . ',' . $ext : $phone2;
+        }
         return implode(';', $parts);
     }
 

@@ -81,7 +81,7 @@ final class AppSettingsHandler
                 header('Location: /insales/app?' . $q, true, 302);
                 exit;
             }
-        } elseif (!$s->hasDellinAuth) {
+        } elseif (!$settings->hasDellinAuth) {
             self::renderAuthPage($settings, $error, $shops->findAccessToken($settings->insalesId) ?? '');
             return;
         } elseif ($method === 'POST' && isset($_POST['update_pat'])) {
@@ -202,7 +202,7 @@ final class AppSettingsHandler
     /** @return array{0:list<DellinCounteragent>,1:?string} */
     private static function loadCounteragents(ShopRepository $shops, Config $config, ShopSettings $settings): array
     {
-        if (!$s->hasDellinAuth || $config->bridgeSecret === '') {
+        if (!$settings->hasDellinAuth || $config->bridgeSecret === '') {
             return [[], null];
         }
         try {

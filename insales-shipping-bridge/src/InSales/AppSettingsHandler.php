@@ -156,7 +156,10 @@ final class AppSettingsHandler
                     'sender_doc_serial'     => trim((string) ($_POST['sender_doc_serial']     ?? '')),
                     'sender_doc_number'     => trim((string) ($_POST['sender_doc_number']     ?? '')),
                     'sender_contact_name'   => trim((string) ($_POST['sender_contact_name']   ?? '')),
-                    'sender_contact_phone'  => trim((string) ($_POST['sender_contact_phone']  ?? '')),
+                    'sender_contact_phone'  => self::buildContactPhoneField(
+                        trim((string) ($_POST['sender_contact_phone']  ?? '')),
+                        trim((string) ($_POST['sender_contact_phone2'] ?? ''))
+                    ),
                     'sender_opf_uid'        => trim((string) ($_POST['sender_opf_uid']        ?? '')),
                     'sender_opf_name' => trim((string) ($_POST['sender_opf_name'] ?? '')),
                     'sender_juridical_address' => trim((string) ($_POST['sender_juridical_address'] ?? '')),
@@ -526,8 +529,12 @@ final class AppSettingsHandler
                                                 </div>
                                                 <div class="field">
                                                     <label>ИНН</label>
-                                                    <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="1234567890" class="<?= (($s->senderInn ?? '') === '' && $s->senderType !== 'person') ? 'field-err' : '' ?>">
+                                                    <div style="position:relative">
+                                                        <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="1234567890 — начните вводить…" class="<?= (($s->senderInn ?? '') === '' && $s->senderType !== 'person') ? 'field-err' : '' ?>" autocomplete="off" inputmode="numeric" maxlength="12">
+                                                        <ul id="innSuggestions" class="suggestions" style="position:absolute;top:100%;left:0;right:0;z-index:50"></ul>
+                                                    </div>
                                                     <div class="field-err-msg" id="innErrMsg">Введите ИНН — обязательное поле для организаций</div>
+                                                    <div id="innStatus" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
                                                 </div>
                                                 <!-- временно скрываем из UI юр. адрес
                                                 <div class="field">
@@ -591,7 +598,21 @@ final class AppSettingsHandler
                                         <div class="card-body">
                                             <div class="g2">
                                                 <div class="field"><label>Имя</label><input type="text" id="sender_contact_name" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>" placeholder="Иванов Иван"></div>
-                                                <div class="field"><label>Телефон</label><input type="text" id="sender_contact_phone" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>" placeholder="79131409995"></div>
+                                                <div class="field">
+                                                    <label>Мобильный телефон</label>
+                                                    <input type="text" id="sender_contact_phone" name="sender_contact_phone"
+                                                        value="<?= $h(explode(';', $s->senderContactPhone ?? '')[0]) ?>"
+                                                        placeholder="79131409995"
+                                                        pattern="[78]\d{10}" inputmode="tel">
+                                                    <div class="hint">11 цифр, начиная с 7 или 8</div>
+                                                </div>
+                                                <div class="field">
+                                                    <label>Городской телефон (необязательно)</label>
+                                                    <input type="text" id="sender_contact_phone2" name="sender_contact_phone2"
+                                                        value="<?= $h(explode(';', $s->senderContactPhone ?? '')[1] ?? '') ?>"
+                                                        placeholder="84959901234 или 84959901234,123" inputmode="tel">
+                                                    <div class="hint">С кодом города. Добавочный через запятую: 84959901234,123</div>
+                                                </div>
                                                 <div class="field" style="grid-column:1/-1"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
                                             </div>
                                         </div>
@@ -634,7 +655,7 @@ final class AppSettingsHandler
                             <div class="pg-title">Параметры доставки</div>
                             <div class="pg-sub">Настройки расчёта и оформления заказов</div>
                         </div>
-                        <form method="post" action="/insales/app" id="form-connection">
+                        <form method="post" action="/insales/app" id="form-shipping">
                             <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                             <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
                             <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
@@ -648,7 +669,8 @@ final class AppSettingsHandler
                             <input type="hidden" name="sender_doc_serial" value="<?= $h($s->senderDocSerial ?? '') ?>">
                             <input type="hidden" name="sender_doc_number" value="<?= $h($s->senderDocNumber ?? '') ?>">
                             <input type="hidden" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>">
-                            <input type="hidden" name="sender_contact_phone" value="<?= $h($s->senderContactPhone ?? '') ?>">
+                            <input type="hidden" name="sender_contact_phone" value="<?= $h(explode(';', $s->senderContactPhone ?? '')[0]) ?>">
+                            <input type="hidden" name="sender_contact_phone2" value="<?= $h(explode(';', $s->senderContactPhone ?? '')[1] ?? '') ?>">
                             <input type="hidden" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
                             <input type="hidden" name="sender_opf_name" value="<?= $h($s->senderOpfName ?? '') ?>">
                             <input type="hidden" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>">
@@ -1011,7 +1033,7 @@ final class AppSettingsHandler
                                 </div>
                             </div>
                             <div class="card-body">
-                                <form method="post" action="/insales/app" id="form-shipping">
+                                <form method="post" action="/insales/app" id="form-connection">
                                     <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                                     <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
                                     <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
@@ -1212,8 +1234,51 @@ final class AppSettingsHandler
                     });
                 });
 
-                // INN live validation
+                // INN live validation + DaData autocomplete
                 var innEl = $('sender_inn');
+                var innSugg = $('innSuggestions');
+                var innStatus = $('innStatus');
+                var dadataKey = <?= json_encode(getenv('DADATA_API_KEY') ?: '') ?>;
+                var innTimer;
+
+                function dadataPartySearch(query, cb) {
+                    if (!dadataKey) return;
+                    fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/party', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Token ' + dadataKey,
+                        },
+                        body: JSON.stringify({
+                            query: query,
+                            count: 5,
+                            status: ['ACTIVE']
+                        }),
+                    }).then(function(r) {
+                        return r.json();
+                    }).then(cb).catch(function() {});
+                }
+
+                function fillOrgFromDaData(suggestion) {
+                    var d = suggestion.data;
+                    // ИНН
+                    var innInput = $('sender_inn');
+                    if (innInput && d.inn) {
+                        innInput.value = d.inn;
+                        innInput.classList.remove('field-err');
+                        var innMsg = $('innErrMsg');
+                        if (innMsg) innMsg.style.display = 'none';
+                    }
+                    // Название
+                    var nameInput = document.querySelector('#blockOrg input[name="sender_name"]');
+                    if (nameInput && suggestion.value) nameInput.value = suggestion.value;
+                    // ОПФ — попробуем найти в списке ОПФ ДЛ по короткому названию
+                    if (innStatus) innStatus.textContent = '✓ ' + (suggestion.value || '') + ' заполнено из DaData';
+                    // Триггерим dirty
+                    var f = document.querySelector('#settingsForm');
+                    if (f && f._markDirty) f._markDirty();
+                }
+
                 if (innEl) {
                     innEl.addEventListener('input', function() {
                         if (this.value.trim()) {
@@ -1221,8 +1286,69 @@ final class AppSettingsHandler
                             var msg = $('innErrMsg');
                             if (msg) msg.style.display = 'none';
                         }
+                        clearTimeout(innTimer);
+                        var q = this.value.trim();
+                        if (innSugg) innSugg.style.display = 'none';
+                        if (innStatus) innStatus.textContent = '';
+                        if (!dadataKey || q.length < 4) return;
+                        innTimer = setTimeout(function() {
+                            if (innStatus) innStatus.textContent = 'Поиск…';
+                            dadataPartySearch(q, function(res) {
+                                if (!innSugg) return;
+                                if (innStatus) innStatus.textContent = '';
+                                innSugg.innerHTML = '';
+                                var suggestions = (res && res.suggestions) ? res.suggestions : [];
+                                if (!suggestions.length) {
+                                    innSugg.style.display = 'none';
+                                    return;
+                                }
+                                suggestions.forEach(function(s) {
+                                    var li = document.createElement('li');
+                                    var inn = s.data.inn || '';
+                                    var ogrn = s.data.ogrn || '';
+                                    li.innerHTML = '<strong>' + s.value + '</strong>' +
+                                        (inn ? ' <span style="color:var(--ink3);font-size:11px">ИНН ' + inn + '</span>' : '') +
+                                        (s.data.address && s.data.address.value ? '<br><span style="font-size:11px;color:var(--ink3)">' + s.data.address.value + '</span>' : '');
+                                    li.addEventListener('click', function() {
+                                        innSugg.style.display = 'none';
+                                        fillOrgFromDaData(s);
+                                    });
+                                    innSugg.appendChild(li);
+                                });
+                                innSugg.style.display = 'block';
+                            });
+                        }, 400);
+                    });
+                    innEl.addEventListener('blur', function() {
+                        setTimeout(function() {
+                            if (innSugg) innSugg.style.display = 'none';
+                        }, 200);
+                    });
+                    document.addEventListener('click', function(e) {
+                        if (innEl && innSugg && !innEl.contains(e.target) && !innSugg.contains(e.target))
+                            innSugg.style.display = 'none';
                     });
                 }
+
+                // Phone validation
+                function validatePhone(input) {
+                    var v = input.value.replace(/\D/g, '');
+                    if (v.length === 0) {
+                        input.classList.remove('field-err');
+                        return;
+                    }
+                    var ok = (v.length === 11 && (v[0] === '7' || v[0] === '8')) ||
+                        (v.length === 10 && v[0] !== '7');
+                    input.classList.toggle('field-err', !ok);
+                }
+                var ph1 = $('sender_contact_phone');
+                var ph2 = $('sender_contact_phone2');
+                if (ph1) ph1.addEventListener('input', function() {
+                    validatePhone(this);
+                });
+                if (ph2) ph2.addEventListener('input', function() {
+                    validatePhone(this);
+                });
 
                 // Form submit validation
                 var settingsForm = document.getElementById('settingsForm');
@@ -1284,6 +1410,8 @@ final class AppSettingsHandler
                                         opfSaved.style.display = 'flex';
                                         opfSearchWrap.style.display = 'none';
                                         opfListEl.style.display = 'none';
+                                        var f = document.querySelector('#settingsForm');
+                                        if (f && f._markDirty) f._markDirty();
                                     });
                                 })(it);
                                 opfListEl.appendChild(li);
@@ -1322,6 +1450,8 @@ final class AppSettingsHandler
                                         var fld = $('derival_city_kladr');
                                         if (fld) fld.value = code;
                                         loadTerminals(code);
+                                        var f = cityInput.closest('form');
+                                        if (f && f._markDirty) f._markDirty();
                                     });
                                     citySugg.appendChild(li);
                                 });
@@ -1374,7 +1504,11 @@ final class AppSettingsHandler
                 if (termSel) {
                     termSel.addEventListener('change', function() {
                         var opt = this.options[this.selectedIndex];
-                        if (opt.value) showTermCard(opt);
+                        if (opt.value) {
+                            showTermCard(opt);
+                            var f = this.closest('form');
+                            if (f && f._markDirty) f._markDirty();
+                        }
                     });
                 }
 
@@ -1616,9 +1750,10 @@ final class AppSettingsHandler
                                         derivalCityInput.value = li.textContent;
                                         derivalCitySugg.style.display = 'none';
                                         if (derivalCityKladr) derivalCityKladr.value = code;
-                                        // Сохраняем название города
                                         var nameField = document.getElementById('derival_city_name_hidden');
                                         if (nameField) nameField.value = li.textContent;
+                                        var f = derivalCityInput.closest('form');
+                                        if (f && f._markDirty) f._markDirty();
                                     });
                                     derivalCitySugg.appendChild(li);
                                 });
@@ -1674,6 +1809,20 @@ final class AppSettingsHandler
 
             (function() {
                 var dirtyForm = null;
+
+                window.markFormDirty = function(formOrEl) {
+                    var form = formOrEl instanceof HTMLFormElement ?
+                        formOrEl :
+                        (formOrEl ? formOrEl.closest('form') : null);
+                    if (!form) return;
+                    var submitBtn = form.querySelector('button.js-save-btn');
+                    if (!submitBtn) return;
+                    if (dirtyForm === form) return;
+                    dirtyForm = form;
+                    form.classList.add('form-dirty');
+                    submitBtn.disabled = false;
+                };
+
                 var forms = document.querySelectorAll('form[method="post"]');
                 forms.forEach(function(form) {
                     var submitBtn = form.querySelector('button.js-save-btn');
@@ -1681,10 +1830,7 @@ final class AppSettingsHandler
                     submitBtn.disabled = true;
 
                     function markDirty() {
-                        if (dirtyForm === form) return;
-                        dirtyForm = form;
-                        form.classList.add('form-dirty');
-                        submitBtn.disabled = false;
+                        window.markFormDirty(form);
                     }
 
                     function markClean() {
@@ -1696,6 +1842,8 @@ final class AppSettingsHandler
                         input.addEventListener('change', markDirty);
                         input.addEventListener('input', markDirty);
                     });
+                    // Expose _markDirty on form element so any custom control can call form._markDirty()
+                    form._markDirty = markDirty;
                     form.addEventListener('submit', function() {
                         markClean();
                     });
@@ -1970,6 +2118,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 </head>
 <body>
 HTML;
+    }
+
+    /** Объединяет два телефонных поля (мобильный + городской) через ';' для хранения в одном поле БД. */
+    private static function buildContactPhoneField(string $phone1, string $phone2): string
+    {
+        $parts = array_filter([trim($phone1), trim($phone2)]);
+        return implode(';', $parts);
     }
 
     private static function renderError(string $message): void

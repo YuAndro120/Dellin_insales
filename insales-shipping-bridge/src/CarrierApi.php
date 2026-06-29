@@ -414,11 +414,11 @@ final class CarrierApi
                 'sender' => [
                     'counteragent'   => $senderCounterAgent,
                     'contactPersons' => [['name' => $settings->senderContactName ?? $settings->senderName ?? 'Отправитель']],
-                    'phoneNumbers'   => [['number' => preg_replace('/\D/', '', $settings->senderContactPhone ?? '') ?: '70000000000']],
+                    'phoneNumbers'   => self::buildSenderPhoneNumbers($settings->senderContactPhone ?? ''),
                     'dataForReceipt' => [
                         'send'        => true,
                         'email'       => $settings->requesterEmail ?? null,
-                        'phoneNumber' => preg_replace('/\D/', '', $settings->senderContactPhone ?? '') ?: null,
+                        'phoneNumber' => self::normPhone(explode(';', $settings->senderContactPhone ?? '')[0]) ?: null,
                     ],
                 ],
                 'receiver' => $receiverBlock,
@@ -1448,5 +1448,59 @@ final class CarrierApi
             substr($h, 0, 4),
             substr($h, 4, 12)
         );
+    }
+    // ─────────────────────────────────────────────────────────────
+    // Phone helpers
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Нормализует телефонный номер до 11-значного формата 7XXXXXXXXXX.
+     * Городской с добавочным: "84959901234,123" → "84959901234" (добавочный игнорируется на уровне номера).
+     * Если номер некорректный — возвращает пустую строку.
+     */
+    public static function normPhone(string $raw): string
+    {
+        // Убираем добавочный (после запятой или через слово доб/ext)
+        $raw = preg_replace('/[,;].*$|\s*(доб|ext)\.?\s*\d+/ui', '', $raw);
+        $digits = preg_replace('/\D/', '', $raw);
+        if ($digits === null || $digits === '') return '';
+        if (strlen($digits) === 10) $digits = '7' . $digits;
+        if (strlen($digits) === 11 && $digits[0] === '8') $digits = '7' . substr($digits, 1);
+        if (strlen($digits) !== 11 || $digits[0] !== '7') return '';
+        return $digits;
+    }
+
+    /**
+     * Добавочный номер (если есть, после запятой или "доб").
+     */
+    public static function extractExtension(string $raw): string
+    {
+        if (preg_match('/[,;]\s*(\d+)/', $raw, $m)) return $m[1];
+        if (preg_match('/(?:доб|ext)\.?\s*(\d+)/ui', $raw, $m)) return $m[1];
+        return '';
+    }
+
+    /**
+     * Строит массив phoneNumbers для API ДЛ из строки вида "79131234567;84959901234,123"
+     * (разделитель — точка с запятой, добавочный — запятая).
+     *
+     * @return list<array{number:string,additionalNumber?:string}>
+     */
+    public static function buildSenderPhoneNumbers(string $raw): array
+    {
+        $parts = array_filter(array_map('trim', explode(';', $raw)));
+        $result = [];
+        foreach ($parts as $part) {
+            $norm = self::normPhone($part);
+            if ($norm === '') continue;
+            $ext = self::extractExtension($part);
+            $entry = ['number' => $norm];
+            if ($ext !== '') $entry['additionalNumber'] = $ext;
+            $result[] = $entry;
+        }
+        if ($result === []) {
+            $result = [['number' => '70000000000']];
+        }
+        return $result;
     }
 }

@@ -603,7 +603,6 @@ final class AppSettingsHandler
                                                     <label>Телефон</label>
                                                     <div class="phone-wrap" id="phoneWrap1">
                                                         <button type="button" class="phone-flag" id="phoneFlag1" title="Выбор страны">
-                                                            <span class="flag-cc" id="flagEmoji1">RU</span>
                                                             <span class="flag-code" id="flagCode1">+7</span>
                                                         </button>
                                                         <input type="text" id="sender_contact_phone" name="sender_contact_phone"
@@ -629,7 +628,6 @@ final class AppSettingsHandler
                                                         <label>Дополнительный номер</label>
                                                         <div class="phone-wrap" id="phoneWrap2">
                                                             <button type="button" class="phone-flag" id="phoneFlag2" title="Выбор страны">
-                                                                <span class="flag-cc" id="flagEmoji2">RU</span>
                                                                 <span class="flag-code" id="flagCode2">+7</span>
                                                             </button>
                                                             <input type="text" id="sender_contact_phone2" name="sender_contact_phone2"
@@ -650,7 +648,7 @@ final class AppSettingsHandler
                                                 </div>
                                                 <button type="button" id="removePhone2Btn" style="font-size:11px;color:var(--ink3);background:none;border:0;cursor:pointer;padding:0;margin-top:2px">✕ Убрать дополнительный номер</button>
                                             </div>
-                                            <div id="addPhone2Btn" style="<?= $hasPhone2 ? 'display:none' : '' ?>;margin-top:10px">
+                                            <div id="addPhone2Btn" style="<?= $hasPhone2 ? 'display:none' : '' ?>;margin-top:8px">
                                                 <button type="button" onclick="showPhone2()" style="font-size:12px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ Добавить дополнительный номер</button>
                                             </div>
                                         </div>
@@ -2446,7 +2444,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .phone-flag:hover{background:var(--s3)}
 .flag-cc{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink);line-height:1;font-family:var(--mono)}
 .flag-code{font-size:11px;font-weight:600;color:var(--ink3)}
-.phone-input{flex:1;padding:9px 12px;background:transparent;border:0;font-size:13px;color:var(--ink);font-family:var(--sans);outline:none;min-width:0;border-radius:0 var(--r2) var(--r2) 0;height:38px}
+.phone-input{flex:1;padding:9px 12px;background:transparent;border:0;font-size:13px;color:var(--ink);font-family:var(--sans);outline:none;min-width:0;border-radius:0;height:38px}
 .phone-wrap{min-height:38px}
 .phone-flag-dropdown{position:fixed;z-index:9999;background:var(--s1);border:1px solid var(--line);border-radius:var(--r2);box-shadow:0 8px 24px rgba(26,23,20,.16);min-width:220px;max-height:220px;overflow-y:auto;padding:4px}
 .pflag-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s}

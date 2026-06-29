@@ -603,7 +603,7 @@ final class AppSettingsHandler
                                                     <label>Телефон</label>
                                                     <div class="phone-wrap" id="phoneWrap1">
                                                         <button type="button" class="phone-flag" id="phoneFlag1" title="Выбор страны">
-                                                            <span class="flag-emoji" id="flagEmoji1">🇷🇺</span>
+                                                            <span class="flag-cc" id="flagEmoji1">RU</span>
                                                             <span class="flag-code" id="flagCode1">+7</span>
                                                         </button>
                                                         <input type="text" id="sender_contact_phone" name="sender_contact_phone"
@@ -629,7 +629,7 @@ final class AppSettingsHandler
                                                         <label>Дополнительный номер</label>
                                                         <div class="phone-wrap" id="phoneWrap2">
                                                             <button type="button" class="phone-flag" id="phoneFlag2" title="Выбор страны">
-                                                                <span class="flag-emoji" id="flagEmoji2">🇷🇺</span>
+                                                                <span class="flag-cc" id="flagEmoji2">RU</span>
                                                                 <span class="flag-code" id="flagCode2">+7</span>
                                                             </button>
                                                             <input type="text" id="sender_contact_phone2" name="sender_contact_phone2"
@@ -1535,7 +1535,7 @@ final class AppSettingsHandler
                         PHONE_COUNTRIES.forEach(function(c) {
                             var item = document.createElement('div');
                             item.className = 'pflag-item';
-                            item.innerHTML = '<span style="font-size:18px;margin-right:8px">' + c.flag + '</span>' +
+                            item.innerHTML = '<span class="pflag-cc">' + c.code + '</span>' +
                                 '<span style="font-size:13px;color:var(--ink)">' + c.name + '</span>' +
                                 '<span style="font-size:11px;color:var(--ink3);margin-left:auto">+' + c.dial + '</span>';
                             item.addEventListener('click', function(e) {
@@ -1550,7 +1550,7 @@ final class AppSettingsHandler
 
                     function selectCountry(c) {
                         currentCountry = c;
-                        if (flagEl) flagEl.textContent = c.flag;
+                        if (flagEl) flagEl.textContent = c.code;
                         if (codeEl) codeEl.textContent = '+' + c.dial;
                         updateHint();
                         var f = input.closest('form');
@@ -1567,11 +1567,24 @@ final class AppSettingsHandler
                                 e.stopPropagation();
                                 if (!dropdown) return;
                                 var isOpen = dropdown.style.display !== 'none';
-                                // Close all
                                 document.querySelectorAll('.phone-flag-dropdown').forEach(function(d) {
                                     d.style.display = 'none';
                                 });
-                                dropdown.style.display = isOpen ? 'none' : 'block';
+                                if (isOpen) return;
+                                // Position with fixed: under button, or above if not enough space
+                                var rect = btn.getBoundingClientRect();
+                                var spaceBelow = window.innerHeight - rect.bottom;
+                                var dropH = 220;
+                                dropdown.style.display = 'block';
+                                dropdown.style.width = '240px';
+                                dropdown.style.left = rect.left + 'px';
+                                if (spaceBelow >= dropH || spaceBelow >= 120) {
+                                    dropdown.style.top = (rect.bottom + 4) + 'px';
+                                    dropdown.style.bottom = 'auto';
+                                } else {
+                                    dropdown.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+                                    dropdown.style.top = 'auto';
+                                }
                             });
                         }
                     }
@@ -1609,7 +1622,7 @@ final class AppSettingsHandler
                         var detected = detectCountry(digits);
                         if (detected.code !== currentCountry.code) selectCountry(detected);
                         // Update flag visually
-                        if (flagEl) flagEl.textContent = currentCountry.flag;
+                        if (flagEl) flagEl.textContent = currentCountry.code;
                         if (codeEl) codeEl.textContent = '+' + currentCountry.dial;
                         updateHint();
                         var f = this.closest('form');
@@ -1618,10 +1631,11 @@ final class AppSettingsHandler
 
                     // Init on load
                     var initVal = input.value.replace(/\D/g, '');
-                    if (initVal) {
-                        var initC = detectCountry(initVal);
-                        selectCountry(initC);
-                    }
+                    var initC = initVal ? detectCountry(initVal) : PHONE_COUNTRIES[0];
+                    // Silent init (no markDirty)
+                    currentCountry = initC;
+                    if (flagEl) flagEl.textContent = initC.code;
+                    if (codeEl) codeEl.textContent = '+' + initC.dial;
                     updateHint();
                 }
 
@@ -2428,13 +2442,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 /* PHONE WIDGET */
 .phone-wrap{position:relative;display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);transition:border .15s,box-shadow .15s;overflow:visible}
 .phone-wrap:focus-within{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
-.phone-flag{display:flex;align-items:center;gap:4px;padding:8px 10px 8px 12px;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;font-size:12px;color:var(--ink2);font-family:var(--sans);font-weight:500;transition:background .12s;border-radius:var(--r2) 0 0 var(--r2)}
+.phone-flag{display:flex;align-items:center;gap:3px;padding:0 10px 0 11px;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;color:var(--ink2);font-family:var(--sans);transition:background .12s;border-radius:var(--r2) 0 0 var(--r2);height:100%}
 .phone-flag:hover{background:var(--s3)}
-.flag-emoji{font-size:18px;line-height:1}
-.flag-code{font-size:12px;font-weight:600;color:var(--ink2)}
-.phone-input{flex:1;padding:9px 12px;background:transparent;border:0;font-size:13px;color:var(--ink);font-family:var(--sans);outline:none;min-width:0;border-radius:0 var(--r2) var(--r2) 0}
-.phone-flag-dropdown{position:absolute;top:calc(100% + 4px);left:0;z-index:100;background:var(--s1);border:1px solid var(--line);border-radius:var(--r2);box-shadow:0 8px 24px rgba(26,23,20,.12);min-width:220px;max-height:260px;overflow-y:auto;padding:4px}
-.pflag-item{display:flex;align-items:center;gap:0;padding:8px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s}
+.flag-cc{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink);line-height:1;font-family:var(--mono)}
+.flag-code{font-size:11px;font-weight:600;color:var(--ink3)}
+.phone-input{flex:1;padding:9px 12px;background:transparent;border:0;font-size:13px;color:var(--ink);font-family:var(--sans);outline:none;min-width:0;border-radius:0 var(--r2) var(--r2) 0;height:38px}
+.phone-wrap{min-height:38px}
+.phone-flag-dropdown{position:fixed;z-index:9999;background:var(--s1);border:1px solid var(--line);border-radius:var(--r2);box-shadow:0 8px 24px rgba(26,23,20,.16);min-width:220px;max-height:220px;overflow-y:auto;padding:4px}
+.pflag-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s}
+.pflag-cc{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink);font-family:var(--mono);min-width:28px}
 .pflag-item:hover{background:var(--ambl)}
 .phone-valid-hint{font-size:11px;margin-top:4px;min-height:16px;transition:color .15s}
 .phone-valid-hint.valid{color:var(--grn)}

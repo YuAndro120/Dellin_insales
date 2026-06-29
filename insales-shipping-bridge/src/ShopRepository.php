@@ -8,7 +8,7 @@ use PDO;
 
 final class ShopRepository
 {
-    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, derival_time_from, derival_time_to, derival_break_from, derival_break_to, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_juridical_address, sender_opf_name, freight_name, delivery_payer, requester_role, package_uid, package_name, delivery_types, package_in_calc, derival_city_name';
+    private const SELECT_FIELDS = 'insales_id, shop_host, api_password, dellin_appkey, dellin_pat_enc, sender_terminal_id, derival_variant, derival_city_kladr, derival_street, derival_house, derival_time_from, derival_time_to, derival_break_from, derival_break_to, requester_email, counteragent_uid, sender_counteragent_id, sender_name, sender_type, sender_inn, sender_doc_type, sender_doc_serial, sender_doc_number, sender_contact_name, sender_contact_phone, freight_uid, produce_days_offset, default_stated_value, default_weight_kg, default_dimensions_cm, is_enabled, sender_opf_uid, sender_opf_name, freight_name, delivery_payer, requester_role, package_uid, package_name, delivery_types, package_in_calc, derival_city_name';
 
     public function __construct(private readonly PDO $pdo) {}
 
@@ -177,7 +177,6 @@ SQL;
               sender_contact_phone  = :sender_contact_phone,
               sender_opf_uid        = :sender_opf_uid,
               sender_opf_name = :sender_opf_name,
-              sender_juridical_address = :sender_juridical_address,
               freight_uid           = :freight_uid,
               freight_name = :freight_name,
               package_uid  = :package_uid,
@@ -217,7 +216,6 @@ SQL;
             ':sender_contact_phone' => trim((string) ($data['sender_contact_phone'] ?? '')) ?: null,
             ':sender_opf_uid'       => trim((string) ($data['sender_opf_uid'] ?? '')) ?: null,
             ':sender_opf_name' => trim((string) ($data['sender_opf_name'] ?? '')),
-            ':sender_juridical_address' => trim((string) ($data['sender_juridical_address'] ?? '')) ?: '',
             ':freight_uid'         => $freightUid !== '' ? $freightUid : null,
             ':freight_name' => trim((string) ($data['freight_name'] ?? '')),
             ':package_uid'  => trim((string) ($data['package_uid']  ?? '')),

@@ -125,7 +125,7 @@ final class InstallHandlers
     $url = rtrim($bridgeUrl, '/');
     return <<<HTML
 <html><head><meta charset="utf-8">
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="/fonts/fonts.css" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Instrument Sans',system-ui,sans-serif;background:#f5f3f0;color:#1a1714;font-size:13px;padding:10px}

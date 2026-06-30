@@ -30,6 +30,13 @@ $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $corsOrigin = getenv('CORS_ORIGIN') ?: '*';
 $cors = Response::corsHeaders($corsOrigin);
 
+// ── Security headers (применяются ко всем ответам) ──
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('X-XSS-Protection: 1; mode=block');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://suggestions.dadata.ru; frame-ancestors 'none';");
+
 if ($method === 'OPTIONS') {
     http_response_code(204);
     foreach ($cors as $h) {

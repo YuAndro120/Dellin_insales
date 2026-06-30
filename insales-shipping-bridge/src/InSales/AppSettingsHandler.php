@@ -2940,7 +2940,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .field-err-msg{font-size:11px;color:#b91c1c;margin-top:4px;display:none}
 
 /* PHONE WIDGET */
-.phone-wrap{position:relative;display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);transition:border .15s,box-shadow .15s;overflow:hidden;min-height:36px}
+.phone-wrap{position:relative;display:flex;align-items:stretch;height:36px;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);transition:border .15s,box-shadow .15s;overflow:hidden}
 .phone-wrap:focus-within{border-color:var(--amber);box-shadow:0 0 0 3px var(--ambl);background:var(--s1)}
 .phone-flag{display:flex;align-items:center;justify-content:center;width:48px;padding:0;background:transparent;border:0;border-right:1px solid var(--line);cursor:pointer;flex-shrink:0;transition:background .12s;border-radius:0;height:100%}
 .phone-flag:hover{background:var(--s3)}

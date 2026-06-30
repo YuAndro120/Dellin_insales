@@ -2412,16 +2412,31 @@ final class AppSettingsHandler
                     if (opfShort) {
                         fetchJ(opfBase + encodeURIComponent(opfShort)).then(function(j) {
                             var items = j.items || [],
-                                matched = null;
+                                matched = null,
+                                q = opfShort.toUpperCase();
+                            // Точное совпадение по name (краткое, напр. "ИП") или title
                             for (var i = 0; i < items.length; i++) {
-                                if (items[i].title.toUpperCase() === opfShort.toUpperCase()) {
+                                var t = items[i].title.toUpperCase(),
+                                    n = (items[i].name || '').toUpperCase();
+                                if (n === q || t === q) {
                                     matched = items[i];
                                     break;
                                 }
                             }
+                            // Частичное по title или name
                             if (!matched)
                                 for (var i = 0; i < items.length; i++) {
-                                    if (items[i].title.toUpperCase().indexOf(opfShort.toUpperCase()) !== -1) {
+                                    var t = items[i].title.toUpperCase(),
+                                        n = (items[i].name || '').toUpperCase();
+                                    if (t.indexOf(q) !== -1 || n.indexOf(q) !== -1) {
+                                        matched = items[i];
+                                        break;
+                                    }
+                                }
+                            // Приоритет — Россия, если ничего не нашли
+                            if (!matched)
+                                for (var i = 0; i < items.length; i++) {
+                                    if ((items[i].country_name || '').indexOf('Росс') !== -1) {
                                         matched = items[i];
                                         break;
                                     }

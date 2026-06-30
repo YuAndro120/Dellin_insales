@@ -1073,7 +1073,6 @@ final class AppSettingsHandler
                             <input type="hidden" name="sender_opf_uid" value="<?= $h($s->senderOpfUid ?? '') ?>">
                             <input type="hidden" name="sender_opf_name" value="<?= $h($s->senderOpfName ?? '') ?>">
                             <input type="hidden" name="sender_juridical_address" value="<?= $h($s->senderJuridicalAddress ?? '') ?>">
-                            <input type="hidden" name="is_enabled" value="<?= $s->isEnabled ? '1' : '' ?>">
                             <input type="hidden" name="package_uid" value="<?= $h($s->packageUid) ?>">
                             <input type="hidden" name="package_name" value="<?= $h($s->packageName) ?>">
                             <input type="hidden" name="derival_city_name" value="<?= $h($s->derivalCityName ?? '') ?>">

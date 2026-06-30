@@ -2561,8 +2561,8 @@ final class AppSettingsHandler
 
                 function phoneIsValid(digits, c) {
                     if (!digits) return false;
-                    if ((c.code === 'RU' || c.code === 'KZ') && digits[0] === '8') digits = '7' + digits.slice(1);
-                    return digits.startsWith(c.dial) && digits.length === c.len;
+                    var nationalLen = c.len - c.dial.length;
+                    return digits.length === nationalLen;
                 }
 
                 function initPhone(inputId, codeId, dropId, hintId, wrapId) {
@@ -2625,11 +2625,12 @@ final class AppSettingsHandler
                             hintEl.className = 'phone-valid-hint';
                             return;
                         }
+                        var nationalLen = cur.len - cur.dial.length;
                         if (phoneIsValid(digits, cur)) {
                             hintEl.textContent = '✓ Номер корректен';
                             hintEl.className = 'phone-valid-hint valid';
                         } else {
-                            var m = cur.len - digits.length;
+                            var m = nationalLen - digits.length;
                             hintEl.textContent = m > 0 ? 'Ещё ' + m + (m === 1 ? ' цифра' : m < 5 ? ' цифры' : ' цифр') : '✗ Неверный формат';
                             hintEl.className = 'phone-valid-hint ' + (m > 0 ? 'pending' : 'invalid');
                         }

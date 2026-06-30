@@ -23,7 +23,7 @@ final class ConsentHandler
             return;
         }
 
-        if (\ShippingBridge\RateLimiter::isBlocked($config, 'consent', 10, 300)) {
+        if (\ShippingBridge\RateLimiter::isBlocked($config, 'consent', 10, 300, true)) {
             http_response_code(429);
             echo json_encode(['ok' => false, 'error' => 'Слишком много запросов. Попробуйте позже.']);
             return;

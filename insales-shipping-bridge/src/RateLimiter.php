@@ -13,14 +13,15 @@ final class RateLimiter
     /**
      * @return bool true если лимит превышен и запрос нужно отклонить
      */
-    public static function isBlocked(Config $config, string $action, int $maxAttempts = 5, int $windowSeconds = 300): bool
+    public static function isBlocked(Config $config, string $action, int $maxAttempts = 5, int $windowSeconds = 300, bool $countAllAttempts = false): bool
     {
         $ip = self::clientIp();
         $pdo = Db::pdo($config);
 
+        $successFilter = $countAllAttempts ? '' : 'AND success = 0';
         $stmt = $pdo->prepare(
-            'SELECT COUNT(*) FROM admin_login_attempts
-             WHERE ip_address = :ip AND success = 0 AND attempted_at > (NOW() - INTERVAL :window SECOND)'
+            "SELECT COUNT(*) FROM admin_login_attempts
+             WHERE ip_address = :ip {$successFilter} AND attempted_at > (NOW() - INTERVAL :window SECOND)"
         );
         $stmt->bindValue(':ip', $ip . '|' . $action);
         $stmt->bindValue(':window', $windowSeconds, \PDO::PARAM_INT);

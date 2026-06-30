@@ -453,7 +453,7 @@ final class CarrierApi
 
         if ($requestId === 0) {
             \ShippingBridge\Logger::error($settings->insalesId, $orderIdForLog, 'order.create.no_request_id', [
-                'response' => $res,
+                'response' => \ShippingBridge\Logger::maskSensitiveFields($res),
             ]);
             throw new \RuntimeException('Dellin не вернул requestID: ' . json_encode($res, JSON_UNESCAPED_UNICODE));
         }

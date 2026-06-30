@@ -23,6 +23,12 @@ final class ConsentHandler
             return;
         }
 
+        if (\ShippingBridge\RateLimiter::isBlocked($config, 'consent', 10, 300)) {
+            http_response_code(429);
+            echo json_encode(['ok' => false, 'error' => 'Слишком много запросов. Попробуйте позже.']);
+            return;
+        }
+
         $source     = trim((string) ($_POST['source']     ?? 'landing'));
         $email      = trim((string) ($_POST['email']      ?? '')) ?: null;
         $insalesId  = trim((string) ($_POST['insales_id'] ?? '')) ?: null;
@@ -72,8 +78,10 @@ final class ConsentHandler
                 'ck'     => $consentCk,
             ]);
 
+            \ShippingBridge\RateLimiter::recordAttempt($config, 'consent', true);
             echo json_encode(['ok' => true]);
         } catch (\Throwable $e) {
+            \ShippingBridge\RateLimiter::recordAttempt($config, 'consent', false);
             http_response_code(500);
             echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
         }

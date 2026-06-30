@@ -219,6 +219,9 @@ final class AppSettingsHandler
 
     private static function handleDellinAuth(ShopRepository $shops, Config $config, ShopSettings $settings): ?string
     {
+        if (\ShippingBridge\RateLimiter::isBlocked($config, 'dellin_auth', 5, 300)) {
+            return 'Слишком много попыток. Подождите 5 минут и попробуйте снова.';
+        }
         if ($config->bridgeSecret === '') {
             return 'Задайте BRIDGE_SECRET в .env на сервере.';
         }
@@ -241,7 +244,9 @@ final class AppSettingsHandler
             $api = new CarrierApi($config);
             $api->loginWithPat(new CarrierCredentials($appkey, $pat));
             $shops->saveDellinCredentials($settings->insalesId, $appkey, $pat, $config->bridgeSecret);
+            \ShippingBridge\RateLimiter::recordAttempt($config, 'dellin_auth', true);
         } catch (\Throwable $e) {
+            \ShippingBridge\RateLimiter::recordAttempt($config, 'dellin_auth', false);
             return 'Не удалось авторизоваться в Dellin: ' . $e->getMessage();
         }
         return null;

@@ -82,9 +82,7 @@ final class CheckoutPage
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Оформление подписки — ДЛ Коннект</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
+  <link href="/fonts/fonts.css" rel="stylesheet">
     :root {
       --bg:         #16181c;
       --bg-soft:    #1c1f24;
@@ -489,8 +487,7 @@ HTML;
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Оплата прошла — ДЛ Коннект</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="/fonts/fonts.css" rel="stylesheet">
   <style>
     :root { --bg:#16181c; --bg-card:#1f2228; --line:#2c3038; --ink:#f2efe9; --ink-dim:#a8a59d; --ink-faint:#6b6963; --amber:#e8742c; --green:#5fb88a; --green-soft:#1a2b22 }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
@@ -531,8 +528,7 @@ HTML;
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ошибка оплаты — ДЛ Коннект</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="/fonts/fonts.css" rel="stylesheet">
   <style>
     :root { --bg:#16181c; --bg-card:#1f2228; --line:#2c3038; --ink:#f2efe9; --ink-dim:#a8a59d; --ink-faint:#6b6963; --amber:#e8742c; --red-soft:#2c1414 }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }

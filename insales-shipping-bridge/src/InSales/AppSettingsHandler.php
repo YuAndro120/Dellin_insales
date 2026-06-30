@@ -789,7 +789,7 @@ final class AppSettingsHandler
                                                     <div class="field">
                                                         <label>ИНН</label>
                                                         <div style="position:relative">
-                                                            <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="1234567890 — начните вводить…" class="<?= (($s->senderInn ?? '') === '' && $s->senderType !== 'person') ? 'field-err' : '' ?>" autocomplete="off" inputmode="numeric" maxlength="12">
+                                                            <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="ИНН или название организации…" class="<?= (($s->senderInn ?? '') === '' && $s->senderType !== 'person') ? 'field-err' : '' ?>" autocomplete="off" maxlength="255">
                                                             <ul id="innSuggestions" class="suggestions" style="position:fixed;z-index:9999;display:none"></ul>
                                                         </div>
                                                         <div class="field-err-msg" id="innErrMsg">Введите ИНН — обязательное поле для организаций</div>

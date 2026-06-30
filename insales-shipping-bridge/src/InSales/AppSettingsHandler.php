@@ -790,7 +790,7 @@ final class AppSettingsHandler
                                                         <label>ИНН</label>
                                                         <div style="position:relative">
                                                             <input type="text" id="sender_inn" name="sender_inn" value="<?= $h($s->senderInn ?? '') ?>" placeholder="1234567890 — начните вводить…" class="<?= (($s->senderInn ?? '') === '' && $s->senderType !== 'person') ? 'field-err' : '' ?>" autocomplete="off" inputmode="numeric" maxlength="12">
-                                                            <ul id="innSuggestions" class="suggestions" style="position:absolute;top:100%;left:0;right:0;z-index:50"></ul>
+                                                            <ul id="innSuggestions" class="suggestions" style="position:fixed;z-index:9999;display:none"></ul>
                                                         </div>
                                                         <div class="field-err-msg" id="innErrMsg">Введите ИНН — обязательное поле для организаций</div>
                                                         <div id="innStatus" style="font-size:11px;color:var(--ink3);margin-top:4px"></div>
@@ -2484,6 +2484,10 @@ final class AppSettingsHandler
                                     });
                                     innSugg.appendChild(li);
                                 });
+                                var rect = innEl.getBoundingClientRect();
+                                innSugg.style.left = rect.left + 'px';
+                                innSugg.style.top = (rect.bottom + 4) + 'px';
+                                innSugg.style.width = rect.width + 'px';
                                 innSugg.style.display = 'block';
                             });
                         }, 400);

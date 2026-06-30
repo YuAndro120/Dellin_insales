@@ -690,7 +690,7 @@ final class AppSettingsHandler
                             elseif (!$chk_ca) $next_action = 'Выберите контрагента в Деловых Линиях.';
                             else $next_action = 'Всё готово — переходите к настройке доставки.';
                             ?>
-                            php<div class="<?= $done_sender === $total_sender ? 'page-grid' : 'page-grid-3' ?>">
+                            <div class="<?= $done_sender === $total_sender ? 'page-grid' : 'page-grid-3' ?>">
                                 <div class="page-col">
                                     <!-- Организация -->
                                     <div class="card">
@@ -2687,12 +2687,10 @@ final class AppSettingsHandler
                     if (f && f._markDirty) f._markDirty();
                 });
 
-                // expose _markDirty
+                // expose _markDirty as alias to global markFormDirty (unify with nav-item dirty check)
                 document.querySelectorAll('form[method="post"]').forEach(function(form) {
                     form._markDirty = function() {
-                        var btn = form.querySelector('button.js-save-btn');
-                        if (btn) btn.disabled = false;
-                        form.classList.add('form-dirty');
+                        if (window.markFormDirty) window.markFormDirty(form);
                     };
                 });
             })();

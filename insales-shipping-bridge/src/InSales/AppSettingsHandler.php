@@ -886,7 +886,7 @@ final class AppSettingsHandler
                                                         <button type="button" onclick="showPhone2()" style="font-size:11px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ доп. номер</button>
                                                     </div>
                                                 </div>
-                                                <div id="phone2Block" style="grid-column:1/-1;<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:2px;padding-top:10px;padding-right:2px;border-top:1px solid var(--s3)">
+                                                <div id="phone2Block" style="<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:2px;padding-top:10px;border-top:1px solid var(--s3);width:100%;box-sizing:border-box">
                                                     <div class="g2" style="gap:10px">
                                                         <div class="field" style="margin-bottom:0">
                                                             <label>Доп. номер</label>

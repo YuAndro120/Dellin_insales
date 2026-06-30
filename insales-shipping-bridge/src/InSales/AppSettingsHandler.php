@@ -864,6 +864,12 @@ final class AppSettingsHandler
                                         <div class="card-body" style="padding:14px 16px">
                                             <div class="g2" style="gap:10px">
                                                 <div class="field" style="margin-bottom:0"><label>Имя</label><input type="text" id="sender_contact_name" name="sender_contact_name" value="<?= $h($s->senderContactName ?? '') ?>" placeholder="Иванов Иван"></div>
+                                                <?php
+                                                $ph2raw = explode(';', $s->senderContactPhone ?? '')[1] ?? '';
+                                                $ph2num = preg_replace('/,.*$/', '', $ph2raw);
+                                                $ph2ext = (strpos($ph2raw, ',') !== false) ? substr($ph2raw, strpos($ph2raw, ',') + 1) : '';
+                                                $hasPhone2 = trim($ph2raw) !== '';
+                                                ?>
                                                 <div class="field" style="margin-bottom:0">
                                                     <label>Телефон</label>
                                                     <div class="phone-wrap" id="phoneWrap1">
@@ -876,17 +882,11 @@ final class AppSettingsHandler
                                                         <div class="phone-flag-dropdown" id="phoneDropdown1" style="display:none;position:fixed"></div>
                                                     </div>
                                                     <div class="phone-valid-hint" id="phoneHint1"></div>
+                                                    <div id="addPhone2Btn" style="<?= $hasPhone2 ? 'display:none;' : '' ?>margin-top:6px">
+                                                        <button type="button" onclick="showPhone2()" style="font-size:11px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ доп. номер</button>
+                                                    </div>
                                                 </div>
-                                                <?php
-                                                $ph2raw = explode(';', $s->senderContactPhone ?? '')[1] ?? '';
-                                                $ph2num = preg_replace('/,.*$/', '', $ph2raw);
-                                                $ph2ext = (strpos($ph2raw, ',') !== false) ? substr($ph2raw, strpos($ph2raw, ',') + 1) : '';
-                                                $hasPhone2 = trim($ph2raw) !== '';
-                                                ?>
                                                 <div class="field" style="grid-column:1/-1;margin-bottom:0"><label>Email для уведомлений ДЛ</label><input type="email" id="requester_email" name="requester_email" value="<?= $h($s->requesterEmail) ?>" required></div>
-                                                <div id="addPhone2Btn" style="grid-column:1/-1;text-align:right;<?= $hasPhone2 ? 'display:none;' : '' ?>margin-top:4px">
-                                                    <button type="button" onclick="showPhone2()" style="font-size:11px;color:var(--amber);background:none;border:0;cursor:pointer;padding:0;font-weight:500">+ доп. номер</button>
-                                                </div>
                                                 <div id="phone2Block" style="grid-column:1/-1;<?= $hasPhone2 ? '' : 'display:none' ?>;margin-top:2px;padding-top:10px;border-top:1px solid var(--s3)">
                                                     <div class="g2" style="gap:10px">
                                                         <div class="field" style="margin-bottom:0">
@@ -2294,7 +2294,7 @@ final class AppSettingsHandler
                     '<div style="font-size:13.5px;color:var(--ink2);line-height:1.6;margin-bottom:24px">Вы внесли изменения, которые ещё не сохранены. Уйти без сохранения?</div>' +
                     '<div style="display:flex;gap:10px;justify-content:flex-end">' +
                     '<button id="dirty-cancel" class="btn-g">Остаться</button>' +
-                    '<button id="dirty-ok" style="padding:9px 20px;background:var(--err);border:0;border-radius:var(--r2);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)">Уйти без сохранения</button>' +
+                    '<button id="dirty-ok" style="padding:9px 20px;background:#dc2626;border:0;border-radius:var(--r2);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)">Уйти без сохранения</button>' +
                     '</div></div></div>';
                 document.body.appendChild(el.firstChild);
                 document.getElementById('dirty-cancel').addEventListener('click', function() {

@@ -270,7 +270,7 @@ final class AppSettingsHandler
                 </div>
                 <div class="auth-title">Подключение к Деловым Линиям</div>
                 <div class="auth-sub">Магазин: <strong><?= $h($s->shopHost) ?></strong></div>
-                <p class="auth-desc">Укажите персональный токен (PAT) из личного кабинета ДЛ → Настройки → Интеграция.</p>
+                <p class="auth-desc">Укажите API-ключ и персональный токен (PAT) из личного кабинета ДЛ → Настройки → Интеграция.</p>
                 <?php if ($error !== null): ?>
                     <div class="alert-err"><?= $h($error) ?></div>
                 <?php endif; ?>
@@ -283,9 +283,9 @@ final class AppSettingsHandler
                         <label>Персональный токен (PAT)</label>
                         <input type="password" name="dellin_pat" required autocomplete="off" placeholder="dl-api-…">
                     </div>
-                    <button type="submit" class="btn-p" style="width:100%;margin-top:8px">Подключить</button>
+                    <button type="submit" class="btn-p" style="width:100%;margin-top:8px">Подключить →</button>
                 </form>
-                <a href="https://www.dellin.ru/cabinet/account/pat/" target="_blank" class="auth-link">Получить PAT</a>
+                <a href="https://dev.dellin.ru/api/swagger/" target="_blank" class="auth-link">Документация API ДЛ ↗</a>
             </div>
         </div>
     <?php
@@ -1623,22 +1623,36 @@ final class AppSettingsHandler
                     });
                 }
 
-                // ── Nav ──
+                // ── Nav (с проверкой несохранённых изменений) ──
+                function switchToPage(btn) {
+                    document.querySelectorAll('.nav-item').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    document.querySelectorAll('.page').forEach(function(p) {
+                        p.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+                    var pg = document.getElementById('page-' + btn.dataset.page);
+                    if (pg) pg.classList.add('active');
+                    var lbl = document.getElementById('topbar-page');
+                    if (lbl) lbl.textContent = btn.dataset.label || '';
+                    if (window.innerWidth <= 768) closeSidebar();
+                    sessionStorage.setItem('activeNavPage', btn.dataset.page);
+                }
                 document.querySelectorAll('.nav-item').forEach(function(btn) {
-                    btn.addEventListener('click', function() {
-                        document.querySelectorAll('.nav-item').forEach(function(b) {
-                            b.classList.remove('active');
-                        });
-                        document.querySelectorAll('.page').forEach(function(p) {
-                            p.classList.remove('active');
-                        });
-                        this.classList.add('active');
-                        var pg = document.getElementById('page-' + this.dataset.page);
-                        if (pg) pg.classList.add('active');
-                        var lbl = document.getElementById('topbar-page');
-                        if (lbl) lbl.textContent = this.dataset.label || '';
-                        if (window.innerWidth <= 768) closeSidebar();
-                        sessionStorage.setItem('activeNavPage', this.dataset.page);
+                    btn.addEventListener('click', function(e) {
+                        if (window.hasDirtyForm && window.hasDirtyForm()) {
+                            e.preventDefault();
+                            var targetBtn = this;
+                            window.showDirtyModalGlobal(function(confirmed) {
+                                if (confirmed) {
+                                    window.clearDirtyForm();
+                                    switchToPage(targetBtn);
+                                }
+                            });
+                            return;
+                        }
+                        switchToPage(this);
                     });
                 });
 
@@ -2191,6 +2205,21 @@ final class AppSettingsHandler
             (function() {
                 var dirtyForm = null;
 
+                window.hasDirtyForm = function() {
+                    return dirtyForm !== null;
+                };
+                window.clearDirtyForm = function() {
+                    if (dirtyForm) {
+                        var submitBtn = dirtyForm.querySelector('button.js-save-btn');
+                        dirtyForm.classList.remove('form-dirty');
+                        if (submitBtn) submitBtn.disabled = true;
+                    }
+                    dirtyForm = null;
+                };
+                window.showDirtyModalGlobal = function(cb) {
+                    showDirtyModal(cb);
+                };
+
                 window.markFormDirty = function(formOrEl) {
                     var form = formOrEl instanceof HTMLFormElement ?
                         formOrEl :
@@ -2233,21 +2262,8 @@ final class AppSettingsHandler
                         e.returnValue = '';
                     }
                 });
-                document.querySelectorAll('.nav-item, .nav-link').forEach(function(link) {
-                    link.addEventListener('click', function(e) {
-                        if (!dirtyForm) return;
-                        e.preventDefault();
-                        var href = link.getAttribute('href');
-                        showDirtyModal(function(confirmed) {
-                            if (confirmed) {
-                                dirtyForm = null;
-                                window.location.href = href;
-                            }
-                        });
-                    });
-                });
 
-                // Кнопка Отмена — тоже показывает модалку если есть несохранённые изменения
+                // Кнопка Отмена — показывает модалку если есть несохранённые изменения
                 document.querySelectorAll('.btn-cancel').forEach(function(btn) {
                     btn.addEventListener('click', function(e) {
                         if (!dirtyForm) return;
@@ -2255,7 +2271,7 @@ final class AppSettingsHandler
                         var href = btn.getAttribute('href') || btn.dataset.href;
                         showDirtyModal(function(confirmed) {
                             if (confirmed) {
-                                dirtyForm = null;
+                                window.clearDirtyForm();
                                 if (href) window.location.href = href;
                                 else window.location.reload();
                             }
@@ -2753,9 +2769,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .content{max-width:1100px;padding:36px 40px}
 .page-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
 .page-grid-3{display:grid;grid-template-columns:1fr 1fr 280px;gap:16px;align-items:start}
-.page-grid-3>.page-col{align-self:stretch}
-.page-col{display:flex;flex-direction:column;gap:0}
-.page-col .card:last-child{flex:1}
+.page-col{display:flex;flex-direction:column;gap:12px}
 @media(max-width:1100px){.page-grid-3{grid-template-columns:1fr 1fr}}
 @media(max-width:900px){.page-grid{grid-template-columns:1fr}.page-grid-3{grid-template-columns:1fr}}
 /* PROGRESS CARD */

@@ -225,11 +225,9 @@ final class AppSettingsHandler
         if ($config->bridgeSecret === '') {
             return 'Задайте BRIDGE_SECRET в .env на сервере.';
         }
-        $appkey = trim((string) ($_POST['dellin_appkey'] ?? ''));
-        $pat    = trim((string) ($_POST['dellin_pat']    ?? ''));
-        if ($pat === '') {
-            return 'Укажите персональный токен (PAT).';
-        }
+        $appkey = $config->dellinAppkey;
+        $pat    = trim((string) ($_POST['dellin_pat'] ?? ''));
+
         // При обновлении PAT — берём существующий appkey из БД
         if ($appkey === '' && $config->bridgeSecret !== '') {
             $existing = $shops->findCarrierCredentials($settings->insalesId, $config->bridgeSecret);

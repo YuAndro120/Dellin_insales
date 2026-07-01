@@ -275,7 +275,7 @@ final class AppSettingsHandler
                 </div>
                 <div class="auth-title">Подключение к Деловым Линиям</div>
                 <div class="auth-sub">Магазин: <strong><?= $h($s->shopHost) ?></strong></div>
-                <p class="auth-desc">Укажите API-ключ и персональный токен (PAT) из личного кабинета ДЛ → Настройки → Интеграция.</p>
+                <p class="auth-desc">Укажите API-ключ и персональный токен (PAT) из личного кабинета ДЛ</p>
                 <?php if ($error !== null): ?>
                     <div class="alert-err"><?= $h($error) ?></div>
                 <?php endif; ?>
@@ -288,9 +288,9 @@ final class AppSettingsHandler
                         <label>Персональный токен (PAT)</label>
                         <input type="password" name="dellin_pat" required autocomplete="off" placeholder="dl-api-…">
                     </div>
-                    <button type="submit" class="btn-p" style="width:100%;margin-top:8px">Подключить →</button>
+                    <button type="submit" class="btn-p" style="width:100%;margin-top:8px">Подключить</button>
                 </form>
-                <a href="https://dev.dellin.ru/api/swagger/" target="_blank" class="auth-link">Документация API ДЛ ↗</a>
+                <a href="https://www.dellin.ru/cabinet/account/pat/" target="_blank" rel="noopener">Получить токен в Деловых Линиях</a>
             </div>
         </div>
     <?php

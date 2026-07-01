@@ -386,42 +386,6 @@ final class AppSettingsHandler
                         <div style="height:1px;background:var(--s3);margin-bottom:18px"></div>
                     <?php endif; ?>
 
-                    <?php if (!$hasDellinAuth): ?>
-                        <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;display:flex;align-items:center;gap:8px">Подключение к Деловым Линиям<span style="flex:1;height:1px;background:var(--s3)"></span></div>
-
-                        <div style="background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);padding:12px 14px;margin-bottom:12px">
-                            <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px">
-                                <div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--ink2)">
-                                    <span style="width:18px;height:18px;border-radius:50%;background:var(--ambl);border:1px solid #f5c4b3;color:var(--amber);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">1</span>
-                                    Войдите в личный кабинет Деловых Линий
-                                </div>
-                                <div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--ink2)">
-                                    <span style="width:18px;height:18px;border-radius:50%;background:var(--ambl);border:1px solid #f5c4b3;color:var(--amber);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">2</span>
-                                    Перейдите в Настройки → Интеграция API
-                                </div>
-                                <div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--ink2)">
-                                    <span style="width:18px;height:18px;border-radius:50%;background:var(--ambl);border:1px solid #f5c4b3;color:var(--amber);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">3</span>
-                                    Создайте токен доступа (PAT) и вставьте ниже
-                                </div>
-                            </div>
-                            <a href="https://lk.dellin.ru" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--amber);text-decoration:none;font-weight:600;padding:6px 10px;background:var(--ambl);border:1px solid #f5c4b3;border-radius:var(--r)">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-                                    <polyline points="15 3 21 3 21 9" />
-                                    <line x1="10" y1="14" x2="21" y2="3" />
-                                </svg>
-                                Открыть ЛК Деловых Линий
-                            </a>
-                        </div>
-
-                        <div style="margin-bottom:12px">
-                            <div style="font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.03em;text-transform:uppercase;margin-bottom:5px">Персональный токен (PAT)</div>
-                            <input type="password" id="onboardingPat" placeholder="dl-api-…" autocomplete="off"
-                                style="width:100%;padding:9px 12px;background:var(--s2);border:1px solid var(--line);border-radius:var(--r2);font-size:13px;color:var(--ink);font-family:var(--sans);outline:none;box-sizing:border-box">
-                            <div style="font-size:11px;color:var(--ink3);margin-top:4px">Найти в ЛК ДЛ → Настройки → Интеграция API</div>
-                        </div>
-                    <?php endif; ?>
-
                     <div id="onboardingErr" style="font-size:12px;color:#b91c1c;margin-bottom:10px;display:none"></div>
 
                     <button id="onboardingSubmit" disabled

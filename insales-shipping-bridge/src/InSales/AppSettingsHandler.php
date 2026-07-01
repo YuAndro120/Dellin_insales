@@ -390,7 +390,7 @@ final class AppSettingsHandler
 
                     <button id="onboardingSubmit" disabled
                         style="width:100%;padding:11px;background:var(--s3);border:0;border-radius:var(--r2);color:var(--ink3);font-size:13px;font-weight:600;cursor:not-allowed;font-family:var(--sans);transition:all .2s">
-                        Подключить и начать работу
+                        Начать работу
                     </button>
                     <div style="margin-top:10px;font-size:11px;color:var(--ink3);text-align:center">* Обязательное поле. Без согласия использование приложения невозможно.</div>
                 </div>
@@ -412,7 +412,7 @@ final class AppSettingsHandler
 
                     function updateBtn() {
                         var pdOk = consentGiven || (cbPd && cbPd.checked);
-                        var patOk = hasAuth || (patInput && patInput.value.trim().length > 4);
+                        var patOk = true;
                         var ok = pdOk && patOk;
                         btn.disabled = !ok;
                         btn.style.background = ok ? 'var(--amber)' : 'var(--s3)';

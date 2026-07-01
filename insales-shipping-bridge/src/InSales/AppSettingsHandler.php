@@ -290,7 +290,7 @@ final class AppSettingsHandler
                     </div>
                     <button type="submit" class="btn-p" style="width:100%;margin-top:8px">Подключить</button>
                 </form>
-                <a href="https://www.dellin.ru/cabinet/account/pat/" target="_blank" rel="noopener">Получить токен в Деловых Линиях</a>
+                <a href="https://www.dellin.ru/cabinet/account/pat/" target="_blank" rel="noopener" style="display:block;margin-top:16px;font-size:13px;color:var(--amber);text-decoration:none;text-align:center">Получить токен в Деловых Линиях ↗</a>
             </div>
         </div>
     <?php

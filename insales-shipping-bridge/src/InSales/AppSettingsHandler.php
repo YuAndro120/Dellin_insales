@@ -2692,9 +2692,8 @@ final class AppSettingsHandler
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" type="image/x-icon" href="/favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
-<link rel="apple-touch-icon" sizes="192x192" href="/favicon-192.png">
+<link rel="icon" type="image/png" href="/images/logo.png">
+<link rel="apple-touch-icon" href="/images/logo.png">
 <title>{$t}</title>
 <link href="/fonts/fonts.css" rel="stylesheet">
 <style>

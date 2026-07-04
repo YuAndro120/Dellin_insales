@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ДЛ Коннект — интеграция Деловых Линий с inSales | Автоматизация доставки</title>
-<link rel="icon" type="image/png" href="/images/logo.png">
-<link rel="apple-touch-icon" href="/images/logo.png">
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
   <meta name="description"
     content="ДЛ Коннект — приложение интеграции Деловых Линий с inSales. Расчёт стоимости доставки со скидками, автоматическое оформление заявок, трек-номера в заказы. 14 дней бесплатно.">
   <meta name="keywords"
@@ -106,7 +106,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 24px;
+      padding: 14px 24px;
       max-width: 1100px;
       margin: 0 auto
     }
@@ -114,19 +114,12 @@
     .nav-brand {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 10px;
       font-family: var(--display);
       font-weight: 600;
       font-size: 18px;
       letter-spacing: -0.01em;
       text-decoration: none
-    }
-
-    .nav-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--amber)
     }
 
     .nav-links {
@@ -162,7 +155,7 @@
       }
     }
 
-    /* HERO */
+    /* HERO — unchanged layout */
     .hero {
       position: relative;
       padding: 88px 0 64px;
@@ -233,7 +226,7 @@
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 36px
+      margin-bottom: 24px
     }
 
     .btn-primary {
@@ -350,6 +343,16 @@
       border-bottom: 1px solid var(--line-soft)
     }
 
+    .trust-label {
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 16px
+    }
+
     .trust-row {
       display: flex;
       align-items: center;
@@ -357,8 +360,125 @@
       gap: 48px;
       flex-wrap: wrap;
       font-size: 13px;
-      color: var(--ink-faint);
+      color: var(--ink-dim);
       font-family: var(--mono)
+    }
+
+    /* PAIN BLOCK */
+    .pain {
+      padding: 72px 0
+    }
+
+    .pain-inner {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 40px 44px
+    }
+
+    .pain-title {
+      font-family: var(--display);
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      text-align: center
+    }
+
+    .pain-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 32px;
+      margin-bottom: 28px
+    }
+
+    .pain-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 14.5px;
+      color: var(--ink-dim)
+    }
+
+    .pain-check {
+      color: var(--amber);
+      flex-shrink: 0;
+      margin-top: 2px
+    }
+
+    .pain-conclusion {
+      text-align: center;
+      font-family: var(--display);
+      font-size: 19px;
+      font-weight: 600;
+      color: var(--ink);
+      padding-top: 20px;
+      border-top: 1px solid var(--line-soft)
+    }
+
+    .pain-conclusion em {
+      color: var(--amber);
+      font-style: normal
+    }
+
+    @media (max-width:700px) {
+      .pain-list {
+        grid-template-columns: 1fr
+      }
+
+      .pain-inner {
+        padding: 28px 24px
+      }
+    }
+
+    /* STAT BLOCK */
+    .stat-block {
+      padding: 0 0 72px
+    }
+
+    .stat-inner {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 28px;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 32px 36px
+    }
+
+    .stat-number {
+      font-family: var(--display);
+      font-size: 56px;
+      font-weight: 600;
+      color: var(--amber);
+      line-height: 1;
+      white-space: nowrap
+    }
+
+    .stat-text {
+      font-size: 15px;
+      color: var(--ink-dim);
+      line-height: 1.55
+    }
+
+    .stat-text strong {
+      color: var(--ink)
+    }
+
+    .stat-source {
+      display: block;
+      margin-top: 6px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--ink-faint)
+    }
+
+    @media (max-width:640px) {
+      .stat-inner {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding: 28px 24px
+      }
     }
 
     /* SECTIONS */
@@ -369,6 +489,12 @@
     .section-head {
       max-width: 560px;
       margin-bottom: 48px
+    }
+
+    .section-head.center {
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center
     }
 
     .section-eyebrow {
@@ -393,6 +519,105 @@
       color: var(--ink-dim);
       font-size: 15.5px;
       line-height: 1.65
+    }
+
+    /* SHOWCASE — zig-zag interface blocks */
+    .showcase-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 64px
+    }
+
+    .showcase-item {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: center
+    }
+
+    .showcase-item.reverse .showcase-window {
+      order: 2
+    }
+
+    .showcase-item.reverse .showcase-text {
+      order: 1
+    }
+
+    .showcase-window {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 20px 48px -20px rgba(0, 0, 0, .5)
+    }
+
+    .showcase-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      background: var(--bg-soft);
+      border-bottom: 1px solid var(--line-soft)
+    }
+
+    .showcase-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--line)
+    }
+
+    .showcase-titletext {
+      margin-left: 8px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--ink-faint)
+    }
+
+    .showcase-media {
+      aspect-ratio: 16/10;
+      background: repeating-linear-gradient(45deg, var(--bg-soft), var(--bg-soft) 12px, var(--bg-card) 12px, var(--bg-card) 24px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-faint);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-align: center
+    }
+
+    .showcase-step {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--amber);
+      margin-bottom: 10px
+    }
+
+    .showcase-item h3 {
+      font-family: var(--display);
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 10px
+    }
+
+    .showcase-item p {
+      font-size: 14.5px;
+      color: var(--ink-dim);
+      line-height: 1.6
+    }
+
+    @media (max-width:820px) {
+      .showcase-item {
+        grid-template-columns: 1fr
+      }
+
+      .showcase-item.reverse .showcase-window {
+        order: 1
+      }
+
+      .showcase-item.reverse .showcase-text {
+        order: 2
+      }
     }
 
     /* FEATURES */
@@ -435,6 +660,82 @@
       font-size: 14px;
       color: var(--ink-dim);
       line-height: 1.6
+    }
+
+    /* BEFORE / AFTER */
+    .diff-table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden
+    }
+
+    .diff-table th {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      padding: 16px 20px;
+      text-align: center;
+      width: 50%
+    }
+
+    .diff-table th.before-col {
+      color: var(--ink-faint);
+      background: var(--bg-soft)
+    }
+
+    .diff-table th.after-col {
+      color: var(--amber);
+      background: var(--amber-soft)
+    }
+
+    .diff-table td {
+      padding: 16px 20px;
+      font-size: 14.5px;
+      border-top: 1px solid var(--line-soft);
+      text-align: center;
+      width: 50%
+    }
+
+    .diff-table td.before-col {
+      color: var(--ink-faint)
+    }
+
+    .diff-table td.after-col {
+      color: var(--ink);
+      font-weight: 500
+    }
+
+    @media (max-width:600px) {
+      .diff-table th, .diff-table td {
+        padding: 12px 14px;
+        font-size: 13px
+      }
+    }
+
+    /* ROI CALLOUT */
+    .roi-callout {
+      background: var(--amber-soft);
+      border: 1px solid #5a3f26;
+      border-radius: 16px;
+      padding: 32px 36px;
+      text-align: center;
+      margin-bottom: 48px
+    }
+
+    .roi-callout p {
+      font-family: var(--display);
+      font-size: clamp(18px, 2.4vw, 22px);
+      font-weight: 600;
+      color: var(--ink);
+      max-width: 640px;
+      margin: 0 auto;
+      line-height: 1.4
     }
 
     /* PRICING */
@@ -574,8 +875,7 @@
       font-family: inherit
     }
 
-    .plan-form input[type="email"],
-    .plan-form input[type="text"] {
+    .plan-form input[type="email"] {
       width: 100%;
       padding: 10px 12px;
       background: var(--bg-soft);
@@ -588,13 +888,11 @@
       transition: border-color .15s
     }
 
-    .plan-form input[type="email"]:focus,
-    .plan-form input[type="text"]:focus {
+    .plan-form input[type="email"]:focus {
       border-color: var(--amber)
     }
 
-    .plan-form input[type="email"]::placeholder,
-    .plan-form input[type="text"]::placeholder {
+    .plan-form input[type="email"]::placeholder {
       color: var(--ink-faint)
     }
 
@@ -718,6 +1016,26 @@
       text-decoration: underline
     }
 
+    /* FINAL CTA */
+    .final-cta {
+      padding: 88px 0;
+      text-align: center;
+      border-top: 1px solid var(--line-soft)
+    }
+
+    .final-cta h2 {
+      max-width: 600px;
+      margin: 0 auto 14px
+    }
+
+    .final-cta p {
+      color: var(--ink-dim);
+      font-size: 15.5px;
+      max-width: 520px;
+      margin: 0 auto 28px;
+      line-height: 1.6
+    }
+
     /* FOOTER */
     footer {
       border-top: 1px solid var(--line-soft);
@@ -735,18 +1053,20 @@
     }
   </style>
   <!-- Yandex.Metrika counter -->
-<script type="text/javascript">
-    (function(m,e,t,r,i,k,a){
-        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-        m[i].l=1*new Date();
-        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=110367588', 'ym');
+  <script type="text/javascript">
+    (function (m, e, t, r, i, k, a) {
+      m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments) };
+      m[i].l = 1 * new Date();
+      for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
+      k = e.createElement(t), a = e.getElementsByTagName(t)[0], k.async = 1, k.src = r, a.parentNode.insertBefore(k, a)
+    })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js?id=110367588', 'ym');
 
-    ym(110367588, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
-</script>
-<noscript><div><img src="https://mc.yandex.ru/watch/110367588" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-<!-- /Yandex.Metrika counter -->
+    ym(110367588, 'init', { ssr: true, webvisor: true, clickmap: true, ecommerce: "dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce: true, trackLinks: true });
+  </script>
+  <noscript>
+    <div><img src="https://mc.yandex.ru/watch/110367588" style="position:absolute; left:-9999px;" alt="" /></div>
+  </noscript>
+  <!-- /Yandex.Metrika counter -->
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -757,7 +1077,7 @@
       "operatingSystem": "Web",
       "offers": {
         "@type": "Offer",
-        "price": "399",
+        "price": "690",
         "priceCurrency": "RUB",
         "priceValidUntil": "2027-01-01"
       },
@@ -773,7 +1093,7 @@
 
   <nav class="nav">
     <div class="nav-inner">
-      <a href="#" class="nav-brand"><img src="/images/logo.png" alt="ДЛ Коннект" style="width:36px;height:36px">ДЛ Коннект</a>
+      <a href="#" class="nav-brand"><img src="/images/logo.png" alt="ДЛ Коннект" style="width:32px;height:32px">ДЛ Коннект</a>
       <div class="nav-links">
         <a href="#how">Как работает</a>
         <a href="#pricing">Тарифы</a>
@@ -784,21 +1104,23 @@
     </div>
   </nav>
 
+  <!-- HERO — unchanged -->
   <header class="hero">
     <div class="wrap hero-grid">
       <div>
         <div class="eyebrow">Приложение для inSales</div>
-        <h1>Автоматизируйте<br>отправку заказов<br>через <em>Деловые Линии</em></h1>
-        <p class="hero-sub">Покупатель видит точную цену доставки в корзине — меньше брошенных заказов. Менеджер
-          оформляет заявку в ДЛ одним кликом — без ручного ввода и опечаток. Без программистов. 14 дней бесплатно.</p>
+        <h1>Перестаньте оформлять<br>доставку <em>вручную</em></h1>
+        <p class="hero-sub">ДЛ Коннект автоматически рассчитывает стоимость доставки по вашему договору и создаёт заявки в Деловые Линии прямо из inSales. Меньше рутины, меньше ошибок, больше времени на клиентов.</p>
         <div class="hero-actions">
-          <a href="#pricing" class="btn-primary">Выбрать тариф</a>
+          <a href="#pricing" class="btn-primary">Попробовать бесплатно</a>
           <a href="#how" class="btn-secondary">Как это работает</a>
         </div>
         <div class="hero-meta">
           <span>14 дней бесплатно</span>
           <span>·</span>
-          <span>Без привязки карты для старта</span>
+          <span>Подключение за минуту</span>
+          <span>·</span>
+          <span>Без банковской карты</span>
         </div>
       </div>
 
@@ -825,10 +1147,43 @@
   </header>
 
   <div class="trust">
-    <div class="wrap trust-row">
-      <span>inSales</span>
-      <span>Деловые Линии</span>
-      <span>Т-Банк</span>
+    <div class="wrap">
+      <div class="trust-label">Совместимо с</div>
+      <div class="trust-row">
+        <span>inSales</span>
+        <span>Деловые Линии</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAIN BLOCK -->
+  <div class="pain">
+    <div class="wrap">
+      <div class="pain-inner">
+        <div class="pain-title">Кажется знакомо?</div>
+        <div class="pain-list">
+          <div class="pain-item"><span class="pain-check">📦</span> Менеджеры вручную оформляют каждую отправку</div>
+          <div class="pain-item"><span class="pain-check">💰</span> Стоимость доставки приходится рассчитывать
+            отдельно</div>
+          <div class="pain-item"><span class="pain-check">🔁</span> Данные заказа постоянно копируются между системами
+          </div>
+          <div class="pain-item"><span class="pain-check">⏳</span> На оформление одной доставки уходят минуты,
+            которые можно потратить на клиентов</div>
+        </div>
+        <div class="pain-conclusion"><em>ДЛ Коннект</em> автоматизирует весь процесс</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAT BLOCK — external credibility -->
+  <div class="stat-block">
+    <div class="wrap">
+      <div class="stat-inner">
+        <div class="stat-number">~49%</div>
+        <div class="stat-text"><strong>Почти половина брошенных корзин</strong> в интернет-магазинах — из-за неожиданной стоимости доставки, которую покупатель узнаёт слишком поздно.
+          <span class="stat-source">Источник: Baymard Institute</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -836,31 +1191,30 @@
     <div class="wrap">
       <div class="section-head">
         <div class="section-eyebrow">Как это работает</div>
-        <h2>От установки до первой заявки — без программистов</h2>
+        <h2>Подключение займёт меньше минуты</h2>
         <p class="section-desc">ДЛ Коннект встраивается в админку inSales и работает поверх вашего личного кабинета
           Деловых Линий — никаких отдельных сайтов и переключений между вкладками.</p>
       </div>
       <div class="steps">
         <div class="step">
           <div class="step-num">01</div>
-          <h4>Установка за 1 минуту</h4>
-          <p>Подключаете приложение из каталога inSales, указываете токен Деловых Линий — без участия разработчика.</p>
+          <h4>Подключите приложение за минуту</h4>
+          <p>Устанавливаете приложение из каталога inSales, указываете токен Деловых Линий — без участия
+            разработчика.</p>
         </div>
         <div class="step">
           <div class="step-num">02</div>
-          <h4>Прозрачная цена для покупателя</h4>
-          <p>Точная стоимость и сроки Деловых Линий видны в корзине ещё до оформления — меньше отказов на этапе
-            доставки.</p>
+          <h4>Показывайте покупателю точную стоимость</h4>
+          <p>Цена и сроки Деловых Линий видны в корзине ещё до оформления — меньше отказов на этапе доставки.</p>
         </div>
         <div class="step">
           <div class="step-num">03</div>
-          <h4>Одна кнопка для менеджера</h4>
-          <p>Заявка в Деловые Линии формируется и отправляется автоматически — без ручного переноса данных и опечаток.
-          </p>
+          <h4>Создавайте заявку автоматически</h4>
+          <p>Заявка в Деловые Линии формируется и отправляется сама — без ручного переноса данных и опечаток.</p>
         </div>
         <div class="step">
           <div class="step-num">04</div>
-          <h4>Экономия часов в неделю</h4>
+          <h4>Экономьте время менеджеров</h4>
           <p>Меньше рутины у логиста, меньше ошибок в адресах и весе груза — особенно заметно при десятках заказов в
             день.</p>
         </div>
@@ -868,29 +1222,122 @@
     </div>
   </section>
 
+  <!-- SHOWCASE — zig-zag interface preview, placeholders for tomorrow's GIFs -->
   <section style="padding-top:0">
     <div class="wrap">
-      <div class="section-head">
-        <div class="section-eyebrow">Что внутри</div>
-        <h2>Не просто калькулятор — рабочий инструмент логиста</h2>
+      <div class="section-head center">
+        <div class="section-eyebrow">Как это выглядит</div>
+        <h2>Всё нужное — внутри привычного интерфейса</h2>
+        <p class="section-desc">Никаких отдельных сайтов и переключений между вкладками — ДЛ Коннект работает прямо
+          внутри inSales.</p>
       </div>
-      <div class="features-grid">
+
+      <div class="showcase-grid">
+        <div class="showcase-item">
+          <div class="showcase-window">
+            <div class="showcase-titlebar"><span class="showcase-dot"></span><span class="showcase-dot"></span><span
+                class="showcase-dot"></span><span class="showcase-titletext">корзина магазина</span></div>
+            <div class="showcase-media">[ GIF: расчёт стоимости в корзине ]</div>
+          </div>
+          <div class="showcase-text">
+            <div class="showcase-step">01 — Покупатель видит цену сразу</div>
+            <h3>Точная стоимость доставки в корзине</h3>
+            <p>Расчёт идёт по вашему персональному договору с Деловыми Линиями — покупатель видит реальную цену
+              при оформления заказа, без срыва продажи на последнем шаге.</p>
+          </div>
+        </div>
+
+        <div class="showcase-item reverse">
+          <div class="showcase-window">
+            <div class="showcase-titlebar"><span class="showcase-dot"></span><span class="showcase-dot"></span><span
+                class="showcase-dot"></span><span class="showcase-titletext">заявка → Деловые Линии</span></div>
+            <div class="showcase-media">[ GIF: автосоздание заявки ]</div>
+          </div>
+          <div class="showcase-text">
+            <div class="showcase-step">02 — Без ручного переноса данных</div>
+            <h3>Заявка в Деловые Линии создаётся автоматически*</h3>
+            <p>Как только покупатель оформил заказ, заявка на доставку формируется и отправляется сама — адрес, ФИО и
+              телефон переносятся без опечаток и лишних кликов. *Доступно в тарифе "Автоматизация"</p>
+          </div>
+        </div>
+
+        <div class="showcase-item">
+          <div class="showcase-window">
+            <div class="showcase-titlebar"><span class="showcase-dot"></span><span class="showcase-dot"></span><span
+                class="showcase-dot"></span><span class="showcase-titletext">настройки ДЛ Коннект</span></div>
+            <div class="showcase-media">[ GIF: настройка приложения ]</div>
+          </div>
+          <div class="showcase-text">
+            <div class="showcase-step">03 — Настройка за 1 минуту</div>
+            <h3>Простые настройки без участия разработчика</h3>
+            <p>Укажите токен доступа к Деловым Линиям, выберите терминал или адрес забора груза — и приложение готово
+              к работе.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-eyebrow">Что изменится</div>
+        <h2>Что изменится после подключения</h2>
+      </div>
+      <div class="features-grid" style="grid-template-columns:repeat(2,1fr)">
         <div class="feature">
           <div class="feature-num">01</div>
-          <h3>Расчёт со скидками</h3>
-          <p>Тарифы считаются по вашему персональному договору с Деловыми Линиями, а не по публичному прайсу.</p>
+          <h3>Стоимость доставки рассчитывается автоматически</h3>
+          <p>Покупатель сразу видит стоимость доставки с вашими скидками в Деловых Линиях.</p>
         </div>
         <div class="feature">
           <div class="feature-num">02</div>
-          <h3>Терминалы и забор</h3>
-          <p>Отгрузка с терминала или забор курьером от адреса — с реальным расписанием и доступными датами.</p>
+          <h3>Заявки создаются автоматически</h3>
+          <p>После оформления заказа данные сразу передаются в Деловые Линии — без участия менеджера*. *Доступно в тарифе "Автоматизация"</p>
         </div>
         <div class="feature">
           <div class="feature-num">03</div>
-          <h3>Гибкие типы доставки</h3>
-          <p>Авто, авиа, экспресс и малогабаритные грузы — покупатель выбирает нужный вариант прямо в корзине.</p>
+          <h3>Всё работает внутри inSales</h3>
+          <p>Без копирования адресов, товаров и контактов между разными вкладками и системами.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-num">04</div>
+          <h3>Меньше ручной работы</h3>
+          <p>Менеджеры тратят время на клиентов, а не на оформление доставки для каждого заказа.</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- BEFORE / AFTER -->
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="section-head center">
+        <div class="section-eyebrow">Разница на практике</div>
+        <h2>До и после подключения</h2>
+      </div>
+      <table class="diff-table">
+        <tr>
+          <th class="before-col">До подключения</th>
+          <th class="after-col">После подключения</th>
+        </tr>
+        <tr>
+          <td class="before-col">❌ Ручной расчёт стоимости</td>
+          <td class="after-col">✅ Стоимость рассчитывается автоматически</td>
+        </tr>
+        <tr>
+          <td class="before-col">❌ Копирование данных между системами</td>
+          <td class="after-col">✅ Заявка создаётся сама* *Доступно в тарифе "Автоматизация"</td>
+        </tr>
+        <tr>
+          <td class="before-col">❌ Несколько вкладок браузера</td>
+          <td class="after-col">✅ Работа в одном интерфейсе</td>
+        </tr>
+        <tr>
+          <td class="before-col">❌ Ошибки при переносе данных</td>
+          <td class="after-col">✅ Минимум ручной работы</td>
+        </tr>
+      </table>
     </div>
   </section>
 
@@ -898,14 +1345,19 @@
     <div class="wrap">
       <div class="section-head">
         <div class="section-eyebrow">Тарифы</div>
-        <h2>Один магазин — один тариф, который растёт вместе с вами</h2>
-        <p class="section-desc">14 дней бесплатного доступа ко всем функциям тарифа «Полный» — решите, какой объём
-          автоматизации вам нужен, попробовав его на практике.</p>
+        <h2>Выберите уровень автоматизации</h2>
+        <p class="section-desc">Попробуйте полный функционал бесплатно в течение 14 дней. Без ограничений и без
+          привязки банковской карты.</p>
       </div>
+
+      <div class="roi-callout">
+        <p>Стоимость подписки обычно меньше одного часа работы менеджера в месяц. Если ДЛ Коннект экономит хотя бы 20–30 минут в день, он окупается многократно.</p>
+      </div>
+
       <div class="pricing-grid">
         <div class="price-card">
           <div class="price-name">Старт</div>
-          <div class="price-amount">499 ₽<span> / мес</span></div>
+          <div class="price-amount">690 ₽<span> / мес</span></div>
           <div class="price-trial">14 дней пробного периода</div>
           <ul class="price-features">
             <li><span class="price-check">✓</span>Расчёт стоимости со скидками ДЛ в корзине</li>
@@ -914,8 +1366,6 @@
           </ul>
           <form class="plan-form early-access-form" data-plan="calc_only">
             <input type="email" name="email" placeholder="Email" required>
-            <input type="text" name="inn" placeholder="ИНН компании или ИП" maxlength="12">
-            <input type="text" name="company_name" placeholder="Название компании">
             <input type="hidden" name="plan" value="calc_only">
             <input type="hidden" name="insales_id" class="js-insales-id">
             <label class="recurrent-label consent-label">
@@ -923,17 +1373,17 @@
               <span>Согласен на <a href="/privacy.html" target="_blank" style="color:var(--amber)">обработку
                   персональных данных</a></span>
             </label>
-            <button type="submit" class="price-btn plan-submit">Оставить заявку</button>
+            <button type="submit" class="price-btn plan-submit">Начать бесплатно</button>
           </form>
           <div class="early-access-thanks"
-            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо! Свяжемся
-            с вами в
+            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо!
+            Свяжемся с вами в
             ближайшее время.</div>
         </div>
         <div class="price-card featured">
           <div class="price-tag">Популярный</div>
           <div class="price-name">Полный</div>
-          <div class="price-amount">999 ₽<span> / мес</span></div>
+          <div class="price-amount">1290 ₽<span> / мес</span></div>
           <div class="price-trial">14 дней пробного периода</div>
           <ul class="price-features">
             <li><span class="price-check">✓</span>Всё из тарифа «Старт»</li>
@@ -943,8 +1393,6 @@
           </ul>
           <form class="plan-form early-access-form" data-plan="full">
             <input type="email" name="email" placeholder="Email" required>
-            <input type="text" name="inn" placeholder="ИНН компании или ИП" maxlength="12">
-            <input type="text" name="company_name" placeholder="Название компании">
             <input type="hidden" name="plan" value="full">
             <input type="hidden" name="insales_id" class="js-insales-id">
             <label class="recurrent-label consent-label">
@@ -952,16 +1400,16 @@
               <span>Согласен на <a href="/privacy.html" target="_blank" style="color:var(--amber)">обработку
                   персональных данных</a></span>
             </label>
-            <button type="submit" class="price-btn plan-submit">Оставить заявку</button>
+            <button type="submit" class="price-btn plan-submit">Начать бесплатно</button>
           </form>
           <div class="early-access-thanks"
-            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо! Свяжемся
-            с вами
+            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо!
+            Свяжемся с вами
             в ближайшее время.</div>
         </div>
         <div class="price-card" style="opacity:.85">
           <div class="price-name">Автоматизация</div>
-          <div class="price-amount">1499 ₽<span> / мес</span></div>
+          <div class="price-amount">1990 ₽<span> / мес</span></div>
           <div class="price-trial" style="color:var(--ink-faint)">Скоро — собираем ранний доступ</div>
           <ul class="price-features">
             <li><span class="price-check">✓</span>Всё из тарифа «Полный»</li>
@@ -971,8 +1419,6 @@
           </ul>
           <form class="plan-form early-access-form" data-plan="automation">
             <input type="email" name="email" placeholder="Email" required>
-            <input type="text" name="inn" placeholder="ИНН компании или ИП" maxlength="12">
-            <input type="text" name="company_name" placeholder="Название компании">
             <input type="hidden" name="plan" value="automation">
             <input type="hidden" name="insales_id" class="js-insales-id">
             <label class="recurrent-label consent-label">
@@ -981,11 +1427,11 @@
                   персональных данных</a></span>
             </label>
             <button type="submit" class="price-btn plan-submit"
-              style="background:transparent;border:1px solid var(--amber);color:var(--amber)">Оставить заявку</button>
+              style="background:transparent;border:1px solid var(--amber);color:var(--amber)">Начать бесплатно</button>
           </form>
           <div class="early-access-thanks"
-            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо! Свяжемся
-            с вами
+            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо!
+            Свяжемся с вами
             в ближайшее время.</div>
         </div>
       </div>
@@ -1004,9 +1450,24 @@
             токен доступа (PAT), который вы получаете в настройках интеграции ДЛ.</div>
         </div>
         <div class="faq-item">
+          <div class="faq-q">Сколько занимает подключение?</div>
+          <div class="faq-a">Обычно меньше минуты — установите приложение из каталога inSales и укажите токен
+            доступа к Деловым Линиям. Настройка терминала или адреса забора занимает ещё пару минут.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Нужен ли программист для подключения?</div>
+          <div class="faq-a">Нет, всё делается через понятный интерфейс настроек внутри inSales — без участия
+            разработчика.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Работает ли с индивидуальными условиями Деловых Линий?</div>
+          <div class="faq-a">Да, расчёт стоимости выполняется с учётом вашего персонального договора и скидок — не по
+            публичному прайсу перевозчика.</div>
+        </div>
+        <div class="faq-item">
           <div class="faq-q">Что происходит после 14 дней пробного периода?</div>
-          <div class="faq-a">Если вы не выбрали тариф, доступ к оформлению заявок приостанавливается до оплаты. Все ваши
-            настройки и история заказов сохраняются.</div>
+          <div class="faq-a">Если вы не выбрали тариф, доступ к оформлению заявок приостанавливается до оплаты. Все
+            ваши настройки и история заказов сохраняются.</div>
         </div>
         <div class="faq-item">
           <div class="faq-q">Можно ли сменить тариф или отменить подписку?</div>
@@ -1014,9 +1475,14 @@
             inSales.</div>
         </div>
         <div class="faq-item">
+          <div class="faq-q">Что делать, если возникнут сложности?</div>
+          <div class="faq-a">Напишите в поддержку — отвечаем в течение 1 рабочего дня и помогаем разобраться с
+            настройкой.</div>
+        </div>
+        <div class="faq-item">
           <div class="faq-q">Как происходит оплата?</div>
-          <div class="faq-a">Картой через защищённую форму Т-Банка, с опциональным автопродлением подписки, или по счёту
-            для организаций — выбор способа доступен на странице оплаты.</div>
+          <div class="faq-a">Картой через защищённую форму Т-Банка, с опциональным автопродлением подписки, или по
+            счёту для организаций — выбор способа доступен на странице оплаты.</div>
         </div>
       </div>
     </div>
@@ -1026,7 +1492,7 @@
     <div class="wrap">
       <div class="section-head">
         <div class="section-eyebrow">Контакты и реквизиты</div>
-        <h2>Связаться с нами</h2>
+        <h2>Остались вопросы?</h2>
       </div>
       <div class="legal-card">
         <div class="legal-grid">
@@ -1058,6 +1524,15 @@
           <a href="/privacy.html">Обработка персональных данных</a>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="final-cta">
+    <div class="wrap">
+      <h2>Попробуйте ДЛ Коннект бесплатно</h2>
+      <p>Подключение займёт несколько минут. Все возможности доступны бесплатно в течение 14 дней.</p>
+      <a href="#pricing" class="btn-primary">Попробовать бесплатно</a>
     </div>
   </section>
 

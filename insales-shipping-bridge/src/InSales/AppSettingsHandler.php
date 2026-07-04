@@ -375,7 +375,7 @@ final class AppSettingsHandler
 
                         <label id="consentPdRow" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid #f5c4b3;border-radius:var(--r2);background:var(--ambl);margin-bottom:8px">
                             <input type="checkbox" id="consentPd" style="margin-top:2px;accent-color:var(--amber);flex-shrink:0;width:14px;height:14px">
-                            <span style="font-size:12px;color:var(--ink2);line-height:1.5">Согласен на обработку персональных данных согласно <a href="/privacy.html" target="_blank" style="color:var(--amber);text-decoration:none">Политике конфиденциальности</a> ИП Андронов Ю. В. <span style="color:var(--amber)">*</span></span>
+                            <span style="font-size:12px;color:var(--ink2);line-height:1.5">Согласен на обработку персональных данных согласно <a href="/privacy.html" target="_blank" style="color:var(--amber);text-decoration:none">Политике конфиденциальности</a><span style="color:var(--amber)">*</span></span>
                         </label>
                         <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);margin-bottom:18px">
                             <input type="checkbox" id="consentCookies" style="margin-top:2px;accent-color:var(--amber);flex-shrink:0;width:14px;height:14px">

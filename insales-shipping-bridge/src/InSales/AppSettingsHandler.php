@@ -262,14 +262,7 @@ final class AppSettingsHandler
         <div class="auth-wrap">
             <div class="auth-card">
                 <div class="auth-logo">
-                    <svg viewBox="0 0 1000 880" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
-                        <polygon fill="#1a1714" points="574,713 190,544 108,688 540,772" />
-                        <polygon fill="#1a1714" points="739,422 499,0 409,159 697,497" />
-                        <polygon fill="#1a1714" points="678,531 390,193 308,336 644,589" />
-                        <polygon fill="#1a1714" points="626,621 290,368 208,513 592,681" />
-                        <polygon fill="#1a1714" points="90,721 0,880 479,880 521,805" />
-                        <polygon fill="#1a1714" points="520,880 648,880 760,682 872,880 1000,880 760,457" />
-                    </svg>
+                    <img src="/images/logo.png" alt="ДЛ Коннект" style="width:100%;height:100%;object-fit:contain">
                 </div>
                 <div class="auth-title">Подключение к Деловым Линиям</div>
                 <div class="auth-sub">Магазин: <strong><?= $h($s->shopHost) ?></strong></div>
@@ -352,14 +345,7 @@ final class AppSettingsHandler
 
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
                         <div style="width:34px;height:34px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:5px">
-                            <svg viewBox="0 0 1000 880" xmlns="http://www.w3.org/2000/svg">
-                                <polygon fill="#1a1714" points="574,713 190,544 108,688 540,772" />
-                                <polygon fill="#1a1714" points="739,422 499,0 409,159 697,497" />
-                                <polygon fill="#1a1714" points="678,531 390,193 308,336 644,589" />
-                                <polygon fill="#1a1714" points="626,621 290,368 208,513 592,681" />
-                                <polygon fill="#1a1714" points="90,721 0,880 479,880 521,805" />
-                                <polygon fill="#1a1714" points="520,880 648,880 760,682 872,880 1000,880 760,457" />
-                            </svg>
+                            <img src="/images/logo.png" alt="ДЛ Коннект" style="width:100%;height:100%;object-fit:contain">
                         </div>
                         <div>
                             <div style="font-size:13px;font-weight:600;color:var(--ink)">Деловые Линии</div>
@@ -523,14 +509,7 @@ final class AppSettingsHandler
             <aside class="sidebar" id="sidebar">
                 <div class="brand">
                     <div class="brand-logo">
-                        <svg viewBox="0 0 1000 880" xmlns="http://www.w3.org/2000/svg">
-                            <polygon fill="#1a1714" points="574,713 190,544 108,688 540,772" />
-                            <polygon fill="#1a1714" points="739,422 499,0 409,159 697,497" />
-                            <polygon fill="#1a1714" points="678,531 390,193 308,336 644,589" />
-                            <polygon fill="#1a1714" points="626,621 290,368 208,513 592,681" />
-                            <polygon fill="#1a1714" points="90,721 0,880 479,880 521,805" />
-                            <polygon fill="#1a1714" points="520,880 648,880 760,682 872,880 1000,880 760,457" />
-                        </svg>
+                        <img src="/images/logo.png" alt="ДЛ Коннект" style="width:100%;height:100%;object-fit:contain">
                     </div>
                     <div>
                         <div class="brand-name">Деловые Линии</div>
@@ -585,14 +564,7 @@ final class AppSettingsHandler
             <header class="topbar" id="topbar">
                 <div class="burger" id="burger"><span></span><span></span><span></span></div>
                 <div class="topbar-brand">
-                    <div class="topbar-logo"><svg viewBox="0 0 1000 880" xmlns="http://www.w3.org/2000/svg">
-                            <polygon fill="#1a1714" points="574,713 190,544 108,688 540,772" />
-                            <polygon fill="#1a1714" points="739,422 499,0 409,159 697,497" />
-                            <polygon fill="#1a1714" points="678,531 390,193 308,336 644,589" />
-                            <polygon fill="#1a1714" points="626,621 290,368 208,513 592,681" />
-                            <polygon fill="#1a1714" points="90,721 0,880 479,880 521,805" />
-                            <polygon fill="#1a1714" points="520,880 648,880 760,682 872,880 1000,880 760,457" />
-                        </svg></div>
+                    <div class="topbar-logo"><img src="/images/logo.png" alt="ДЛ Коннект" style="width:100%;height:100%;object-fit:contain"></div>
                     <span class="topbar-name">Деловые Линии</span>
                 </div>
                 <span class="topbar-page" id="topbar-page">Отправитель</span>

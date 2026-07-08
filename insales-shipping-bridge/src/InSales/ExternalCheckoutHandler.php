@@ -109,13 +109,15 @@ final class ExternalCheckoutHandler
         ];
 
         $sid = self::loginCached($api, $creds, $sessionCache, $settings->insalesId);
-        $out = [];
+$out = [];
 
-        foreach ($deliveryTypes as $dtype) {
-            try {
-                $calc = self::calculateWithDateFallback(
+foreach ($deliveryTypes as $dtype) {
+    try {
+        $calc = self::withSessionRetry(
+            function (string $currentSid) use ($api, $senderId, $kladr, $street, $house, $cargo, $calcCtx, $creds, $dtype, $settings): ?array {
+                return self::calculateWithDateFallback(
                     static fn(CalculatorContext $ctx) => $api->calculateToCity(
-                        $sid,
+                        $currentSid,
                         $senderId,
                         $kladr,
                         $street,
@@ -131,6 +133,13 @@ final class ExternalCheckoutHandler
                     'courier',
                     $dtype,
                 );
+            },
+            $api,
+            $creds,
+            $sessionCache,
+            $settings->insalesId,
+            $sid,
+        );
                 if ($calc === null || $calc['price'] === null) continue;
 
                 $out[] = [
@@ -202,24 +211,26 @@ final class ExternalCheckoutHandler
         $typeIndex = array_flip(['auto', 'avia', 'express', 'small']);
 
         $sid = self::loginCached($api, $creds, $sessionCache, $settings->insalesId);
-        $out = [];
+$out = [];
 
-        /** @var array<int, array<string,mixed>> $pointsByTid */
-        $pointsByTid = [];
-        $terminalIds = [];
-        foreach ($points as $t) {
-            $tid = (int) ($t['id'] ?? 0);
-            if ($tid <= 0) continue;
-            $pointsByTid[$tid] = $t;
-            $terminalIds[] = $tid;
-        }
+/** @var array<int, array<string,mixed>> $pointsByTid */
+$pointsByTid = [];
+$terminalIds = [];
+foreach ($points as $t) {
+    $tid = (int) ($t['id'] ?? 0);
+    if ($tid <= 0) continue;
+    $pointsByTid[$tid] = $t;
+    $terminalIds[] = $tid;
+}
 
-        // Один параллельный батч-запрос на каждый тип доставки — вместо
-        // последовательного вызова на каждую пару (терминал × тип).
-        foreach ($deliveryTypes as $dtype) {
-            try {
-                $calcResults = $api->calculateToTerminalsBatch(
-                    $sid,
+// Один параллельный батч-запрос на каждый тип доставки — вместо
+// последовательного вызова на каждую пару (терминал × тип).
+foreach ($deliveryTypes as $dtype) {
+    try {
+        $calcResults = self::withSessionRetry(
+            function (string $currentSid) use ($api, $senderId, $terminalIds, $kladr, $cargo, $calcCtx, $creds, $dtype, $settings) {
+                return $api->calculateToTerminalsBatch(
+                    $currentSid,
                     $senderId,
                     $terminalIds,
                     $kladr,
@@ -230,7 +241,14 @@ final class ExternalCheckoutHandler
                     5,
                     $settings->insalesId,
                 );
-            } catch (\Throwable $ex) {
+            },
+            $api,
+            $creds,
+            $sessionCache,
+            $settings->insalesId,
+            $sid,
+        );
+    } catch (\Throwable $ex) {
                 \ShippingBridge\Logger::error($settings->insalesId, null, 'calc.pickup_points_batch.error', [
                     'delivery_type' => $dtype,
                     'error' => $ex->getMessage(),
@@ -294,11 +312,13 @@ final class ExternalCheckoutHandler
         $dtype     = $typeList[$pointId % 10] ?? 'auto';
         $realTid   = (int) ($pointId / 10);
 
-        $kladr = InsalesOrderParser::cityKladr($body);
-        $sid   = self::loginCached($api, $creds, $sessionCache, $settings->insalesId);
-        $calc  = self::calculateWithDateFallback(
+       $kladr = InsalesOrderParser::cityKladr($body);
+$sid   = self::loginCached($api, $creds, $sessionCache, $settings->insalesId);
+$calc  = self::withSessionRetry(
+    function (string $currentSid) use ($api, $senderId, $realTid, $kladr, $cargo, $calcCtx, $creds, $dtype, $settings): ?array {
+        return self::calculateWithDateFallback(
             static fn(CalculatorContext $ctx) => $api->calculateToTerminal(
-                $sid,
+                $currentSid,
                 $senderId,
                 $realTid,
                 $kladr,
@@ -313,6 +333,13 @@ final class ExternalCheckoutHandler
             'pickup_point_single',
             $dtype,
         );
+    },
+    $api,
+    $creds,
+    $sessionCache,
+    $settings->insalesId,
+    $sid,
+);
         if ($calc === null || $calc['price'] === null) {
             self::jsonError(['errors' => ['Расчёт для выбранного ПВЗ недоступен']], 422, $cors);
             return;
@@ -346,6 +373,39 @@ final class ExternalCheckoutHandler
         Response::json([$point], 200, $cors);
     }
 
+    /**
+ * Выполняет вызов API ДЛ с текущей закэшированной сессией. Если ДЛ
+ * отвечает "Unauthorized" (сессия невалидна на их стороне раньше
+ * заявленного срока — например, после смены PAT или отзыва сессии),
+ * сбрасывает кэш, логинится заново и повторяет попытку один раз.
+ *
+ * @template T
+ * @param callable(string $sid): T $callFn
+ * @return T
+ */
+private static function withSessionRetry(
+    callable $callFn,
+    CarrierApi $api,
+    CarrierCredentials $creds,
+    DellinSessionCache $sessionCache,
+    string $insalesId,
+    string $sid,
+) {
+    try {
+        return $callFn($sid);
+    } catch (\Throwable $e) {
+        if (!str_contains($e->getMessage(), 'Unauthorized') && !str_contains($e->getMessage(), '401')) {
+            throw $e;
+        }
+        \ShippingBridge\Logger::info($insalesId, null, 'calc.session.invalidated_retry', [
+            'error' => $e->getMessage(),
+        ]);
+        $sessionCache->invalidate($insalesId);
+        $newSid = $api->loginWithPat($creds);
+        $sessionCache->store($insalesId, $newSid);
+        return $callFn($newSid);
+    }
+}
     /**
      * Возвращает закэшированный sessionID ДЛ для магазина, если он есть
      * и не истёк, иначе логинится заново и сохраняет результат в кэш.

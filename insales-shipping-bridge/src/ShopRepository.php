@@ -52,22 +52,28 @@ SQL;
         $this->assertActiveShop($insalesId);
     }
 
-    public function saveDellinCredentials(string $insalesId, string $appkey, string $pat, string $bridgeSecret): void
-    {
-        $appkey = trim($appkey);
-        $pat = trim($pat);
-        if ($appkey === '' || $pat === '') {
-            throw new \InvalidArgumentException('Укажите API-ключ и PAT');
-        }
-
-        $enc = SecretStore::encrypt($pat, $bridgeSecret);
-        $st = $this->pdo->prepare(
-            'UPDATE insales_shops SET dellin_appkey = :key, dellin_pat_enc = :pat
-             WHERE insales_id = :iid AND uninstalled_at IS NULL'
-        );
-        $st->execute([':key' => $appkey, ':pat' => $enc, ':iid' => $insalesId]);
-        $this->assertActiveShop($insalesId);
+public function saveDellinCredentials(string $insalesId, string $appkey, string $pat, string $bridgeSecret): void
+{
+    $appkey = trim($appkey);
+    $pat = trim($pat);
+    if ($appkey === '' || $pat === '') {
+        throw new \InvalidArgumentException('Укажите API-ключ и PAT');
     }
+
+    $enc = SecretStore::encrypt($pat, $bridgeSecret);
+    $st = $this->pdo->prepare(
+        'UPDATE insales_shops SET dellin_appkey = :key, dellin_pat_enc = :pat
+         WHERE insales_id = :iid AND uninstalled_at IS NULL'
+    );
+    $st->execute([':key' => $appkey, ':pat' => $enc, ':iid' => $insalesId]);
+    $this->assertActiveShop($insalesId);
+
+    // Инвалидируем закэшированную сессию ДЛ — новый PAT требует новой сессии,
+    // иначе старый sessionID может считаться протухшим на стороне ДЛ раньше
+    // указанного expires_at и API будет отвечать 401 Unauthorized.
+    $del = $this->pdo->prepare('DELETE FROM dellin_sessions WHERE insales_id = :iid');
+    $del->execute([':iid' => $insalesId]);
+}
 
     public function findCarrierCredentials(string $insalesId, string $bridgeSecret): ?CarrierCredentials
     {

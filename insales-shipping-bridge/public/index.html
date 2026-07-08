@@ -393,16 +393,17 @@
 
     .pain-item {
       display: flex;
-      gap: 10px;
+      gap: 14px;
       align-items: flex-start;
       font-size: 14.5px;
       color: var(--ink-dim)
     }
 
     .pain-check {
-      color: var(--amber);
       flex-shrink: 0;
-      margin-top: 2px
+      width: 48px;
+      height: 48px;
+      margin-top: -4px
     }
 
     .pain-conclusion {
@@ -1162,12 +1163,12 @@
       <div class="pain-inner">
         <div class="pain-title">Кажется знакомо?</div>
         <div class="pain-list">
-          <div class="pain-item"><span class="pain-check">📦</span> Менеджеры вручную оформляют каждую отправку</div>
-          <div class="pain-item"><span class="pain-check">💰</span> Стоимость доставки приходится рассчитывать
+          <div class="pain-item"><img src="/images/icon-notebook.webp" class="pain-check" alt=""> Менеджеры вручную оформляют каждую отправку</div>
+          <div class="pain-item"><img src="/images/icon-refresh.webp" class="pain-check" alt=""> Стоимость доставки приходится рассчитывать
             отдельно</div>
-          <div class="pain-item"><span class="pain-check">🔁</span> Данные заказа постоянно копируются между системами
+          <div class="pain-item"><img src="/images/icon-thunder.webp" class="pain-check" alt=""> Данные заказа постоянно копируются между системами
           </div>
-          <div class="pain-item"><span class="pain-check">⏳</span> На оформление одной доставки уходят минуты,
+          <div class="pain-item"><img src="/images/icon-watch.webp" class="pain-check" alt=""> На оформление одной доставки уходят минуты,
             которые можно потратить на клиентов</div>
         </div>
         <div class="pain-conclusion"><em>ДЛ Коннект</em> автоматизирует весь процесс</div>
@@ -1242,8 +1243,8 @@
           <div class="showcase-text">
             <div class="showcase-step">01 — Покупатель видит цену сразу</div>
             <h3>Точная стоимость доставки в корзине</h3>
-            <p>Расчёт идёт по вашему персональному договору с Деловыми Линиями — покупатель видит реальную цену
-              при оформления заказа, без срыва продажи на последнем шаге.</p>
+            <p>Расчёт идёт по вашему персональному договору с Деловыми Линиями — покупатель видит реальную цену ещё
+              до оформления заказа, без сюрпризов на последнем шаге.</p>
           </div>
         </div>
 
@@ -1255,9 +1256,9 @@
           </div>
           <div class="showcase-text">
             <div class="showcase-step">02 — Без ручного переноса данных</div>
-            <h3>Заявка в Деловые Линии создаётся автоматически*</h3>
+            <h3>Заявка в Деловые Линии создаётся автоматически</h3>
             <p>Как только покупатель оформил заказ, заявка на доставку формируется и отправляется сама — адрес, ФИО и
-              телефон переносятся без опечаток и лишних кликов. *Доступно в тарифе "Автоматизация"</p>
+              телефон переносятся без опечаток и лишних кликов.</p>
           </div>
         </div>
 
@@ -1288,12 +1289,12 @@
         <div class="feature">
           <div class="feature-num">01</div>
           <h3>Стоимость доставки рассчитывается автоматически</h3>
-          <p>Покупатель сразу видит стоимость доставки с вашими скидками в Деловых Линиях.</p>
+          <p>Покупатель сразу видит стоимость доставки по вашему договору с Деловыми Линиями.</p>
         </div>
         <div class="feature">
           <div class="feature-num">02</div>
-          <h3>Заявки создаются автоматически</h3>
-          <p>После оформления заказа данные сразу передаются в Деловые Линии — без участия менеджера*. *Доступно в тарифе "Автоматизация"</p>
+          <h3>Заявки создаются автоматически <span style="font-size:11px;color:var(--ink-faint);font-weight:400;font-family:var(--mono);text-transform:none;letter-spacing:0">— тариф «Полный»</span></h3>
+          <p>После оформления заказа данные сразу передаются в Деловые Линии — без участия менеджера.</p>
         </div>
         <div class="feature">
           <div class="feature-num">03</div>
@@ -1327,7 +1328,7 @@
         </tr>
         <tr>
           <td class="before-col">❌ Копирование данных между системами</td>
-          <td class="after-col">✅ Заявка создаётся сама* *Доступно в тарифе "Автоматизация"</td>
+          <td class="after-col">✅ Заявка создаётся сама</td>
         </tr>
         <tr>
           <td class="before-col">❌ Несколько вкладок браузера</td>

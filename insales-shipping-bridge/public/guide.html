@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Инструкция по настройке — ДЛ Коннект</title>
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
+  <meta name="description" content="Пошаговая инструкция по подключению и настройке ДЛ Коннект — интеграции Деловых Линий с inSales.">
+  <link href="/fonts/fonts.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #16181c;
+      --bg-soft: #1c1f24;
+      --bg-card: #1f2228;
+      --line: #2c3038;
+      --line-soft: #24272e;
+      --ink: #f2efe9;
+      --ink-dim: #a8a59d;
+      --ink-faint: #6b6963;
+      --amber: #e8742c;
+      --amber-soft: #3a2a1c;
+      --green: #5fb88a;
+      --display: 'Space Grotesk', sans-serif;
+      --sans: 'Inter', sans-serif;
+      --mono: 'IBM Plex Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    html { scroll-behavior: smooth }
+    body { font-family: var(--sans); background: var(--bg); color: var(--ink); line-height: 1.65; font-size: 16px; -webkit-font-smoothing: antialiased }
+    a { color: var(--amber) }
+    img { display: block; max-width: 100% }
+
+    .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px }
+
+    /* NAV */
+    .nav { position: sticky; top: 0; z-index: 50; background: rgba(22,24,28,.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-soft) }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; max-width: 1100px; margin: 0 auto }
+    .nav-brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 600; font-size: 18px; text-decoration: none; color: var(--ink) }
+    .nav-back { font-size: 13.5px; color: var(--ink-dim); text-decoration: none }
+    .nav-back:hover { color: var(--ink) }
+
+    .hero-head { padding: 56px 0 40px; text-align: center }
+    .eyebrow { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12px; color: var(--amber); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 18px; justify-content: center }
+    .eyebrow::before { content: ''; width: 5px; height: 5px; background: var(--amber); border-radius: 50% }
+    h1 { font-family: var(--display); font-size: clamp(30px,4.5vw,42px); font-weight: 600; letter-spacing: -.02em; line-height: 1.15; margin-bottom: 14px }
+    .hero-sub { color: var(--ink-dim); font-size: 16px; max-width: 520px; margin: 0 auto; line-height: 1.6 }
+
+    /* TOC */
+    .toc { background: var(--bg-card); border: 1px solid var(--line); border-radius: 14px; padding: 20px 24px; margin: 0 0 56px }
+    .toc-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); margin-bottom: 12px }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 8px }
+    .toc-list a { color: var(--ink-dim); text-decoration: none; font-size: 14.5px; display: flex; gap: 8px }
+    .toc-list a:hover { color: var(--amber) }
+    .toc-num { font-family: var(--mono); color: var(--amber); flex-shrink: 0 }
+
+    /* STEPS */
+    .step-block { padding: 0 0 56px; scroll-margin-top: 80px }
+    .step-head { display: flex; align-items: center; gap: 16px; margin-bottom: 20px }
+    .step-num-badge { width: 40px; height: 40px; border-radius: 50%; background: var(--amber-soft); border: 1px solid #5a3f26; color: var(--amber); font-family: var(--display); font-weight: 600; font-size: 17px; display: flex; align-items: center; justify-content: center; flex-shrink: 0 }
+    .step-head h2 { font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -.01em }
+    .step-body { padding-left: 56px }
+    .step-body p { color: var(--ink-dim); font-size: 15px; margin-bottom: 14px; line-height: 1.65 }
+    .step-body ol, .step-body ul { color: var(--ink-dim); margin: 0 0 14px 20px; font-size: 15px; line-height: 1.7 }
+    .step-body strong { color: var(--ink); font-weight: 600 }
+    .step-body code { font-family: var(--mono); font-size: 13.5px; background: var(--bg-soft); color: var(--amber); padding: 2px 6px; border-radius: 5px; border: 1px solid var(--line) }
+
+    .screenshot-placeholder { aspect-ratio: 16/9; background: repeating-linear-gradient(45deg, var(--bg-soft), var(--bg-soft) 12px, var(--bg-card) 12px, var(--bg-card) 24px); border: 1px solid var(--line); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-family: var(--mono); font-size: 12.5px; text-align: center; margin: 16px 0; padding: 16px }
+
+    .screenshot-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 16px 0; background: var(--bg-card) }
+    .screenshot-wrap img { width: 100%; display: block }
+
+    .note-box { background: var(--bg-card); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; padding: 14px 18px; margin: 16px 0; font-size: 14px; color: var(--ink-dim); line-height: 1.6 }
+    .note-box strong { color: var(--ink) }
+
+    .link-box { background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin: 16px 0; display: flex; align-items: center; gap: 10px; font-size: 14px }
+    .link-box a { font-weight: 500 }
+
+    /* FAQ short */
+    .support-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 72px }
+    .support-card h3 { font-family: var(--display); font-size: 19px; font-weight: 600; margin-bottom: 8px }
+    .support-card p { color: var(--ink-dim); font-size: 14.5px; margin-bottom: 18px }
+    .btn-primary { display: inline-block; background: var(--amber); color: #1a1208; font-weight: 600; font-size: 14.5px; padding: 11px 22px; border-radius: 9px; text-decoration: none }
+
+    footer { border-top: 1px solid var(--line-soft); padding: 28px 0; font-size: 13px; color: var(--ink-faint); text-align: center }
+
+    @media (max-width:600px) {
+      .step-body { padding-left: 0; margin-top: 8px }
+      .step-head { align-items: flex-start }
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-brand"><img src="/images/logo.png" alt="ДЛ Коннект" style="width:28px;height:28px">ДЛ Коннект</a>
+      <a href="/" class="nav-back">← На главную</a>
+    </div>
+  </nav>
+
+  <div class="hero-head wrap">
+    <div class="eyebrow">Инструкция по настройке</div>
+    <h1>Подключение ДЛ Коннект</h1>
+    <p class="hero-sub">Пошаговая инструкция по установке и настройке интеграции Деловых Линий с inSales. Занимает несколько минут.</p>
+  </div>
+
+  <div class="wrap">
+    <div class="toc">
+      <div class="toc-title">Содержание</div>
+      <ul class="toc-list">
+        <li><span class="toc-num">01</span><a href="#install">Установка приложения из каталога inSales</a></li>
+        <li><span class="toc-num">02</span><a href="#pat">Получение токена доступа (PAT) в Деловых Линиях</a></li>
+        <li><span class="toc-num">03</span><a href="#sender">Настройка данных отправителя</a></li>
+        <li><span class="toc-num">04</span><a href="#shipping">Настройка способа отгрузки</a></li>
+        <li><span class="toc-num">05</span><a href="#test">Проверка расчёта в корзине</a></li>
+        <li><span class="toc-num">06</span><a href="#fulfill">Оформление заявки в Деловые Линии</a></li>
+      </ul>
+    </div>
+
+    <!-- STEP 1 -->
+    <section class="step-block" id="install">
+      <div class="step-head">
+        <div class="step-num-badge">01</div>
+        <h2>Установка приложения из каталога inSales</h2>
+      </div>
+      <div class="step-body">
+        <p>Зайдите в админ-панель вашего магазина на inSales и откройте раздел <strong>«Приложения»</strong>. Найдите ДЛ Коннект в каталоге и нажмите «Установить».</p>
+        <div class="screenshot-wrap"><img src="/images/guide/guide-01-catalog.png" alt="Каталог расширений inSales с установленным ДЛ Коннект"></div>
+        <p>После установки приложение появится в списке подключённых — откройте его, чтобы перейти к настройке.</p>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="step-block" id="pat">
+      <div class="step-head">
+        <div class="step-num-badge">02</div>
+        <h2>Получение токена доступа (PAT)</h2>
+      </div>
+      <div class="step-body">
+        <p>Для подключения к Деловым Линиям потребуется персональный токен доступа (PAT). Получить его можно в личном кабинете Деловых Линий:</p>
+        <ol>
+          <li>Войдите в <a href="https://www.dellin.ru/cabinet/" target="_blank">личный кабинет Деловых Линий</a></li>
+          <li>Перейдите в раздел <strong>Настройки → Интеграция API</strong></li>
+          <li>Создайте новый токен доступа (PAT) и скопируйте его</li>
+        </ol>
+        <div class="screenshot-placeholder">[ Скриншот: раздел Интеграция API в ЛК Деловых Линий ]</div>
+        <div class="note-box"><strong>Важно:</strong> храните токен в надёжном месте — он даёт доступ к оформлению заявок от имени вашей организации. В ДЛ Коннект токен хранится в зашифрованном виде.</div>
+        <p>Вставьте полученный токен в поле на странице подключения приложения и нажмите «Подключить».</p>
+        <div class="screenshot-wrap"><img src="/images/guide/guide-02-pat.png" alt="Ввод PAT-токена на странице Подключение"></div>
+      </div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="step-block" id="sender">
+      <div class="step-head">
+        <div class="step-num-badge">03</div>
+        <h2>Настройка данных отправителя</h2>
+      </div>
+      <div class="step-body">
+        <p>После подключения перейдите на вкладку <strong>«Отправитель»</strong> и укажите реквизиты вашей организации:</p>
+        <ul>
+          <li>Тип отправителя — физическое лицо или организация</li>
+          <li>Название организации или ФИО — при вводе ИНН реквизиты и организационно-правовая форма подберутся автоматически</li>
+          <li>Контактное лицо — имя и телефон, по которому Деловые Линии свяжутся при заборе груза</li>
+          <li>Контрагент в Деловых Линиях — если у вас несколько контрагентов, выберите нужный из списка</li>
+        </ul>
+        <div class="screenshot-wrap"><img src="/images/guide/guide-03-sender.png" alt="Страница «Отправитель» с заполненными реквизитами"></div>
+        <p>Карточка прогресса справа покажет, какие поля ещё нужно заполнить перед переходом к настройке доставки.</p>
+      </div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="step-block" id="shipping">
+      <div class="step-head">
+        <div class="step-num-badge">04</div>
+        <h2>Настройка способа отгрузки</h2>
+      </div>
+      <div class="step-body">
+        <p>На вкладке <strong>«Доставка»</strong> выберите, как вы будете передавать грузы в Деловые Линии:</p>
+        <ul>
+          <li><strong>От терминала</strong> — вы самостоятельно привозите груз на выбранный терминал</li>
+          <li><strong>От адреса</strong> — курьер Деловых Линий забирает груз по указанному адресу в выбранное время</li>
+        </ul>
+        <div class="screenshot-wrap"><img src="/images/guide/guide-04-shipping.png" alt="Настройка способа отгрузки, груза и типов доставки"></div>
+        <p>Также укажите характер груза, упаковку и параметры по умолчанию (вес, габариты) — они будут использоваться, если у товара в inSales эти данные не заполнены.</p>
+      </div>
+    </section>
+
+    <!-- STEP 5 -->
+    <section class="step-block" id="test">
+      <div class="step-head">
+        <div class="step-num-badge">05</div>
+        <h2>Проверка расчёта в корзине</h2>
+      </div>
+      <div class="step-body">
+        <p>Откройте витрину вашего магазина и добавьте любой товар в корзину. На шаге выбора доставки должна появиться Деловые Линии с рассчитанной стоимостью.</p>
+        <div class="screenshot-wrap"><img src="/images/guide/guide-05-cart-pickup.png" alt="Расчёт доставки в корзине — самовывоз с точками выдачи"></div>
+        <div class="screenshot-wrap"><img src="/images/guide/guide-05-cart-delivery.png" alt="Расчёт доставки в корзине — курьерская доставка с ценами"></div>
+        <p>Если стоимость не рассчитывается — проверьте, что переключатель <strong>«Показывать доставку в корзине»</strong> включён на вкладке «Доставка», и что выбран хотя бы один тип доставки.</p>
+        <div class="link-box">💬 Если что-то не работает — напишите нам, поможем разобраться: <a href="mailto:g120255908@gmail.com">g120255908@gmail.com</a></div>
+      </div>
+    </section>
+
+    <!-- STEP 6 -->
+    <section class="step-block" id="fulfill">
+      <div class="step-head">
+        <div class="step-num-badge">06</div>
+        <h2>Оформление заявки в Деловые Линии</h2>
+      </div>
+      <div class="step-body">
+        <p>Когда покупатель оформил заказ, откройте карточку заказа в inSales — справа появится блок <strong>«Интеграция с Деловыми Линиями»</strong> с адресом и датой забора груза.</p>
+        <div class="screenshot-wrap"><img src="/images/guide/guide-06-order-widget.png" alt="Виджет оформления заявки в карточке заказа inSales"></div>
+        <p>Нажмите <strong>«Оформить в Деловые Линии»</strong> — заявка будет создана автоматически, а трек-номер появится в полях заказа.</p>
+      </div>
+    </section>
+
+    <div class="support-card">
+      <h3>Остались вопросы?</h3>
+      <p>Отвечаем в течение 1 рабочего дня</p>
+      <a href="mailto:g120255908@gmail.com" class="btn-primary">Написать в поддержку</a>
+    </div>
+  </div>
+
+  <footer>
+    © 2026 ИП Андронов Ю. В. · ДЛ Коннект
+  </footer>
+
+</body>
+</html>

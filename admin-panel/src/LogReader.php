@@ -34,6 +34,12 @@ final class LogReader
         'billing.webhook.invalid_token' => 'Вебхук Т-Банка — неверный токен',
         'billing.webhook.misconfigured' => 'Вебхук Т-Банка — не настроен',
         'billing.webhook.unparseable_order_id' => 'Вебхук Т-Банка — не распознан OrderId',
+        'json.packages.error' => 'Справочник упаковок — ошибка',
+        'json.derival_dates.error' => 'Доступные даты забора — ошибка',
+        'json.derival_time_interval.error' => 'Интервал времени забора — ошибка',
+        'json.counteragents.error' => 'Список контрагентов ДЛ — ошибка',
+        'json.freight_search.error' => 'Поиск характера груза — ошибка',
+        'calc.session.invalidated_retry' => 'Сессия ДЛ истекла — автоматический перелогин',
     ];
 
     public function __construct(private readonly string $logDir) {}

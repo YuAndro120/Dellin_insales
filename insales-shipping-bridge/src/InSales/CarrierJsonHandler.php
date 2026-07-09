@@ -61,6 +61,12 @@ final class CarrierJsonHandler
                 'items' => $items,
             ], 200, $cors);
         } catch (\Throwable $e) {
+            \ShippingBridge\Logger::error(
+                trim((string) ($_GET['insales_id'] ?? '-')),
+                null,
+                'json.packages.error',
+                ['error' => $e->getMessage()]
+            );
             Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
         }
     }
@@ -85,6 +91,7 @@ final class CarrierJsonHandler
             $dates = $api->getAddressDates($sid, $settings, $deliveryType, $creds);
             Response::json(['ok' => true, 'dates' => $dates], 200, $cors);
         } catch (\Throwable $e) {
+            \ShippingBridge\Logger::error($insalesId, null, 'json.derival_dates.error', ['error' => $e->getMessage()]);
             Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
         }
     }
@@ -115,6 +122,7 @@ final class CarrierJsonHandler
             $interval = $api->getAddressTimeInterval($sid, $settings, $produceDate, $deliveryType, $creds);
             Response::json(['ok' => true, 'interval' => $interval], 200, $cors);
         } catch (\Throwable $e) {
+            \ShippingBridge\Logger::error($insalesId, null, 'json.derival_time_interval.error', ['error' => $e->getMessage()]);
             Response::json(['ok' => false, 'error' => $e->getMessage()], 422, $cors);
         }
     }
@@ -137,6 +145,12 @@ final class CarrierJsonHandler
                 'count' => count($list),
             ], 200, self::cors($config));
         } catch (\Throwable $e) {
+            \ShippingBridge\Logger::error(
+                trim((string) ($_GET['insales_id'] ?? '-')),
+                null,
+                'json.counteragents.error',
+                ['error' => $e->getMessage()]
+            );
             Response::json(['ok' => false, 'error' => $e->getMessage()], 422, self::cors($config));
         }
     }
@@ -193,6 +207,12 @@ final class CarrierJsonHandler
             $items = $api->searchFreightTypes($q, $page, $creds);
             Response::json(['ok' => true, 'items' => $items], 200, self::cors($config));
         } catch (\Throwable $e) {
+            \ShippingBridge\Logger::error(
+                trim((string) ($_GET['insales_id'] ?? '-')),
+                null,
+                'json.freight_search.error',
+                ['error' => $e->getMessage()]
+            );
             Response::json(['ok' => false, 'error' => $e->getMessage()], 422, self::cors($config));
         }
     }

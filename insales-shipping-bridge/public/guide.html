@@ -33,7 +33,7 @@
     a { color: var(--amber) }
     img { display: block; max-width: 100% }
 
-    .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px }
 
     /* NAV */
     .nav { position: sticky; top: 0; z-index: 50; background: rgba(22,24,28,.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-soft) }
@@ -62,15 +62,19 @@
     .step-num-badge { width: 40px; height: 40px; border-radius: 50%; background: var(--amber-soft); border: 1px solid #5a3f26; color: var(--amber); font-family: var(--display); font-weight: 600; font-size: 17px; display: flex; align-items: center; justify-content: center; flex-shrink: 0 }
     .step-head h2 { font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -.01em }
     .step-body { padding-left: 56px }
-    .step-body p { color: var(--ink-dim); font-size: 15px; margin-bottom: 14px; line-height: 1.65 }
-    .step-body ol, .step-body ul { color: var(--ink-dim); margin: 0 0 14px 20px; font-size: 15px; line-height: 1.7 }
+    .step-body p { color: var(--ink-dim); font-size: 15px; margin-bottom: 14px; line-height: 1.65; max-width: 640px }
+    .step-body ol, .step-body ul { color: var(--ink-dim); margin: 0 0 14px 20px; font-size: 15px; line-height: 1.7; max-width: 640px }
     .step-body strong { color: var(--ink); font-weight: 600 }
     .step-body code { font-family: var(--mono); font-size: 13.5px; background: var(--bg-soft); color: var(--amber); padding: 2px 6px; border-radius: 5px; border: 1px solid var(--line) }
 
     .screenshot-placeholder { aspect-ratio: 16/9; background: repeating-linear-gradient(45deg, var(--bg-soft), var(--bg-soft) 12px, var(--bg-card) 12px, var(--bg-card) 24px); border: 1px solid var(--line); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-family: var(--mono); font-size: 12.5px; text-align: center; margin: 16px 0; padding: 16px }
 
-    .screenshot-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 16px 0; background: var(--bg-card) }
+    .screenshot-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 20px 0; background: var(--bg-card) }
     .screenshot-wrap img { width: 100%; display: block }
+    .step-body .screenshot-wrap { margin-left: -56px; width: calc(100% + 56px) }
+    @media (max-width:600px) {
+      .step-body .screenshot-wrap { margin-left: 0; width: 100% }
+    }
 
     .note-box { background: var(--bg-card); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; padding: 14px 18px; margin: 16px 0; font-size: 14px; color: var(--ink-dim); line-height: 1.6 }
     .note-box strong { color: var(--ink) }

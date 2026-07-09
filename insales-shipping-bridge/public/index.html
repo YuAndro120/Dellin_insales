@@ -576,15 +576,18 @@
     }
 
     .showcase-media {
-      aspect-ratio: 16/10;
       background: repeating-linear-gradient(45deg, var(--bg-soft), var(--bg-soft) 12px, var(--bg-card) 12px, var(--bg-card) 24px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
       color: var(--ink-faint);
       font-family: var(--mono);
       font-size: 12px;
       text-align: center
+    }
+    .showcase-media:empty,
+    .showcase-media:not(:has(img)) {
+      aspect-ratio: 16/10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .showcase-step {
@@ -1237,9 +1240,9 @@
     </div>
   </section>
 
-  <!-- SHOWCASE — zig-zag interface preview, placeholders for tomorrow's GIFs -->
+  <!-- SHOWCASE — zig-zag interface preview -->
   <section style="padding-top:0">
-    <div class="wrap">
+    <div style="max-width:1360px;margin:0 auto;padding:0 24px">
       <div class="section-head center">
         <div class="section-eyebrow">Как это выглядит</div>
         <h2>Всё нужное — внутри привычного интерфейса</h2>

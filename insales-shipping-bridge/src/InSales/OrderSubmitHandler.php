@@ -49,10 +49,10 @@ final class OrderSubmitHandler
                 (int) $insalesOrderId,
             );
         } catch (\Throwable $e) {
+            \ShippingBridge\Logger::error($insalesId, $insalesOrderId, 'order.fetch_insales.error', ['error' => $e->getMessage()]);
             Response::json(['ok' => false, 'error' => 'Ошибка получения заказа: ' . $e->getMessage()], 422, $cors);
             return;
         }
-
         $order = self::parseInsalesOrder($insalesId, $insalesOrderId, $insalesOrder);
 
         // Габариты из настроек
@@ -163,8 +163,9 @@ final class OrderSubmitHandler
                             $fieldId,
                             (string) $existing['dellin_request_id'],
                         );
-                    } catch (\Throwable) {
+                    } catch (\Throwable $ex) {
                         // best-effort, ответ не блокируем
+                        \ShippingBridge\Logger::info($insalesId, $insalesOrderId, 'order.tracking_backfill.failed', ['error' => $ex->getMessage()]);
                     }
                 }
             }
@@ -193,10 +194,10 @@ final class OrderSubmitHandler
                 (int) $insalesOrderId,
             );
         } catch (\Throwable $e) {
+            \ShippingBridge\Logger::error($insalesId, $insalesOrderId, 'order.fetch_insales.error', ['error' => $e->getMessage()]);
             Response::json(['ok' => false, 'error' => 'Ошибка получения заказа из inSales: ' . $e->getMessage()], 422, $cors);
             return;
         }
-
         // Парсим данные получателя и адрес
         $order = self::parseInsalesOrder($insalesId, $insalesOrderId, $insalesOrder);
         $order['derival_date'] = trim((string) ($body['derival_date'] ?? ''));

@@ -72,6 +72,13 @@ final class ExternalCheckoutHandler
 
             self::jsonError(['error' => 'Not found'], 404, $cors);
         } catch (\Throwable $e) {
+            $accountId = InsalesOrderParser::accountId($body);
+            \ShippingBridge\Logger::error(
+                $accountId !== '' ? $accountId : '-',
+                null,
+                'external_checkout.handle.error',
+                ['uri' => $uri, 'error' => $e->getMessage()]
+            );
             self::jsonError(['errors' => [$e->getMessage()]], 422, $cors);
         }
     }

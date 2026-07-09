@@ -100,6 +100,7 @@ final class AppSettingsHandler
                 $deliveryCreated = $setup->createPickUpDeliveryVariant($auth['shop_host'], $auth['api_password']);
             } catch (\Throwable $e) {
                 $error = $e->getMessage();
+                \ShippingBridge\Logger::error($settings->insalesId, null, 'insales.pickup_delivery_variant.error', ['error' => $e->getMessage()]);
             }
             $settings = $shops->findSettingsByInsalesId($settings->insalesId, $config) ?? $settings;
         } elseif ($method === 'POST') {

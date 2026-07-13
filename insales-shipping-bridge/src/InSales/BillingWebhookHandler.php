@@ -20,7 +20,28 @@ use ShippingBridge\TbankAcquiring;
  */
 final class BillingWebhookHandler
 {
+    /**
+     * ⚠️ ЗАКОММЕНТИРОВАНО (2026-07): основной биллинг переведён на нативный
+     * RecurringApplicationCharge inSales (см. InSalesRecurringBilling +
+     * BillingPage::handlePlanSelection). Т-Банк не используется в проде,
+     * поэтому обработка его уведомлений отключена — но не удалена, на
+     * случай отката. Чтобы вернуть Т-Банк, уберите ранний return ниже.
+     */
     public static function handle(Config $config): void
+    {
+        http_response_code(200);
+        echo 'OK'; // Т-Банк webhook отключён, см. комментарий выше
+        return;
+
+        /*
+        self::handleTbankNotification($config);
+        */
+    }
+
+    /**
+     * @noinspection PhpUnused — сохранено для возможного отката на Т-Банк.
+     */
+    private static function handleTbankNotification(Config $config): void
     {
         $raw = file_get_contents('php://input') ?: '';
         if ($raw === '') {

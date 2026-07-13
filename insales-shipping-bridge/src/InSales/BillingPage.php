@@ -8,12 +8,18 @@ use ShippingBridge\Config;
 use ShippingBridge\Db;
 use ShippingBridge\ShopRepository;
 use ShippingBridge\SubscriptionRepository;
-use ShippingBridge\TbankAcquiring;
+use ShippingBridge\TbankAcquiring; // оставлено для возможного отката, см. handlePlanSelection()
+use ShippingBridge\InSales\InSalesRecurringBilling;
 
 /**
  * Страница выбора и оплаты тарифа внутри /insales/app.
  * Доступна по адресу /insales/billing?shop=...&insales_id=...&atk=...
  * (тот же токен доступа atk, что используется для /insales/app).
+ *
+ * С 2026-07 основной биллинг — нативный RecurringApplicationCharge inSales
+ * (см. InSalesRecurringBilling). Т-Банк эквайринг ЗАКОММЕНТИРОВАН, но не
+ * удалён — на случай отката смотрите handlePlanSelectionViaTbank() ниже
+ * и BillingWebhookHandler.php (там тоже закомментирован приём уведомлений).
  */
 final class BillingPage
 {
@@ -83,7 +89,87 @@ final class BillingPage
         ]));
     }
 
+    /**
+     * АКТИВНЫЙ путь: биллинг через нативный RecurringApplicationCharge inSales.
+     *
+     * ⚠️ Перед продакшеном обязательно проверьте на тестовом магазине
+     * партнёрской программы (insales.ru/partnership), появляется ли у
+     * мерчанта экран подтверждения списания — в ответе API его нет, значит,
+     * вероятно, списание стартует сразу после этого вызова без явного
+     * "accept" от пользователя. См. комментарии в InSalesRecurringBilling.
+     *
+     * Ограничение: recurring-биллинг inSales — это ОДНА ежемесячная сумма
+     * на магазин (без понятия "период"), поэтому годовой тариф со скидкой
+     * (period=year) через этот механизм пока не поддерживаем — используем
+     * только month. Если вернёте годовые тарифы, это должно снова уйти на
+     * handlePlanSelectionViaTbank() (см. ниже, закомментировано).
+     */
     private static function handlePlanSelection(
+        Config $config,
+        SubscriptionRepository $subscriptions,
+        string $insalesId,
+        string $shopHost,
+        string $plan,
+        bool $wantsRecurrent,
+        string $period = 'month',
+    ): void {
+        if (!isset(self::PLANS[$plan])) {
+            http_response_code(400);
+            self::renderError('Неизвестный тариф.');
+            return;
+        }
+
+        $planInfo = self::PLANS[$plan];
+        $accessToken = trim((string) ($_POST['atk'] ?? ''));
+
+        $shops = new ShopRepository(Db::pdo($config));
+        $shopCreds = $shops->findApiAuthByInsalesId($insalesId); // ['insales_id','shop_host','api_password']
+        if ($shopCreds === null || $config->insalesAppId === null) {
+            http_response_code(500);
+            self::renderError('Не удалось получить учётные данные приложения для этого магазина.');
+            return;
+        }
+
+        $billing = new InSalesRecurringBilling(new \ShippingBridge\InSales\InSalesClient());
+
+        try {
+            $charge = $billing->setMonthlyCharge(
+                $shopHost,
+                $config->insalesAppId,
+                $shopCreds['api_password'],
+                (float) $planInfo['price'],
+            );
+        } catch (\Throwable $e) {
+            http_response_code(502);
+            self::renderError('Не удалось выставить подписку в inSales: ' . $e->getMessage());
+            return;
+        }
+
+        // paid_till приходит от inSales — используем его как конец периода,
+        // если он есть; иначе (на случай нестандартного ответа) даём 30 дней.
+        $periodEnd = $charge['paid_till'] !== null
+            ? new \DateTimeImmutable($charge['paid_till'])
+            : (new \DateTimeImmutable())->modify('+30 days');
+
+        $subscriptions->activateAfterPayment($insalesId, $plan, 'insales', $periodEnd);
+
+        header('Location: /insales/billing?' . http_build_query([
+            'shop' => $shopHost,
+            'insales_id' => $insalesId,
+            'atk' => $accessToken,
+            'paid' => '1',
+        ]), true, 302);
+    }
+
+    /*
+     * ============================================================
+     * РЕЗЕРВНЫЙ путь: биллинг через Т-Банк эквайринг.
+     * ЗАКОММЕНТИРОВАНО в пользу нативного биллинга inSales (см. выше).
+     * Ничего не удалено — чтобы откатиться, переименуйте этот метод
+     * обратно в handlePlanSelection() и закомментируйте новый.
+     * ============================================================
+     *
+    private static function handlePlanSelectionViaTbank(
         Config $config,
         SubscriptionRepository $subscriptions,
         string $insalesId,
@@ -150,6 +236,9 @@ final class BillingPage
 
         header('Location: ' . $result['payment_url'], true, 302);
     }
+    *
+    * ============================================================
+    */
 
     private static function buildOrderId(string $insalesId, string $plan, string $period = 'month'): string
     {

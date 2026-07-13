@@ -73,6 +73,8 @@ final class BillingPage
         $pdo = Db::pdo($config);
         $subscriptions = new SubscriptionRepository($pdo);
 
+        $accessToken = trim((string) ($_GET['atk'] ?? $_POST['atk'] ?? ''));
+
         if ($method === 'POST' && isset($_POST['select_plan'])) {
             $wantsRecurrent = isset($_POST['recurrent']) && $_POST['recurrent'] === '1';
             $period = trim((string) ($_POST['period'] ?? 'month'));
@@ -80,13 +82,12 @@ final class BillingPage
             return;
         }
 
-        // GET без выбора тарифа — не показываем карточки, отправляем на лендинг.
-        http_response_code(302);
-        header('Location: ' . rtrim($config->landingUrl ?? 'https://receptly.ru', '/') . '/?' . http_build_query([
-            'insales_id' => $insalesId,
-            'shop' => $shopHost,
-            'atk' => $requiredAccessToken ?? '',
-        ]));
+        // GET — показываем карточки тарифов прямо в приложении.
+        // Раньше здесь был редирект на внешний лендинг (receptly.ru) — это
+        // уводило пользователя из inSales вместо показа страницы оплаты,
+        // а после успешной оплаты через inSales (redirect на этот же URL
+        // с ?paid=1) редирект на лендинг просто терял баннер об успехе.
+        self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken);
     }
 
     /**

@@ -18,8 +18,8 @@ use ShippingBridge\InSales\InSalesRecurringBilling;
  * Доступна по адресу /insales/billing?shop=...&insales_id=...&atk=...
  * (тот же токен доступа atk, что используется для /insales/app).
  *
- * С 2026-07 основной биллинг — нативный RecurringApplicationCharge inSales
- * (см. InSalesRecurringBilling). Т-Банк эквайринг ЗАКОММЕНТИРОВАН, но не
+ * С 2026-07 основной биллинг — ApplicationCharge inSales (разовый счёт,
+ * см. InSalesRecurringBilling). Т-Банк эквайринг ЗАКОММЕНТИРОВАН, но не
  * удалён — на случай отката смотрите handlePlanSelectionViaTbank() ниже
  * и BillingWebhookHandler.php (там тоже закомментирован приём уведомлений).
  *
@@ -64,6 +64,14 @@ final class BillingPage
 
         $accessToken = trim((string) ($_GET['atk'] ?? $_POST['atk'] ?? ''));
 
+        // Возврат мерчанта с confirmation_url ApplicationCharge — проверяем
+        // реальный статус счёта через API, а не доверяем самому факту
+        // редиректа (в URL нет подписи/подтверждения).
+        if ($method === 'GET' && isset($_GET['check_charge']) && isset($_GET['plan'])) {
+            self::handleChargeReturn($config, $subscriptions, $insalesId, $shopHost, $accessToken, (string) $_GET['plan']);
+            return;
+        }
+
         if ($method === 'POST' && isset($_POST['select_plan'])) {
             $wantsRecurrent = isset($_POST['recurrent']) && $_POST['recurrent'] === '1';
             $period = trim((string) ($_POST['period'] ?? 'month'));
@@ -80,18 +88,18 @@ final class BillingPage
     }
 
     /**
-     * АКТИВНЫЙ путь: биллинг через нативный RecurringApplicationCharge inSales.
+     * АКТИВНЫЙ путь: биллинг через ApplicationCharge inSales (разовый счёт).
      *
-     * ⚠️ Перед продакшеном обязательно проверьте на тестовом магазине
-     * партнёрской программы (insales.ru/partnership), появляется ли у
-     * мерчанта экран подтверждения списания — в ответе API его нет, значит,
-     * вероятно, списание стартует сразу после этого вызова без явного
-     * "accept" от пользователя. См. комментарии в InSalesRecurringBilling.
+     * Это НЕ автосписание — каждый период мерчант заново нажимает «Выбрать
+     * и оплатить» и подтверждает счёт на стороне inSales. Раньше пробовали
+     * RecurringApplicationCharge (см. историю в InSalesRecurringBilling) —
+     * тот эндпоинт отвечал 200, но не создавал видимого мерчанту счёта и
+     * не запускал реальную оплату, поэтому от него отказались.
      *
-     * Ограничение: recurring-биллинг inSales — это ОДНА ежемесячная сумма
-     * на магазин (без понятия "период"), поэтому годовой тариф со скидкой
-     * (period=year) через этот механизм пока не поддерживаем — используем
-     * только month. Если вернёте годовые тарифы, это должно снова уйти на
+     * Ограничение: ApplicationCharge — это просто сумма без понятия
+     * "период", поэтому годовой тариф со скидкой (period=year) через этот
+     * механизм не считаем отдельно — используем цену тарифа как есть.
+     * Если нужно вернуть годовые тарифы со скидкой, это должно уйти на
      * handlePlanSelectionViaTbank() (см. ниже, закомментировано).
      */
     private static function handlePlanSelection(
@@ -100,7 +108,7 @@ final class BillingPage
         string $insalesId,
         string $shopHost,
         string $plan,
-        bool $wantsRecurrent,
+        bool $wantsRecurrent, // не используется — ApplicationCharge не поддерживает автопродление
         string $period = 'month',
     ): void {
         if (!isset(Plans::ALL[$plan])) {
@@ -122,55 +130,119 @@ final class BillingPage
 
         $billing = new InSalesRecurringBilling(new \ShippingBridge\InSales\InSalesClient());
 
-        try {
-            $charge = $billing->setMonthlyCharge(
-                $shopHost,
-                $config->insalesAppId,
-                $shopCreds['api_password'],
-                (float) $planInfo['price'],
-            );
-        } catch (\Throwable $e) {
-            http_response_code(502);
-            self::renderError('Не удалось выставить подписку в inSales: ' . $e->getMessage());
-            return;
-        }
-
-        // Логируем сырой ответ целиком (не только 4 поля, которые понимает
-        // normalize()) — пока нет полной ясности, что именно inSales
-        // возвращает при разных статусах счёта, лучше видеть всё как есть
-        // в /var/log/bridge/*.jsonl.
-        Logger::info($insalesId, null, 'billing.insales.charge_response', [
-            'plan' => $plan,
-            'raw'  => $charge['raw'],
-        ]);
-
-        // Активируем подписку, ТОЛЬКО если inSales подтвердил конкретную
-        // будущую дату paid_till и не выставил blocked. Судя по всему,
-        // recurring_application_charge выставляет мерчанту реальный счёт
-        // (не списывает деньги мгновенно) — поэтому нельзя вслепую доверять
-        // самому факту успешного API-вызова: это значит лишь "счёт
-        // выставлен", а не "оплачен".
-        $paidTill = $charge['paid_till'] !== null ? new \DateTimeImmutable($charge['paid_till']) : null;
-        $isConfirmedPaid = $paidTill !== null && $paidTill > new \DateTimeImmutable() && !$charge['blocked'];
-
-        if ($isConfirmedPaid) {
-            $subscriptions->activateAfterPayment($insalesId, $plan, 'insales', $paidTill);
-            $paidParam = '1';
-        } else {
-            Logger::error($insalesId, null, 'billing.insales.charge_unconfirmed', [
-                'plan'      => $plan,
-                'paid_till' => $charge['paid_till'],
-                'blocked'   => $charge['blocked'],
-            ]);
-            $paidParam = 'pending';
-        }
-
-        header('Location: /insales/billing?' . http_build_query([
+        // После подтверждения/отклонения счёта inSales вернёт мерчанта
+        // именно на этот URL — по нему мы поймём, какой план проверять.
+        $returnUrl = rtrim($config->publicBridgeUrl, '/') . '/insales/billing?' . http_build_query([
             'shop' => $shopHost,
             'insales_id' => $insalesId,
             'atk' => $accessToken,
-            'paid' => $paidParam,
-        ]), true, 302);
+            'plan' => $plan,
+            'check_charge' => '1',
+        ]);
+
+        try {
+            $charge = $billing->createOneTimeCharge(
+                $shopHost,
+                $config->insalesAppId,
+                $shopCreds['api_password'],
+                'Подписка «' . $planInfo['label'] . '» — ' . $shopHost,
+                (float) $planInfo['price'],
+                $returnUrl,
+                false, // test=true — только вручную при отладке на тестовом магазине
+            );
+        } catch (\Throwable $e) {
+            http_response_code(502);
+            self::renderError('Не удалось выставить счёт в inSales: ' . $e->getMessage());
+            return;
+        }
+
+        if ($charge['confirmation_url'] === '') {
+            http_response_code(502);
+            self::renderError('inSales не вернул ссылку на подтверждение счёта. Попробуйте позже.');
+            return;
+        }
+
+        Logger::info($insalesId, null, 'billing.insales.charge_created', [
+            'plan' => $plan,
+            'charge_id' => $charge['id'],
+            'status' => $charge['status'],
+        ]);
+
+        header('Location: ' . $charge['confirmation_url'], true, 302);
+    }
+
+    /**
+     * Возврат мерчанта с confirmation_url ApplicationCharge. Не доверяем
+     * параметрам в URL (их теоретически можно подделать) — сверяем реальный
+     * статус счёта прямым server-to-server запросом к inSales.
+     */
+    private static function handleChargeReturn(
+        Config $config,
+        SubscriptionRepository $subscriptions,
+        string $insalesId,
+        string $shopHost,
+        string $accessToken,
+        string $plan,
+    ): void {
+        if (!isset(Plans::ALL[$plan])) {
+            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken);
+            return;
+        }
+
+        $shops = new ShopRepository(Db::pdo($config));
+        $shopCreds = $shops->findApiAuthByInsalesId($insalesId);
+        if ($shopCreds === null || $config->insalesAppId === null) {
+            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken);
+            return;
+        }
+
+        $billing = new InSalesRecurringBilling(new \ShippingBridge\InSales\InSalesClient());
+
+        try {
+            $charges = $billing->listOneTimeCharges($shopHost, $config->insalesAppId, $shopCreds['api_password']);
+        } catch (\Throwable $e) {
+            Logger::error($insalesId, null, 'billing.insales.charge_check_failed', ['error' => $e->getMessage()]);
+            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, 'pending');
+            return;
+        }
+
+        // Счета этого магазина уже отскоуплены Basic-авторизацией — чужие
+        // сюда не попадут. Берём тот, что создан последним (наибольший id).
+        $latest = null;
+        foreach ($charges as $c) {
+            if ($latest === null || $c['id'] > $latest['id']) {
+                $latest = $c;
+            }
+        }
+
+        Logger::info($insalesId, null, 'billing.insales.charge_checked', [
+            'plan' => $plan,
+            'charge' => $latest,
+        ]);
+
+        if ($latest !== null && $billing->isPaid($latest)) {
+            $periodEnd = (new \DateTimeImmutable())->modify('+30 days');
+            $subscriptions->activateAfterPayment($insalesId, $plan, 'insales', $periodEnd);
+            $subscriptions->recordPayment(
+                $insalesId,
+                $plan,
+                (float) $latest['price'],
+                'insales',
+                'succeeded',
+                (string) $latest['id'], // используем это поле как ссылку на charge_id inSales
+            );
+            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, '1');
+            return;
+        }
+
+        if ($latest !== null && $latest['status'] === 'declined') {
+            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, '0');
+            return;
+        }
+
+        // Счёт ещё pending (мерчант закрыл окно, не дойдя до конца) —
+        // не считаем ни оплаченным, ни отклонённым.
+        self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, 'pending');
     }
 
     /*
@@ -262,12 +334,13 @@ final class BillingPage
         string $insalesId,
         string $shopHost,
         string $accessToken,
+        ?string $paidOverride = null,
     ): void {
         $h = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
         $sub = $subscriptions->findByInsalesId($insalesId);
         $currentPlan = $sub['plan'] ?? null;
         $currentStatus = $sub['status'] ?? null;
-        $paidParam = $_GET['paid'] ?? null;
+        $paidParam = $paidOverride ?? ($_GET['paid'] ?? null);
 
         http_response_code(200);
         header('Content-Type: text/html; charset=utf-8');
@@ -328,10 +401,7 @@ final class BillingPage
                 echo '<input type="hidden" name="insales_id" value="' . $h($insalesId) . '">';
                 echo '<input type="hidden" name="atk" value="' . $h($accessToken) . '">';
                 echo '<input type="hidden" name="select_plan" value="' . $h($planKey) . '">';
-                echo '<label style="display:flex;align-items:flex-start;gap:7px;font-size:11.5px;color:#666;margin-bottom:12px;cursor:pointer;line-height:1.4">';
-                echo '<input type="checkbox" name="recurrent" value="1" style="margin-top:2px;flex-shrink:0">';
-                echo '<span>Подключить автопродление — карта сохранится, и оплата следующего периода спишется автоматически. Можно отключить в любой момент.</span>';
-                echo '</label>';
+                echo '<p style="font-size:11.5px;color:#666;margin:0 0 12px;line-height:1.4">Оплата на 30 дней. Продление — вручную, тем же способом, когда период закончится.</p>';
                 echo '<button type="submit" class="plan-btn">Выбрать и оплатить</button>';
                 echo '</form>';
             }

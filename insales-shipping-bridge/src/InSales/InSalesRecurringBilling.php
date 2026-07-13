@@ -7,66 +7,43 @@ namespace ShippingBridge\InSales;
 /**
  * Обёртка над нативным биллингом inSales для приложений маркетплейса.
  *
- * inSales предоставляет ДВА независимых механизма монетизации (см. README
- * партнёрской документации: liquidhub.ru/page/razrabotka-prilozheniy-dlya-marketpleysa-insales,
- * раздел "Если вы планируете монетизировать своё приложение и использовать
- * биллинг InSales"):
+ * ИТОГ ПРОВЕРКИ НА РЕАЛЬНОМ МАГАЗИНЕ (2026-07): RecurringApplicationCharge
+ * (singleton-эндпоинт /admin/recurring_application_charge.json) хоть и
+ * отвечает 200 с полями monthly/paid_till/blocked, но НЕ создаёт никакого
+ * видимого мерчанту счёта и не запускает реальную оплату — то есть деньги
+ * по факту не двигаются. Использовать его для прод-биллинга нельзя, методы
+ * ниже оставлены для истории/на случай если саппорт inSales прояснит, как
+ * заставить его работать по-настоящему.
  *
- *  1) ApplicationCharge — разовый счёт с редиректом на подтверждение
- *     (аналог Stripe Checkout / Shopify ApplicationCharge). Полностью
- *     подтверждено по официальной документации api.insales.ru:
- *       POST   /admin/application_charges.json
- *       GET    /admin/application_charges.json
- *       GET    /admin/application_charges/:id.json
- *       POST   /admin/application_charges/:id/decline.json
- *     Тело: {"application_charge": {"name": "...", "price": 999, "return_url": "...", "test": true|false}}
- *     Ответ содержит "confirmation_url" — туда редиректим пользователя,
- *     после подтверждения магазин получает статус "pending" -> оплачивается
- *     мерчантом в личном кабинете inSales, статус меняется на "accepted"/"declined".
+ * АКТИВНЫЙ РАБОЧИЙ СПОСОБ — ApplicationCharge (разовый счёт с реальным
+ * confirmation_url, куда попадает мерчант, и статусом pending → accepted/
+ * declined, который можно проверить через GET). Полностью подтверждено по
+ * официальной документации api.insales.ru:
+ *   POST   /admin/application_charges.json
+ *   GET    /admin/application_charges.json
+ *   GET    /admin/application_charges/:id.json
+ *   POST   /admin/application_charges/:id/decline.json
+ * Тело: {"application_charge": {"name": "...", "price": 999, "return_url": "...", "test": true|false}}
+ * Ответ содержит "confirmation_url" — туда редиректим мерчанта; после его
+ * подтверждения статус меняется с "pending" на "accepted" (оплачено) или
+ * "declined" (отклонено).
  *
- *  2) RecurringApplicationCharge — ЕДИНСТВЕННАЯ на магазин подписка
- *     (не список тарифов с id, а один объект "текущая подписка"). Это
- *     подтверждено:
- *       а) старым XML/legacy клиентом (github.com/nkrkv/pyinsales, insales/lib/api/recurringcharge.js) —
- *          singleton-эндпоинт /admin/recurring_application_charge.xml (GET/POST/PUT)
- *       б) актуальным JSON API (api.insales.ru, secции RecurringApplicationCharge:
- *          Create/Destroy/Get/Update/"add free days") — те же реальные ответы через
- *          sandbox api.insales.ru/simulate/recurringapplicationcharge/*, которые я
- *          вызвал напрямую и получил вот такую форму объекта:
- *            {"monthly": "999.0", "trial_expired_at": "2026-07-18",
- *             "paid_till": "2026-07-18", "blocked": false,
- *             "created_at": "...", "updated_at": "..."}
- *          т.е. НЕТ id, НЕТ name, НЕТ confirmation_url — это не Shopify-подобный
- *          флоу с подтверждением, а прямое выставление ежемесячной суммы,
- *          которую inSales списывает с баланса/карты магазина в личном
- *          кабинете inSales самостоятельно (аналогично их встроенным тарифам
- *          на "Приложения" в Центре Приложений).
- *
- * ВАЖНО — что НЕ подтверждено на 100% и требует проверки перед продакшеном:
- *   - точное имя поля для создания (использую "monthly" по аналогии с ответом
- *     и legacy XML-клиентом; альтернатива — "price");
- *   - есть ли поле для начального триала при создании (использую "trial_days";
- *     не увидел его в реальном ответе simulate, поэтому НЕ полагайтесь на него
- *     вслепую — тестируйте на sandbox-магазине, там же есть флаг test у
- *     ApplicationCharge, но для RecurringApplicationCharge я не нашёл
- *     подтверждения поддержки test-режима);
- *   - точный путь action'а "add free days" (использую
- *     /admin/recurring_application_charge/add_free_days.json — выведено из
- *     фрагмента якоря официальной документации
- *     "recurringapplicationcharge-add-free-days-to-recurring-application-charge-json",
- *     но URL руками я не confirмed).
- * Перед тем как пускать это в прод — сделайте один тестовый вызов create()
- * на тестовом магазине партнёрской программы (insales.ru/partnership) и
- * посмотрите реальный запрошенный/ответный JSON, либо уточните у саппорта
- * inSales через тикет в личном кабинете партнёра.
+ * ⚠️ Единственное, что не подтверждено на 100% про ApplicationCharge:
+ * буквальное значение статуса при успешной оплате — в документации явно
+ * показаны только "pending" и "declined", "accepted" — по аналогии со
+ * старым Shopify API (откуда явно списан весь дизайн этого API). Если на
+ * практике статус после оплаты окажется другим словом — поправьте константу
+ * PAID_STATUSES ниже и всё остальное продолжит работать.
  *
  * Официальные источники:
  * @see https://liquidhub.ru/page/razrabotka-prilozheniy-dlya-marketpleysa-insales
- * @see https://api.insales.ru/?doc_format=JSON#recurring-application-charge
  * @see https://api.insales.ru/?doc_format=JSON#application-charge
  */
 final class InSalesRecurringBilling
 {
+    /** @see class docblock — единственное неподтверждённое буквально значение. */
+    private const PAID_STATUSES = ['accepted', 'paid'];
+
     public function __construct(private readonly InSalesClient $client) {}
 
     /**
@@ -201,6 +178,69 @@ final class InSalesRecurringBilling
                 'test'       => $test,
             ]],
         );
+        return $this->normalizeCharge($res);
+    }
+
+    /**
+     * Получить один счёт по id — используется при возврате мерчанта с
+     * confirmation_url, чтобы проверить итоговый статус через прямой
+     * server-to-server вызов (а не доверять параметрам в URL редиректа,
+     * которые в принципе можно подделать).
+     *
+     * @return array{id:int,name:string,price:string,status:string,confirmation_url:string}|null
+     */
+    public function getOneTimeCharge(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        int $chargeId,
+    ): ?array {
+        try {
+            $res = $this->client->getJsonPath(
+                $shopHost,
+                $applicationLogin,
+                $apiPasswordMd5,
+                "/admin/application_charges/{$chargeId}.json",
+            );
+        } catch (\RuntimeException $e) {
+            return null;
+        }
+        return $res === [] ? null : $this->normalizeCharge($res);
+    }
+
+    /**
+     * Список всех разовых счетов магазина (API уже сам скоупит по магазину
+     * через Basic-авторизацию — чужие счета сюда не попадут). Используется,
+     * когда id счёта неизвестен (например, потеряли его между запросом и
+     * возвратом пользователя) — берём последний по created_at.
+     *
+     * @return list<array{id:int,name:string,price:string,status:string,confirmation_url:string}>
+     */
+    public function listOneTimeCharges(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+    ): array {
+        $res = $this->client->getJsonPath($shopHost, $applicationLogin, $apiPasswordMd5, '/admin/application_charges.json');
+        $items = is_array($res) && array_is_list($res) ? $res : ($res['application_charges'] ?? []);
+        $out = [];
+        foreach ((array) $items as $item) {
+            if (is_array($item)) {
+                $out[] = $this->normalizeCharge($item);
+            }
+        }
+        return $out;
+    }
+
+    /** Считаем ли статус счёта "оплачено" — см. PAID_STATUSES в шапке класса. */
+    public function isPaid(array $charge): bool
+    {
+        return in_array($charge['status'], self::PAID_STATUSES, true);
+    }
+
+    /** @return array{id:int,name:string,price:string,status:string,confirmation_url:string} */
+    private function normalizeCharge(array $res): array
+    {
         return [
             'id'               => (int) ($res['id'] ?? 0),
             'name'             => (string) ($res['name'] ?? ''),

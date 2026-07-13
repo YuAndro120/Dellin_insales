@@ -84,7 +84,7 @@ final class BillingPage
         // уводило пользователя из inSales вместо показа страницы оплаты,
         // а после успешной оплаты через inSales (redirect на этот же URL
         // с ?paid=1) редирект на лендинг просто терял баннер об успехе.
-        self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken);
+        self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, null, $config->insalesBillingTestMode);
     }
 
     /**
@@ -148,7 +148,7 @@ final class BillingPage
                 'Подписка «' . $planInfo['label'] . '» — ' . $shopHost,
                 (float) $planInfo['price'],
                 $returnUrl,
-                false, // test=true — только вручную при отладке на тестовом магазине
+                $config->insalesBillingTestMode, // из .env: INSALES_BILLING_TEST_MODE — по умолчанию false
             );
         } catch (\Throwable $e) {
             http_response_code(502);
@@ -185,14 +185,14 @@ final class BillingPage
         string $plan,
     ): void {
         if (!isset(Plans::ALL[$plan])) {
-            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken);
+            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, null, $config->insalesBillingTestMode);
             return;
         }
 
         $shops = new ShopRepository(Db::pdo($config));
         $shopCreds = $shops->findApiAuthByInsalesId($insalesId);
         if ($shopCreds === null || $config->insalesAppId === null) {
-            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken);
+            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, null, $config->insalesBillingTestMode);
             return;
         }
 
@@ -202,7 +202,7 @@ final class BillingPage
             $charges = $billing->listOneTimeCharges($shopHost, $config->insalesAppId, $shopCreds['api_password']);
         } catch (\Throwable $e) {
             Logger::error($insalesId, null, 'billing.insales.charge_check_failed', ['error' => $e->getMessage()]);
-            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, 'pending');
+            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, 'pending', $config->insalesBillingTestMode);
             return;
         }
 
@@ -231,18 +231,18 @@ final class BillingPage
                 'succeeded',
                 (string) $latest['id'], // используем это поле как ссылку на charge_id inSales
             );
-            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, '1');
+            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, '1', $config->insalesBillingTestMode);
             return;
         }
 
         if ($latest !== null && $latest['status'] === 'declined') {
-            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, '0');
+            self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, '0', $config->insalesBillingTestMode);
             return;
         }
 
         // Счёт ещё pending (мерчант закрыл окно, не дойдя до конца) —
         // не считаем ни оплаченным, ни отклонённым.
-        self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, 'pending');
+        self::renderPlansPage($subscriptions, $insalesId, $shopHost, $accessToken, 'pending', $config->insalesBillingTestMode);
     }
 
     /*
@@ -335,6 +335,7 @@ final class BillingPage
         string $shopHost,
         string $accessToken,
         ?string $paidOverride = null,
+        bool $testMode = false,
     ): void {
         $h = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
         $sub = $subscriptions->findByInsalesId($insalesId);
@@ -366,6 +367,10 @@ final class BillingPage
 
         echo '<h1>Тариф</h1>';
         echo '<div class="sub">Магазин: ' . $h($shopHost) . '</div>';
+
+        if ($testMode) {
+            echo '<div class="status-banner" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:600">⚠ ТЕСТОВЫЙ РЕЖИМ ОПЛАТЫ ВКЛЮЧЁН (INSALES_BILLING_TEST_MODE=1 в .env) — счета подтверждаются без реальных денег. Выключите перед реальным запуском.</div>';
+        }
 
         if ($paidParam === '1') {
             echo '<div class="status-banner" style="background:#e8f9ee;border-color:#b8e8c8">✓ Оплата прошла успешно. Тариф обновлён.</div>';

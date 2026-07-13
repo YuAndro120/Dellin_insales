@@ -21,6 +21,12 @@ final class Config
         public readonly ?string $tbankTerminalPassword = null,
         public readonly ?string $landingUrl = null,
         public readonly ?string $tbankInvoicingToken = null,
+        // ⚠️ Флаг тестового биллинга inSales (ApplicationCharge[test]=true —
+        // счёт можно подтвердить без реальной оплаты). По умолчанию FALSE —
+        // это осознанный выбор: если забудете убрать INSALES_BILLING_TEST_MODE=1
+        // из .env перед реальным запуском, пользователи будут "оплачивать"
+        // бесплатно. См. BillingPage::handlePlanSelection().
+        public readonly bool $insalesBillingTestMode = false,
     ) {}
 
     /** Полная конфигурация для API расчёта и справочников. */
@@ -45,6 +51,7 @@ final class Config
             tbankTerminalPassword: self::opt('TBANK_TERMINAL_PASSWORD'),
             landingUrl: self::opt('LANDING_URL'),
             tbankInvoicingToken: self::opt('TBANK_INVOICING_TOKEN'),
+            insalesBillingTestMode: self::boolOpt('INSALES_BILLING_TEST_MODE'),
         );
     }
 
@@ -76,6 +83,7 @@ final class Config
             tbankTerminalPassword: self::opt('TBANK_TERMINAL_PASSWORD'),
             landingUrl: self::opt('LANDING_URL'),
             tbankInvoicingToken: self::opt('TBANK_INVOICING_TOKEN'),
+            insalesBillingTestMode: self::boolOpt('INSALES_BILLING_TEST_MODE'),
         );
     }
 
@@ -144,6 +152,16 @@ final class Config
             return null;
         }
         return $v;
+    }
+
+    /** Парсит булеву переменную окружения: "1"/"true"/"yes" (без учёта регистра) → true, иначе false. */
+    private static function boolOpt(string $key): bool
+    {
+        $v = self::opt($key);
+        if ($v === null) {
+            return false;
+        }
+        return in_array(strtolower(trim($v)), ['1', 'true', 'yes', 'on'], true);
     }
 
     private static function bootstrapDotEnv(): void

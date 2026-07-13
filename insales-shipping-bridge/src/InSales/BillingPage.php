@@ -6,6 +6,7 @@ namespace ShippingBridge\InSales;
 
 use ShippingBridge\Config;
 use ShippingBridge\Db;
+use ShippingBridge\Logger;
 use ShippingBridge\Plans;
 use ShippingBridge\ShopRepository;
 use ShippingBridge\SubscriptionRepository;
@@ -134,19 +135,41 @@ final class BillingPage
             return;
         }
 
-        // paid_till приходит от inSales — используем его как конец периода,
-        // если он есть; иначе (на случай нестандартного ответа) даём 30 дней.
-        $periodEnd = $charge['paid_till'] !== null
-            ? new \DateTimeImmutable($charge['paid_till'])
-            : (new \DateTimeImmutable())->modify('+30 days');
+        // Логируем сырой ответ целиком (не только 4 поля, которые понимает
+        // normalize()) — пока нет полной ясности, что именно inSales
+        // возвращает при разных статусах счёта, лучше видеть всё как есть
+        // в /var/log/bridge/*.jsonl.
+        Logger::info($insalesId, null, 'billing.insales.charge_response', [
+            'plan' => $plan,
+            'raw'  => $charge['raw'],
+        ]);
 
-        $subscriptions->activateAfterPayment($insalesId, $plan, 'insales', $periodEnd);
+        // Активируем подписку, ТОЛЬКО если inSales подтвердил конкретную
+        // будущую дату paid_till и не выставил blocked. Судя по всему,
+        // recurring_application_charge выставляет мерчанту реальный счёт
+        // (не списывает деньги мгновенно) — поэтому нельзя вслепую доверять
+        // самому факту успешного API-вызова: это значит лишь "счёт
+        // выставлен", а не "оплачен".
+        $paidTill = $charge['paid_till'] !== null ? new \DateTimeImmutable($charge['paid_till']) : null;
+        $isConfirmedPaid = $paidTill !== null && $paidTill > new \DateTimeImmutable() && !$charge['blocked'];
+
+        if ($isConfirmedPaid) {
+            $subscriptions->activateAfterPayment($insalesId, $plan, 'insales', $paidTill);
+            $paidParam = '1';
+        } else {
+            Logger::error($insalesId, null, 'billing.insales.charge_unconfirmed', [
+                'plan'      => $plan,
+                'paid_till' => $charge['paid_till'],
+                'blocked'   => $charge['blocked'],
+            ]);
+            $paidParam = 'pending';
+        }
 
         header('Location: /insales/billing?' . http_build_query([
             'shop' => $shopHost,
             'insales_id' => $insalesId,
             'atk' => $accessToken,
-            'paid' => '1',
+            'paid' => $paidParam,
         ]), true, 302);
     }
 
@@ -273,6 +296,8 @@ final class BillingPage
 
         if ($paidParam === '1') {
             echo '<div class="status-banner" style="background:#e8f9ee;border-color:#b8e8c8">✓ Оплата прошла успешно. Тариф обновлён.</div>';
+        } elseif ($paidParam === 'pending') {
+            echo '<div class="status-banner" style="background:#fff3e0;border-color:#ffd9a8">Счёт в inSales выставлен, но мы не смогли автоматически подтвердить оплату. Проверьте статус счёта в личном кабинете inSales — тариф обновится, как только оплата будет подтверждена.</div>';
         } elseif ($paidParam === '0') {
             echo '<div class="status-banner" style="background:#fdeaea;border-color:#f4b8b8">Оплата не прошла. Попробуйте ещё раз или выберите другой способ.</div>';
         }

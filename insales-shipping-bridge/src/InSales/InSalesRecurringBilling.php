@@ -210,7 +210,9 @@ final class InSalesRecurringBilling
         ];
     }
 
-    /** @return array{monthly:string,trial_expired_at:?string,paid_till:?string,blocked:bool} */
+    /**
+     * @return array{monthly:string,trial_expired_at:?string,paid_till:?string,blocked:bool,raw:array<string,mixed>}
+     */
     private function normalize(array $res): array
     {
         return [
@@ -218,6 +220,7 @@ final class InSalesRecurringBilling
             'trial_expired_at' => isset($res['trial_expired_at']) ? (string) $res['trial_expired_at'] : null,
             'paid_till'        => isset($res['paid_till']) ? (string) $res['paid_till'] : null,
             'blocked'          => (bool) ($res['blocked'] ?? false),
+            'raw'              => $res, // сырой ответ целиком — для логирования/диагностики
         ];
     }
 }

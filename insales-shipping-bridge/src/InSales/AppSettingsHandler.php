@@ -523,7 +523,7 @@ final class AppSettingsHandler
                 </div>
                 <?php
                 $planLabels = [
-                    'calc_only' => 'Калькулятор',
+                    'calc_only' => 'Старт',
                     'full' => 'Полный',
                     'automation' => 'Автоматизация',
                 ];

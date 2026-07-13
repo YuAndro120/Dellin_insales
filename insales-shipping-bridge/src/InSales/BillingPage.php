@@ -6,6 +6,7 @@ namespace ShippingBridge\InSales;
 
 use ShippingBridge\Config;
 use ShippingBridge\Db;
+use ShippingBridge\Plans;
 use ShippingBridge\ShopRepository;
 use ShippingBridge\SubscriptionRepository;
 use ShippingBridge\TbankAcquiring; // оставлено для возможного отката, см. handlePlanSelection()
@@ -20,27 +21,14 @@ use ShippingBridge\InSales\InSalesRecurringBilling;
  * (см. InSalesRecurringBilling). Т-Банк эквайринг ЗАКОММЕНТИРОВАН, но не
  * удалён — на случай отката смотрите handlePlanSelectionViaTbank() ниже
  * и BillingWebhookHandler.php (там тоже закомментирован приём уведомлений).
+ *
+ * Названия/цены/описания тарифов — из ShippingBridge\Plans (единый источник,
+ * синхронизированный с лендингом public/index.html). Раньше здесь была своя
+ * копия этих данных с другими цифрами — см. историю правок.
  */
 final class BillingPage
 {
-    /** @var array<string,array{label:string,price:int,description:string}> */
-    private const PLANS = [
-        SubscriptionRepository::PLAN_CALC_ONLY => [
-            'label' => 'Калькулятор',
-            'price' => 999,
-            'description' => 'Расчёт стоимости с учётом скидок Деловых Линий в корзине. Без отправки заявок из админки.',
-        ],
-        SubscriptionRepository::PLAN_FULL => [
-            'label' => 'Полный',
-            'price' => 1999,
-            'description' => 'Расчёт стоимости и полное оформление заявок в Деловые Линии прямо из админки.',
-        ],
-        SubscriptionRepository::PLAN_AUTOMATION => [
-            'label' => 'Автоматизация',
-            'price' => 4999,
-            'description' => 'Всё из тарифа «Полный», плюс автоматизация по стадиям заказа, отчёты по логистике, счета и платёжные ссылки.',
-        ],
-    ];
+    // Тарифы (label/price/description) — см. ShippingBridge\Plans::ALL.
 
     public static function handle(Config $config, ShopRepository $shops, string $method): void
     {
@@ -114,13 +102,13 @@ final class BillingPage
         bool $wantsRecurrent,
         string $period = 'month',
     ): void {
-        if (!isset(self::PLANS[$plan])) {
+        if (!isset(Plans::ALL[$plan])) {
             http_response_code(400);
             self::renderError('Неизвестный тариф.');
             return;
         }
 
-        $planInfo = self::PLANS[$plan];
+        $planInfo = Plans::ALL[$plan];
         $accessToken = trim((string) ($_POST['atk'] ?? ''));
 
         $shops = new ShopRepository(Db::pdo($config));
@@ -298,7 +286,7 @@ final class BillingPage
         }
 
         echo '<div class="plans">';
-        foreach (self::PLANS as $planKey => $info) {
+        foreach (Plans::ALL as $planKey => $info) {
             $isCurrent = $currentPlan === $planKey && $currentStatus === 'active';
             echo '<div class="plan-card' . ($isCurrent ? ' current' : '') . '">';
             if ($isCurrent) {

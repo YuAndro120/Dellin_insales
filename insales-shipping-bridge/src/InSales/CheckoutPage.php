@@ -5,38 +5,21 @@ declare(strict_types=1);
 namespace ShippingBridge\InSales;
 
 use ShippingBridge\Config;
+use ShippingBridge\Plans;
 use ShippingBridge\ShopRepository;
 use ShippingBridge\SubscriptionRepository;
 
 /**
  * Страница оплаты тарифа: выбор периода (1/12 мес), способа оплаты (карта/счёт),
  * автопродление. POST уходит на /insales/billing (карта) или /insales/billing/invoice (счёт).
+ *
+ * Тарифы — из ShippingBridge\Plans (единый источник, синхронизирован с
+ * лендингом public/index.html). Раньше здесь была своя копия с другими
+ * цифрами и без тарифа "Автоматизация" вообще (из-за чего по прямой ссылке
+ * ?plan=automation была ошибка "Тариф не найден") — теперь исправлено.
  */
 final class CheckoutPage
 {
-  private const PLANS = [
-    SubscriptionRepository::PLAN_CALC_ONLY => [
-      'label'    => 'Старт',
-      'price'    => 999,
-      'features' => [
-        'Расчёт стоимости со скидками ДЛ в корзине',
-        'Сроки доставки для покупателя',
-        'Все типы доставки ДЛ',
-      ],
-    ],
-    SubscriptionRepository::PLAN_FULL => [
-      'label'    => 'Полный',
-      'price'    => 1999,
-      'features' => [
-        'Всё из тарифа «Старт»',
-        'Оформление заявки в ДЛ из админки',
-        'Терминалы, забор от адреса, расписание',
-        'Полные настройки отправителя',
-        'Трек-номер автоматически в заказ',
-      ],
-    ],
-  ];
-
   private const ANNUAL_DISCOUNT = 0.20; // 20% скидка при оплате за год
 
   public static function handle(Config $config, ShopRepository $shops): void
@@ -52,7 +35,7 @@ final class CheckoutPage
 
     $paid = $_GET['paid'] ?? null;
     if ($paid === '1') {
-      self::renderSuccess(self::PLANS[$plan] ?? [], $insalesId, $shopHost, $landingUrl);
+      self::renderSuccess(Plans::ALL[$plan] ?? [], $insalesId, $shopHost, $landingUrl);
       return;
     }
     if ($paid === '0') {
@@ -60,13 +43,13 @@ final class CheckoutPage
       return;
     }
 
-    if (!isset(self::PLANS[$plan])) {
+    if (!isset(Plans::ALL[$plan])) {
       http_response_code(404);
       echo '<p style="font-family:sans-serif;padding:40px">Тариф не найден.</p>';
       return;
     }
 
-    $planInfo   = self::PLANS[$plan];
+    $planInfo   = Plans::ALL[$plan];
     $monthPrice = $planInfo['price'];
     $yearPrice  = (int) round($monthPrice * 12 * (1 - self::ANNUAL_DISCOUNT));
 

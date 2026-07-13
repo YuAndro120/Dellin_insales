@@ -65,6 +65,7 @@ final class CheckoutPage
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Оформление подписки — ДЛ Коннект</title>
+  <link rel="icon" type="image/png" href="/images/logo.png">
   <link href="/fonts/fonts.css" rel="stylesheet">
     :root {
       --bg:         #16181c;
@@ -470,6 +471,7 @@ HTML;
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Оплата прошла — ДЛ Коннект</title>
+  <link rel="icon" type="image/png" href="/images/logo.png">
   <link href="/fonts/fonts.css" rel="stylesheet">
   <style>
     :root { --bg:#16181c; --bg-card:#1f2228; --line:#2c3038; --ink:#f2efe9; --ink-dim:#a8a59d; --ink-faint:#6b6963; --amber:#e8742c; --green:#5fb88a; --green-soft:#1a2b22 }
@@ -511,6 +513,7 @@ HTML;
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ошибка оплаты — ДЛ Коннект</title>
+  <link rel="icon" type="image/png" href="/images/logo.png">
   <link href="/fonts/fonts.css" rel="stylesheet">
   <style>
     :root { --bg:#16181c; --bg-card:#1f2228; --line:#2c3038; --ink:#f2efe9; --ink-dim:#a8a59d; --ink-faint:#6b6963; --amber:#e8742c; --red-soft:#2c1414 }

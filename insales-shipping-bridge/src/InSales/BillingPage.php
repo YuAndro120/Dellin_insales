@@ -249,7 +249,7 @@ final class BillingPage
         http_response_code(200);
         header('Content-Type: text/html; charset=utf-8');
 
-        echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Тариф</title>';
+        echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Тариф</title><link rel="icon" type="image/png" href="/images/logo.png"><link rel="apple-touch-icon" href="/images/logo.png">';
         echo '<style>
             body{font-family:-apple-system,sans-serif;background:#f7f7f8;margin:0;padding:32px 20px;color:#1a1a1a}
             .wrap{max-width:880px;margin:0 auto}
@@ -322,6 +322,6 @@ final class BillingPage
     private static function renderError(string $message): void
     {
         header('Content-Type: text/html; charset=utf-8');
-        echo '<!DOCTYPE html><html><body style="font-family:sans-serif;padding:40px"><p>' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</p></body></html>';
+        echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Тариф</title><link rel="icon" type="image/png" href="/images/logo.png"></head><body style="font-family:sans-serif;padding:40px"><p>' . htmlspecialchars($message, ENT_QUOTES, 'UTF-8') . '</p></body></html>';
     }
 }

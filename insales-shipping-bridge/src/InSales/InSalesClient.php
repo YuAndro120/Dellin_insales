@@ -432,19 +432,49 @@ final class InSalesClient
      * @param array<string, mixed> $orderPayload содержимое ключа "order"
      * @return array<string, mixed>
      */
-    public function updateOrder(
+    /**
+     * Список пользовательских статусов заказа, настроенных в магазине —
+     * нужен для UI настройки автоматизации (чтобы показать реальные
+     * названия статусов, а не голые permalink'и).
+     * @see https://www.insales.ru/collection/doc-rabota-s-api-i-prilozheniya/product/rabota-s-polzovatelskimi-statusami-2
+     * @return list<array{permalink:string,title:string,system_status:string}>
+     */
+    public function listCustomStatuses(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+    ): array {
+        try {
+            $res = $this->getJsonPath($shopHost, $applicationLogin, $apiPasswordMd5, '/admin/custom_statuses.json');
+        } catch (\RuntimeException $e) {
+            // Кастомные статусы могут быть выключены в магазине — не валим всё приложение.
+            return [];
+        }
+        $items = is_array($res) && array_is_list($res) ? $res : ($res['custom_statuses'] ?? []);
+        $out = [];
+        foreach ((array) $items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $out[] = [
+                'permalink' => (string) ($item['permalink'] ?? ''),
+                'title' => (string) ($item['title'] ?? ''),
+                'system_status' => (string) ($item['system_status'] ?? ''),
+            ];
+        }
+        return $out;
+    }
+
+    /** Проставить пользовательский статус заказу (см. listCustomStatuses()). */
+    public function setOrderCustomStatus(
         string $shopHost,
         string $applicationLogin,
         string $apiPasswordMd5,
         int $orderId,
-        array $orderPayload,
+        string $customStatusPermalink,
     ): array {
-        return $this->putJson(
-            $shopHost,
-            $applicationLogin,
-            $apiPasswordMd5,
-            "/admin/orders/{$orderId}.json",
-            ['order' => $orderPayload],
-        );
+        return $this->updateOrder($shopHost, $applicationLogin, $apiPasswordMd5, $orderId, [
+            'custom_status_permalink' => $customStatusPermalink,
+        ]);
     }
 }

@@ -22,6 +22,8 @@ final class CarrierApi
     private const URL_FREIGHT_SEARCH = 'https://api.dellin.ru/v1/public/freight_types/search.json';
     private const URL_ADDRESS_DATES = 'https://api.dellin.ru/v2/request/address/dates.json';
     private const URL_ADDRESS_TIME_INTERVAL = 'https://api.dellin.ru/v2/request/address/time_interval.json';
+    private const URL_STATUSES_REFERENCE = 'https://api.dellin.ru/v1/references/statuses.json';
+    private const URL_ORDERS_LOG = 'https://api.dellin.ru/v3/orders.json';
     private const COUNTRY_NAMES = [
         '0x8f51001438c4d49511dbd774581edb7a' => 'Россия',
         '0x8f51001438c4d49511dbd774581edb7b' => 'Украина',
@@ -123,6 +125,65 @@ final class CarrierApi
             $items[$uid] = $name;
         }
         return $items;
+    }
+
+    /**
+     * Справочник всех возможных статусов заказа ДЛ — для UI настройки
+     * автоматизации (список для выпадающего списка "статус ДЛ -> статус inSales").
+     * Не требует sessionID (публичный метод).
+     * @return list<array{status:string,title:string}>
+     */
+    public function getStatusesReference(): array
+    {
+        $res = $this->postJson(self::URL_STATUSES_REFERENCE, [
+            'appkey' => $this->config->dellinAppkey,
+        ]);
+        $items = is_array($res) && array_is_list($res) ? $res : ($res['data'] ?? $res);
+        $out = [];
+        foreach ((array) $items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $out[] = ['status' => (string) ($item['status'] ?? ''), 'title' => (string) ($item['title'] ?? '')];
+        }
+        return $out;
+    }
+
+    /**
+     * Инкрементальный опрос «Журнала заказов» — только заказы, изменившиеся
+     * после $sinceLastUpdate (формат "Y-m-d H:i"). Используется поллером
+     * bin/dellin_status_poller.php вместо вебхуков (у ДЛ нет подтверждённого
+     * эндпоинта подписки на события — см. AutomationJobRepository и
+     * bin/dellin_status_poller.php). Лимит API — 1600 запросов/час, поэтому
+     * инкрементальность здесь принципиальна, а не просто оптимизация.
+     *
+     * @return list<array{orderId:string,state:string,stateName:string,orderNumber:string}>
+     */
+    public function pollOrdersLog(CarrierCredentials $creds, ?string $sinceLastUpdate, int $page = 1): array
+    {
+        $sid = $this->loginWithPat($creds);
+        $body = array_filter([
+            'appkey' => $creds->appkey ?? $this->config->dellinAppkey,
+            'sessionID' => $sid,
+            'lastUpdate' => $sinceLastUpdate,
+            'page' => $page,
+        ], static fn($v) => $v !== null);
+
+        $res = $this->postJson(self::URL_ORDERS_LOG, $body);
+        $orders = $res['orders'] ?? [];
+        $out = [];
+        foreach ((array) $orders as $o) {
+            if (!is_array($o)) {
+                continue;
+            }
+            $out[] = [
+                'orderId' => (string) ($o['orderId'] ?? ''),
+                'state' => (string) ($o['state'] ?? ''),
+                'stateName' => (string) ($o['stateName'] ?? ''),
+                'orderNumber' => (string) ($o['orderNumber'] ?? ''),
+            ];
+        }
+        return $out;
     }
 
     /**

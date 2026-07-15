@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace ShippingBridge\InSales;
 
+use ShippingBridge\AutomationJobRepository;
+use ShippingBridge\AutomationRuleRepository;
 use ShippingBridge\Db;
 use ShippingBridge\Config;
 use ShippingBridge\Http\Response;
 use ShippingBridge\ShopRepository;
+use ShippingBridge\SubscriptionRepository;
 
 final class WebhookOrderHandler
 {
@@ -67,6 +70,18 @@ final class WebhookOrderHandler
         // КЛАДР из кастомного поля если inSales его передаёт
         $cityKladr = (string) ($shipping['kladr_id'] ?? $shipping['city_kladr'] ?? '');
 
+        // Статус заказа: приоритет — пользовательский (custom_status_permalink),
+        // если в магазине включены кастомные статусы; иначе системный
+        // (fulfillment_status). См. AutomationRuleRepository — именно по
+        // этому значению настраивается автоматизация "статус -> создать заказ в ДЛ".
+        $currentStatus = (string) (
+            $payload['custom-status-permalink']
+            ?? $payload['custom_status_permalink']
+            ?? $payload['fulfillment-status']
+            ?? $payload['fulfillment_status']
+            ?? ''
+        );
+
         // Груз — суммируем по позициям
         $weight = 0.0;
         $statedValue = 0.0;
@@ -81,15 +96,27 @@ final class WebhookOrderHandler
         }
 
         $pdo = Db::pdo($config);
+
+        // Предыдущий известный статус — читаем ДО апдейта, чтобы понять,
+        // изменился ли статус (а не просто пришло дублирующее orders/update
+        // по другой причине, например правка адреса).
+        $prevStatusStmt = $pdo->prepare('
+            SELECT insales_custom_status FROM dellin_orders
+            WHERE insales_shop_id = :shop_id AND insales_order_id = :order_id
+        ');
+        $prevStatusStmt->execute(['shop_id' => $insalesShopId, 'order_id' => $orderId]);
+        $prevStatus = $prevStatusStmt->fetchColumn();
+        $prevStatus = $prevStatus === false ? null : (string) $prevStatus;
+
         $stmt = $pdo->prepare('
             INSERT INTO dellin_orders (
-                insales_shop_id, insales_order_id, insales_order_number,
+                insales_shop_id, insales_order_id, insales_order_number, insales_custom_status,
                 receiver_name, receiver_phone, receiver_email,
                 arrival_city_kladr, arrival_city_name,
                 arrival_street, arrival_house, arrival_flat,
                 weight, stated_value, insales_payload
             ) VALUES (
-                :shop_id, :order_id, :order_number,
+                :shop_id, :order_id, :order_number, :custom_status,
                 :receiver_name, :receiver_phone, :receiver_email,
                 :city_kladr, :city_name,
                 :street, :house, :flat,
@@ -97,6 +124,7 @@ final class WebhookOrderHandler
             )
             ON DUPLICATE KEY UPDATE
                 insales_order_number = VALUES(insales_order_number),
+                insales_custom_status = VALUES(insales_custom_status),
                 receiver_name = VALUES(receiver_name),
                 receiver_phone = VALUES(receiver_phone),
                 receiver_email = VALUES(receiver_email),
@@ -115,6 +143,7 @@ final class WebhookOrderHandler
             'shop_id'       => $insalesShopId,
             'order_id'      => $orderId,
             'order_number'  => $orderNumber,
+            'custom_status' => $currentStatus !== '' ? $currentStatus : null,
             'receiver_name' => $receiverName,
             'receiver_phone' => $receiverPhone,
             'receiver_email' => $receiverEmail,
@@ -127,6 +156,27 @@ final class WebhookOrderHandler
             'stated_value'  => round($statedValue, 2),
             'payload'       => $raw,
         ]);
+
+        // Автоматизация "статус inSales -> создать заказ в ДЛ" — только на
+        // тарифе "Автоматизация" и только если статус реально изменился
+        // (защита от повторной постановки на дублирующиеся вебхуки).
+        if ($currentStatus !== '' && $currentStatus !== $prevStatus) {
+            $subscriptions = new SubscriptionRepository($pdo);
+            if ($subscriptions->hasAtLeast($insalesShopId, SubscriptionRepository::PLAN_AUTOMATION)) {
+                $rules = new AutomationRuleRepository($pdo);
+                $action = $rules->findAction($insalesShopId, AutomationRuleRepository::DIRECTION_INSALES_TO_DL, $currentStatus);
+                if ($action === AutomationRuleRepository::ACTION_CREATE_DL_ORDER) {
+                    (new AutomationJobRepository($pdo))->enqueue(
+                        $insalesShopId,
+                        $orderId,
+                        'create_dl_order',
+                    );
+                    \ShippingBridge\Logger::info($insalesShopId, $orderId, 'automation.enqueued', [
+                        'trigger_status' => $currentStatus,
+                    ]);
+                }
+            }
+        }
 
         Response::json(['ok' => true], 200);
     }

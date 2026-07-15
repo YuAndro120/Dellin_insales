@@ -279,6 +279,46 @@ public function saveDellinCredentials(string $insalesId, string $appkey, string 
         return $row !== null ? ShopSettings::fromRow($row) : null;
     }
 
+    /**
+     * Все активные магазины с настроенными учётными данными Деловых Линий
+     * и ненулевым dellin_request_id хотя бы в одном заказе — нужны поллеру
+     * статусов (нет смысла опрашивать магазин, который никогда не оформлял
+     * заявок через ДЛ или не настроил PAT).
+     *
+     * @return list<array{insales_id:string,dellin_appkey:string,dellin_pat_enc:string,dellin_status_poll_cursor:?string}>
+     */
+    public function findAllWithCarrierCreds(): array
+    {
+        $stmt = $this->pdo->query('
+            SELECT DISTINCT s.insales_id, s.dellin_appkey, s.dellin_pat_enc, s.dellin_status_poll_cursor
+            FROM insales_shops s
+            INNER JOIN dellin_orders d ON d.insales_shop_id = s.insales_id
+              AND d.dellin_request_id IS NOT NULL
+            WHERE s.uninstalled_at IS NULL
+              AND s.dellin_appkey IS NOT NULL AND s.dellin_appkey != \'\'
+              AND s.dellin_pat_enc IS NOT NULL AND s.dellin_pat_enc != \'\'
+        ');
+        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+
+        return array_map(static fn(array $r): array => [
+            'insales_id' => (string) $r['insales_id'],
+            'dellin_appkey' => (string) $r['dellin_appkey'],
+            'dellin_pat_enc' => (string) $r['dellin_pat_enc'],
+            'dellin_status_poll_cursor' => $r['dellin_status_poll_cursor'] !== null
+                ? (string) $r['dellin_status_poll_cursor']
+                : null,
+        ], $rows);
+    }
+
+    /** Обновляет курсор инкрементального опроса ДЛ (datetime в формате 'Y-m-d H:i'). */
+    public function updateDellinPollCursor(string $insalesId, string $cursor): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE insales_shops SET dellin_status_poll_cursor = :cursor WHERE insales_id = :iid'
+        );
+        $stmt->execute([':cursor' => $cursor, ':iid' => $insalesId]);
+    }
+
     public function findActiveByHost(string $shopHost): ?array
     {
         $row = $this->fetchRow(

@@ -260,6 +260,115 @@ final class OrderSubmitHandler
     }
 
     /**
+     * Программное создание заявки в ДЛ по триггеру автоматизации (смена
+     * статуса заказа в inSales) — используется воркером очереди
+     * (bin/automation_worker.php), не HTTP-эндпоинтом. Повторяет логику
+     * handle(), но без Response::json/чтения HTTP body: даты забора не
+     * выбраны пользователем, поэтому берём ближайшую доступную дату (пустые
+     * derival_date/derival_time — CarrierApi::createOrder уже умеет
+     * подставлять дефолт при их отсутствии, см. виджет оформления).
+     *
+     * @return array{ok:bool,error?:string,request_id?:int,barcode?:string}
+     */
+    public static function submitAutomated(
+        Config $config,
+        ShopRepository $shops,
+        string $insalesId,
+        string $insalesOrderId,
+    ): array {
+        $settings = $shops->findSettingsByInsalesId($insalesId, $config);
+        if ($settings === null) {
+            return ['ok' => false, 'error' => 'Магазин не найден'];
+        }
+
+        $pdo = Db::pdo($config);
+        $subscriptions = new \ShippingBridge\SubscriptionRepository($pdo);
+        if (!$subscriptions->hasAtLeast($insalesId, \ShippingBridge\SubscriptionRepository::PLAN_FULL)) {
+            return ['ok' => false, 'error' => 'Автоматизация недоступна на текущем тарифе'];
+        }
+
+        $existing = $shops->findOrderByInsalesId($insalesId, $insalesOrderId);
+        if ($existing !== null && $existing['dellin_request_id'] !== null) {
+            // Уже оформлено (например, вручную из виджета до срабатывания
+            // автоматизации) — не создаём вторую заявку.
+            return [
+                'ok' => true,
+                'request_id' => (int) $existing['dellin_request_id'],
+                'barcode' => (string) ($existing['dellin_barcode'] ?? ''),
+            ];
+        }
+
+        $auth = $shops->findApiAuthByInsalesId($insalesId);
+        if ($auth === null) {
+            return ['ok' => false, 'error' => 'Нет данных авторизации магазина'];
+        }
+
+        $client = new InSalesClient();
+        try {
+            $insalesOrder = $client->getOrder(
+                $auth['shop_host'],
+                $config->insalesAppId ?? '',
+                $auth['api_password'],
+                (int) $insalesOrderId,
+            );
+        } catch (\Throwable $e) {
+            \ShippingBridge\Logger::error($insalesId, $insalesOrderId, 'automation.order.fetch_insales.error', ['error' => $e->getMessage()]);
+            return ['ok' => false, 'error' => 'Ошибка получения заказа из inSales: ' . $e->getMessage()];
+        }
+
+        $order = self::parseInsalesOrder($insalesId, $insalesOrderId, $insalesOrder);
+        $order['derival_date'] = '';
+        $order['derival_time'] = '';
+
+        $creds = $shops->findCarrierCredentials($insalesId, $config->bridgeSecret);
+        if ($creds === null) {
+            return ['ok' => false, 'error' => 'Не настроены учётные данные Dellin'];
+        }
+
+        $api = new CarrierApi($config);
+        try {
+            $sid = $api->loginWithPat($creds);
+            $deliveryType = in_array(
+                $order['delivery_calc_type'] ?? 'auto',
+                ['auto', 'avia', 'express', 'small'],
+                true
+            ) ? $order['delivery_calc_type'] : 'auto';
+
+            $result = $api->createOrder($sid, $settings, $order, $creds, $deliveryType);
+        } catch (\Throwable $e) {
+            self::upsertOrderError($pdo, $order, $e->getMessage());
+            \ShippingBridge\Logger::error(
+                $insalesId,
+                $insalesOrderId,
+                'automation.order.create.failed',
+                ['error' => $e->getMessage(), 'order_number' => $order['insales_order_number'] ?? '']
+            );
+            return ['ok' => false, 'error' => self::humanizeError($e->getMessage())];
+        }
+
+        self::upsertOrder($pdo, $order, (int) $result['request_id'], (string) $result['barcode']);
+
+        $fieldId = $shops->findOrderFieldId($insalesId);
+        if ($fieldId !== null && $fieldId > 0) {
+            self::writeTrackingNumber(
+                $client,
+                $auth,
+                $config,
+                (int) $insalesOrderId,
+                $insalesOrder,
+                $fieldId,
+                (string) $result['request_id'],
+            );
+        }
+
+        \ShippingBridge\Logger::info($insalesId, $insalesOrderId, 'automation.order.created', [
+            'request_id' => $result['request_id'],
+        ]);
+
+        return ['ok' => true, 'request_id' => (int) $result['request_id'], 'barcode' => (string) $result['barcode']];
+    }
+
+    /**
      * @param array<string, mixed> $raw
      * @return array<string, mixed>
      */

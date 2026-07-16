@@ -1549,16 +1549,23 @@ final class AppSettingsHandler
                             } catch (\Throwable) {}
                         }
 
-                        // Статусы ДЛ — жёстко заданный список (не делаем HTTP при каждом рендере)
+                        // Статусы ДЛ — реальный список из GET /v1/references/statuses.json (2026-07)
                         $dlStatuses = [
-                            ['status' => 'delivering',  'title' => 'Передан в доставку'],
-                            ['status' => 'arrived',     'title' => 'Прибыл в город получателя'],
-                            ['status' => 'inway',       'title' => 'Груз в пути'],
-                            ['status' => 'delivered',   'title' => 'Доставлен получателю'],
-                            ['status' => 'returned',    'title' => 'Возврат отправителю'],
-                            ['status' => 'cancelled',   'title' => 'Отменён'],
-                            ['status' => 'processing',  'title' => 'На обработке'],
-                            ['status' => 'ready',       'title' => 'Готов к выдаче'],
+                            ['status' => 'draft',                          'title' => 'Черновик'],
+                            ['status' => 'processing',                     'title' => 'В обработке'],
+                            ['status' => 'pickup',                         'title' => 'Забор груза от адреса'],
+                            ['status' => 'waiting',                        'title' => 'Ожидает сдачи на терминал'],
+                            ['status' => 'declined',                       'title' => 'Отклонен'],
+                            ['status' => 'received',                       'title' => 'Груз принят к перевозке'],
+                            ['status' => 'received_warehousing',           'title' => 'Груз принят к перевозке. Платное хранение'],
+                            ['status' => 'inway',                          'title' => 'Груз в пути'],
+                            ['status' => 'arrived',                        'title' => 'Груз прибыл на терминал'],
+                            ['status' => 'warehousing',                    'title' => 'Груз прибыл на терминал. Платное хранение'],
+                            ['status' => 'arrived_to_airport',             'title' => 'Груз прибыл в аэропорт'],
+                            ['status' => 'airport_warehousing',            'title' => 'Груз прибыл в аэропорт. Платное хранение'],
+                            ['status' => 'delivery',                       'title' => 'Доставка груза до адреса'],
+                            ['status' => 'accompanying_documents_return',  'title' => 'Груз выдан. Возврат СД'],
+                            ['status' => 'finished',                       'title' => 'Заказ завершен'],
                         ];
 
                         $rulesIn = $autoRules->findByDirection($s->insalesId, \ShippingBridge\AutomationRuleRepository::DIRECTION_INSALES_TO_DL);
@@ -1701,10 +1708,12 @@ final class AppSettingsHandler
                                                 <option value="<?= $h($ds['status']) ?>"><?= $h($ds['title']) ?></option>
                                             <?php endforeach; ?>
                                             <?php if (empty($dlStatuses)): ?>
+                                                <option value="received">received — Груз принят к перевозке</option>
                                                 <option value="inway">inway — Груз в пути</option>
-                                                <option value="arrived">arrived — Прибыл в город</option>
-                                                <option value="delivered">delivered — Доставлен</option>
-                                                <option value="returned">returned — Возврат</option>
+                                                <option value="arrived">arrived — Груз прибыл на терминал</option>
+                                                <option value="delivery">delivery — Доставка груза до адреса</option>
+                                                <option value="finished">finished — Заказ завершен</option>
+                                                <option value="declined">declined — Отклонен</option>
                                             <?php endif; ?>
                                         </select>
                                     </div>

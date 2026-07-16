@@ -465,6 +465,27 @@ final class InSalesClient
         return $out;
     }
 
+    /**
+     * Обновить заказ в inSales.
+     * @param array<string, mixed> $orderPayload содержимое ключа "order"
+     * @return array<string, mixed>
+     */
+    public function updateOrder(
+        string $shopHost,
+        string $applicationLogin,
+        string $apiPasswordMd5,
+        int $orderId,
+        array $orderPayload,
+    ): array {
+        return $this->putJson(
+            $shopHost,
+            $applicationLogin,
+            $apiPasswordMd5,
+            "/admin/orders/{$orderId}.json",
+            ['order' => $orderPayload],
+        );
+    }
+
     /** Проставить пользовательский статус заказу (см. listCustomStatuses()). */
     public function setOrderCustomStatus(
         string $shopHost,

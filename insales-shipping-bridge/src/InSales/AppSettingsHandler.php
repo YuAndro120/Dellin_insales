@@ -1635,9 +1635,12 @@ final class AppSettingsHandler
                                             <?php endforeach; ?>
                                             <?php if (empty($customStatuses)): ?>
                                                 <option value="new">new — Новый</option>
-                                                <option value="confirmed">confirmed — Подтверждён</option>
-                                                <option value="ready">ready — Готов к отгрузке</option>
-                                                <option value="shipped">shipped — Отправлен</option>
+                                                <option value="accepted">accepted — В обработке</option>
+                                                <option value="approved">approved — Согласован</option>
+                                                <option value="dispatched">dispatched — Отгружен</option>
+                                                <option value="delivered">delivered — Доставлен</option>
+                                                <option value="declined">declined — Отменён</option>
+                                                <option value="returned">returned — Возврат</option>
                                             <?php endif; ?>
                                         </select>
                                     </div>
@@ -1725,8 +1728,13 @@ final class AppSettingsHandler
                                                 <option value="<?= $h($cs['permalink']) ?>"><?= $h($cs['title']) ?> (<?= $h($cs['permalink']) ?>)</option>
                                             <?php endforeach; ?>
                                             <?php if (empty($customStatuses)): ?>
+                                                <option value="new">new — Новый</option>
+                                                <option value="accepted">accepted — В обработке</option>
+                                                <option value="approved">approved — Согласован</option>
+                                                <option value="dispatched">dispatched — Отгружен</option>
                                                 <option value="delivered">delivered — Доставлен</option>
-                                                <option value="closed">closed — Завершён</option>
+                                                <option value="declined">declined — Отменён</option>
+                                                <option value="returned">returned — Возврат</option>
                                             <?php endif; ?>
                                         </select>
                                     </div>

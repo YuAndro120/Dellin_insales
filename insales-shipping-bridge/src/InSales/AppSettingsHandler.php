@@ -1532,12 +1532,10 @@ final class AppSettingsHandler
                         $autoRules = new \ShippingBridge\AutomationRuleRepository($autoPdo);
                         $autoClient = new InSalesClient();
 
-                        // findApiAuthByInsalesId через PDO напрямую (без $shops, который недоступен здесь)
                         $autoAuthStmt = $autoPdo->prepare('SELECT shop_host, api_password FROM insales_shops WHERE insales_id = :iid LIMIT 1');
                         $autoAuthStmt->execute(['iid' => $s->insalesId]);
                         $autoAuth = $autoAuthStmt->fetch(\PDO::FETCH_ASSOC) ?: null;
 
-                        // Кастомные статусы магазина inSales
                         $customStatuses = [];
                         if ($autoAuth !== null) {
                             try {
@@ -1548,30 +1546,39 @@ final class AppSettingsHandler
                                 );
                             } catch (\Throwable) {}
                         }
-
-                        // Статусы ДЛ — реальный список из GET /v1/references/statuses.json (2026-07)
-                        $dlStatuses = [
-                            ['status' => 'draft',                          'title' => 'Черновик'],
-                            ['status' => 'processing',                     'title' => 'В обработке'],
-                            ['status' => 'pickup',                         'title' => 'Забор груза от адреса'],
-                            ['status' => 'waiting',                        'title' => 'Ожидает сдачи на терминал'],
-                            ['status' => 'declined',                       'title' => 'Отклонен'],
-                            ['status' => 'received',                       'title' => 'Груз принят к перевозке'],
-                            ['status' => 'received_warehousing',           'title' => 'Груз принят к перевозке. Платное хранение'],
-                            ['status' => 'inway',                          'title' => 'Груз в пути'],
-                            ['status' => 'arrived',                        'title' => 'Груз прибыл на терминал'],
-                            ['status' => 'warehousing',                    'title' => 'Груз прибыл на терминал. Платное хранение'],
-                            ['status' => 'arrived_to_airport',             'title' => 'Груз прибыл в аэропорт'],
-                            ['status' => 'airport_warehousing',            'title' => 'Груз прибыл в аэропорт. Платное хранение'],
-                            ['status' => 'delivery',                       'title' => 'Доставка груза до адреса'],
-                            ['status' => 'accompanying_documents_return',  'title' => 'Груз выдан. Возврат СД'],
-                            ['status' => 'finished',                       'title' => 'Заказ завершен'],
+                        // Если кастомных нет — используем системные
+                        $insalesStatuses = !empty($customStatuses) ? $customStatuses : [
+                            ['permalink' => 'new',        'title' => 'Новый'],
+                            ['permalink' => 'accepted',   'title' => 'В обработке'],
+                            ['permalink' => 'approved',   'title' => 'Согласован'],
+                            ['permalink' => 'dispatched', 'title' => 'Отгружен'],
+                            ['permalink' => 'delivered',  'title' => 'Доставлен'],
+                            ['permalink' => 'declined',   'title' => 'Отменён'],
+                            ['permalink' => 'returned',   'title' => 'Возврат'],
                         ];
 
-                        $rulesIn = $autoRules->findByDirection($s->insalesId, \ShippingBridge\AutomationRuleRepository::DIRECTION_INSALES_TO_DL);
+                        $dlStatuses = [
+                            ['status' => 'draft',                         'title' => 'Черновик'],
+                            ['status' => 'processing',                    'title' => 'В обработке'],
+                            ['status' => 'pickup',                        'title' => 'Забор груза от адреса'],
+                            ['status' => 'waiting',                       'title' => 'Ожидает сдачи на терминал'],
+                            ['status' => 'declined',                      'title' => 'Отклонён'],
+                            ['status' => 'received',                      'title' => 'Груз принят к перевозке'],
+                            ['status' => 'received_warehousing',          'title' => 'Груз принят. Платное хранение'],
+                            ['status' => 'inway',                         'title' => 'Груз в пути'],
+                            ['status' => 'arrived',                       'title' => 'Груз прибыл на терминал'],
+                            ['status' => 'warehousing',                   'title' => 'Прибыл на терминал. Платное хранение'],
+                            ['status' => 'arrived_to_airport',            'title' => 'Груз прибыл в аэропорт'],
+                            ['status' => 'airport_warehousing',           'title' => 'В аэропорту. Платное хранение'],
+                            ['status' => 'delivery',                      'title' => 'Доставка до адреса'],
+                            ['status' => 'accompanying_documents_return', 'title' => 'Груз выдан. Возврат СД'],
+                            ['status' => 'finished',                      'title' => 'Заказ завершён'],
+                        ];
+
+                        $rulesIn  = $autoRules->findByDirection($s->insalesId, \ShippingBridge\AutomationRuleRepository::DIRECTION_INSALES_TO_DL);
                         $rulesOut = $autoRules->findByDirection($s->insalesId, \ShippingBridge\AutomationRuleRepository::DIRECTION_DL_TO_INSALES);
 
-                        $statusLabel = static function(string $val, array $list, string $keyField, string $labelField): string {
+                        $findLabel = static function(string $val, array $list, string $keyField, string $labelField): string {
                             foreach ($list as $item) {
                                 if (($item[$keyField] ?? '') === $val) return (string) ($item[$labelField] ?? $val);
                             }
@@ -1580,77 +1587,48 @@ final class AppSettingsHandler
                         ?>
 
                         <!-- inSales → ДЛ -->
-                        <div class="card" style="margin-bottom:12px">
+                        <div class="card">
                             <div class="card-hdr">
                                 <div>
                                     <div class="card-title">inSales → Деловые Линии</div>
-                                    <div class="card-sub">При смене статуса заказа в inSales — автоматически создать заявку в ДЛ</div>
+                                    <div class="card-sub">При смене статуса заказа — автоматически создать заявку в ДЛ</div>
                                 </div>
                             </div>
                             <div class="card-body sm">
 
-                                <?php if (!empty($rulesIn)): ?>
-                                <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
-                                    <thead><tr style="color:var(--ink3)">
-                                        <th style="text-align:left;padding:4px 8px;font-weight:500">Статус inSales</th>
-                                        <th style="text-align:left;padding:4px 8px;font-weight:500">Действие</th>
-                                        <th></th>
-                                    </tr></thead>
-                                    <tbody>
-                                    <?php foreach ($rulesIn as $rule): ?>
-                                        <tr style="border-top:1px solid var(--line2)">
-                                            <td style="padding:8px 8px">
-                                                <?= $h($statusLabel($rule['trigger_value'], $customStatuses, 'permalink', 'title')) ?>
-                                                <span style="color:var(--ink3);font-size:11px;margin-left:4px"><?= $h($rule['trigger_value']) ?></span>
-                                            </td>
-                                            <td style="padding:8px 8px;color:var(--ink2)">Создать заказ в ДЛ</td>
-                                            <td style="padding:8px 8px;text-align:right">
-                                                <form method="post" style="display:inline">
-                                                    <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
-                                                    <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
-                                                    <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
-                                                    <input type="hidden" name="direction" value="insales_to_dl">
-                                                    <input type="hidden" name="trigger_value" value="<?= $h($rule['trigger_value']) ?>">
-                                                    <button type="submit" name="delete_automation_rule" value="1" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:12px;padding:2px 6px" onclick="return confirm('Удалить правило?')">✕</button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                                <?php endif; ?>
+                                <?php foreach ($rulesIn as $rule): ?>
+                                <div class="ir">
+                                    <span class="ir-l"><?= $h($findLabel($rule['trigger_value'], $insalesStatuses, 'permalink', 'title')) ?><span style="color:var(--ink3);margin-left:6px;font-family:var(--mono);font-size:11px"><?= $h($rule['trigger_value']) ?></span></span>
+                                    <span class="ir-v" style="font-family:var(--sans);color:var(--ink2)">Создать заказ в ДЛ</span>
+                                    <form method="post" style="flex-shrink:0">
+                                        <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
+                                        <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
+                                        <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
+                                        <input type="hidden" name="direction" value="insales_to_dl">
+                                        <input type="hidden" name="trigger_value" value="<?= $h($rule['trigger_value']) ?>">
+                                        <button type="submit" name="delete_automation_rule" value="1" class="btn-icon-del" onclick="return confirm('Удалить правило?')" title="Удалить">✕</button>
+                                    </form>
+                                </div>
+                                <?php endforeach; ?>
 
-                                <form method="post" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+                                <form method="post" style="margin-top:<?= empty($rulesIn) ? '0' : '14px' ?>">
                                     <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                                     <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
                                     <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
                                     <input type="hidden" name="direction" value="insales_to_dl">
                                     <input type="hidden" name="action" value="create_dl_order">
-                                    <div style="flex:1;min-width:200px">
-                                        <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">Статус inSales</div>
-                                        <select name="trigger_value" style="width:100%" required>
+                                    <div class="field" style="margin-bottom:10px">
+                                        <label>Статус заказа в inSales</label>
+                                        <select name="trigger_value" required>
                                             <option value="">— выберите статус —</option>
-                                            <?php foreach ($customStatuses as $cs): ?>
-                                                <option value="<?= $h($cs['permalink']) ?>"><?= $h($cs['title']) ?> (<?= $h($cs['permalink']) ?>)</option>
+                                            <?php foreach ($insalesStatuses as $cs): ?>
+                                                <option value="<?= $h($cs['permalink']) ?>"><?= $h($cs['title']) ?></option>
                                             <?php endforeach; ?>
-                                            <?php if (empty($customStatuses)): ?>
-                                                <option value="new">new — Новый</option>
-                                                <option value="accepted">accepted — В обработке</option>
-                                                <option value="approved">approved — Согласован</option>
-                                                <option value="dispatched">dispatched — Отгружен</option>
-                                                <option value="delivered">delivered — Доставлен</option>
-                                                <option value="declined">declined — Отменён</option>
-                                                <option value="returned">returned — Возврат</option>
-                                            <?php endif; ?>
                                         </select>
                                     </div>
-                                    <div style="flex:0 0 auto;padding-bottom:0">
-                                        <button type="submit" name="save_automation_rule" value="1" class="btn-primary" style="height:36px">Добавить правило</button>
-                                    </div>
+                                    <button type="submit" name="save_automation_rule" value="1" class="btn-p">Добавить правило</button>
                                 </form>
-                                <?php if (empty($customStatuses)): ?>
-                                <p style="font-size:11px;color:var(--ink3);margin:8px 0 0">Не удалось загрузить статусы магазина — проверьте подключение или добавьте вручную permalink статуса.</p>
-                                <?php endif; ?>
+
                             </div>
                         </div>
 
@@ -1659,93 +1637,59 @@ final class AppSettingsHandler
                             <div class="card-hdr">
                                 <div>
                                     <div class="card-title">Деловые Линии → inSales</div>
-                                    <div class="card-sub">При изменении статуса в ДЛ — автоматически обновить статус заказа в inSales</div>
+                                    <div class="card-sub">При изменении статуса в ДЛ — обновить статус заказа в inSales</div>
                                 </div>
                             </div>
                             <div class="card-body sm">
 
-                                <?php if (!empty($rulesOut)): ?>
-                                <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
-                                    <thead><tr style="color:var(--ink3)">
-                                        <th style="text-align:left;padding:4px 8px;font-weight:500">Статус ДЛ</th>
-                                        <th style="text-align:left;padding:4px 8px;font-weight:500">Статус inSales</th>
-                                        <th></th>
-                                    </tr></thead>
-                                    <tbody>
-                                    <?php foreach ($rulesOut as $rule): ?>
-                                        <tr style="border-top:1px solid var(--line2)">
-                                            <td style="padding:8px 8px">
-                                                <?= $h($statusLabel($rule['trigger_value'], $dlStatuses, 'status', 'title')) ?>
-                                                <span style="color:var(--ink3);font-size:11px;margin-left:4px"><?= $h($rule['trigger_value']) ?></span>
-                                            </td>
-                                            <td style="padding:8px 8px">
-                                                <?= $h($statusLabel($rule['action'], $customStatuses, 'permalink', 'title')) ?>
-                                                <span style="color:var(--ink3);font-size:11px;margin-left:4px"><?= $h($rule['action']) ?></span>
-                                            </td>
-                                            <td style="padding:8px 8px;text-align:right">
-                                                <form method="post" style="display:inline">
-                                                    <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
-                                                    <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
-                                                    <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
-                                                    <input type="hidden" name="direction" value="dl_to_insales">
-                                                    <input type="hidden" name="trigger_value" value="<?= $h($rule['trigger_value']) ?>">
-                                                    <button type="submit" name="delete_automation_rule" value="1" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:12px;padding:2px 6px" onclick="return confirm('Удалить правило?')">✕</button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                                <?php endif; ?>
+                                <?php foreach ($rulesOut as $rule): ?>
+                                <div class="ir">
+                                    <span class="ir-l"><?= $h($findLabel($rule['trigger_value'], $dlStatuses, 'status', 'title')) ?><span style="color:var(--ink3);margin-left:6px;font-family:var(--mono);font-size:11px"><?= $h($rule['trigger_value']) ?></span></span>
+                                    <span class="ir-v" style="font-family:var(--sans);color:var(--ink2)">→ <?= $h($findLabel($rule['action'], $insalesStatuses, 'permalink', 'title')) ?></span>
+                                    <form method="post" style="flex-shrink:0">
+                                        <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
+                                        <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
+                                        <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
+                                        <input type="hidden" name="direction" value="dl_to_insales">
+                                        <input type="hidden" name="trigger_value" value="<?= $h($rule['trigger_value']) ?>">
+                                        <button type="submit" name="delete_automation_rule" value="1" class="btn-icon-del" onclick="return confirm('Удалить правило?')" title="Удалить">✕</button>
+                                    </form>
+                                </div>
+                                <?php endforeach; ?>
 
-                                <form method="post" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+                                <form method="post" style="margin-top:<?= empty($rulesOut) ? '0' : '14px' ?>">
                                     <input type="hidden" name="shop" value="<?= $h($s->shopHost) ?>">
                                     <input type="hidden" name="insales_id" value="<?= $h($s->insalesId) ?>">
                                     <input type="hidden" name="atk" value="<?= $h($accessToken) ?>">
                                     <input type="hidden" name="direction" value="dl_to_insales">
-                                    <div style="flex:1;min-width:180px">
-                                        <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">Статус ДЛ</div>
-                                        <select name="trigger_value" style="width:100%" required>
-                                            <option value="">— выберите статус —</option>
-                                            <?php foreach ($dlStatuses as $ds): ?>
-                                                <option value="<?= $h($ds['status']) ?>"><?= $h($ds['title']) ?></option>
-                                            <?php endforeach; ?>
-                                            <?php if (empty($dlStatuses)): ?>
-                                                <option value="received">received — Груз принят к перевозке</option>
-                                                <option value="inway">inway — Груз в пути</option>
-                                                <option value="arrived">arrived — Груз прибыл на терминал</option>
-                                                <option value="delivery">delivery — Доставка груза до адреса</option>
-                                                <option value="finished">finished — Заказ завершен</option>
-                                                <option value="declined">declined — Отклонен</option>
-                                            <?php endif; ?>
-                                        </select>
+                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+                                        <div class="field" style="margin-bottom:0">
+                                            <label>Статус ДЛ</label>
+                                            <select name="trigger_value" required>
+                                                <option value="">— выберите —</option>
+                                                <?php foreach ($dlStatuses as $ds): ?>
+                                                    <option value="<?= $h($ds['status']) ?>"><?= $h($ds['title']) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <div class="field" style="margin-bottom:0">
+                                            <label>→ Статус в inSales</label>
+                                            <select name="action" required>
+                                                <option value="">— выберите —</option>
+                                                <?php foreach ($insalesStatuses as $cs): ?>
+                                                    <option value="<?= $h($cs['permalink']) ?>"><?= $h($cs['title']) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div style="flex:1;min-width:180px">
-                                        <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">→ Статус inSales</div>
-                                        <select name="action" style="width:100%" required>
-                                            <option value="">— выберите статус —</option>
-                                            <?php foreach ($customStatuses as $cs): ?>
-                                                <option value="<?= $h($cs['permalink']) ?>"><?= $h($cs['title']) ?> (<?= $h($cs['permalink']) ?>)</option>
-                                            <?php endforeach; ?>
-                                            <?php if (empty($customStatuses)): ?>
-                                                <option value="new">new — Новый</option>
-                                                <option value="accepted">accepted — В обработке</option>
-                                                <option value="approved">approved — Согласован</option>
-                                                <option value="dispatched">dispatched — Отгружен</option>
-                                                <option value="delivered">delivered — Доставлен</option>
-                                                <option value="declined">declined — Отменён</option>
-                                                <option value="returned">returned — Возврат</option>
-                                            <?php endif; ?>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <button type="submit" name="save_automation_rule" value="1" class="btn-primary" style="height:36px">Добавить правило</button>
-                                    </div>
+                                    <button type="submit" name="save_automation_rule" value="1" class="btn-p">Добавить правило</button>
                                 </form>
 
-                                <p style="font-size:11px;color:var(--ink3);margin:12px 0 0;line-height:1.5">
-                                    Статусы ДЛ проверяются раз в час. При совпадении статус заказа в inSales обновляется автоматически.
-                                </p>
+                                <div class="ir" style="margin-top:14px;border-bottom:0;padding-bottom:0">
+                                    <span class="ir-l">Частота проверки</span>
+                                    <span class="ir-v" style="font-family:var(--sans)">раз в час</span>
+                                </div>
+
                             </div>
                         </div>
                     </div><!-- /page-automation -->
@@ -3155,6 +3099,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:14p
 .opf-item-sub{font-size:11px;color:var(--ink3);margin-top:1px}
 .field input.field-err{border-color:#ef4444;box-shadow:0 0 0 3px #fef2f2;background:var(--s1)}
 .field-err-msg{font-size:11px;color:#b91c1c;margin-top:4px;display:none}
+.btn-icon-del{background:none;border:none;color:var(--ink3);cursor:pointer;font-size:13px;padding:4px 6px;border-radius:var(--r2);transition:color .15s,background .15s;line-height:1}
+.btn-icon-del:hover{color:#ef4444;background:rgba(239,68,68,.08)}
 
 /* PHONE WIDGET */
 .phone-wrap{position:relative;display:flex;align-items:stretch;height:36px;border:1px solid var(--line);border-radius:var(--r2);background:var(--s2);transition:border .15s,box-shadow .15s;overflow:hidden}

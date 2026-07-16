@@ -82,6 +82,15 @@ final class WebhookOrderHandler
             ?? ''
         );
 
+        // Диагностический лог — удалить после подтверждения что автоматизация работает
+        \ShippingBridge\Logger::info($insalesShopId, $orderId, 'webhook.order.debug', [
+            'current_status' => $currentStatus,
+            'status_keys_present' => array_intersect_key($payload, array_flip([
+                'custom-status-permalink', 'custom_status_permalink',
+                'fulfillment-status', 'fulfillment_status',
+            ])),
+        ]);
+
         // Груз — суммируем по позициям
         $weight = 0.0;
         $statedValue = 0.0;

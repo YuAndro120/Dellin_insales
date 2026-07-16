@@ -1531,36 +1531,44 @@ final class AppSettingsHandler
                         $autoPdo = \ShippingBridge\Db::pdo($config);
                         $autoRules = new \ShippingBridge\AutomationRuleRepository($autoPdo);
                         $autoClient = new InSalesClient();
-                        $autoAuth = $shops->findApiAuthByInsalesId($s->insalesId);
+
+                        // findApiAuthByInsalesId через PDO напрямую (без $shops, который недоступен здесь)
+                        $autoAuthStmt = $autoPdo->prepare('SELECT shop_host, api_password FROM insales_shops WHERE insales_id = :iid LIMIT 1');
+                        $autoAuthStmt->execute(['iid' => $s->insalesId]);
+                        $autoAuth = $autoAuthStmt->fetch(\PDO::FETCH_ASSOC) ?: null;
 
                         // Кастомные статусы магазина inSales
                         $customStatuses = [];
                         if ($autoAuth !== null) {
                             try {
                                 $customStatuses = $autoClient->listCustomStatuses(
-                                    $autoAuth['shop_host'],
+                                    (string) $autoAuth['shop_host'],
                                     $config->insalesAppId ?? '',
-                                    $autoAuth['api_password'],
+                                    (string) $autoAuth['api_password'],
                                 );
                             } catch (\Throwable) {}
                         }
 
-                        // Статусы Деловых Линий
-                        $api = new \ShippingBridge\CarrierApi($config);
-                        $dlStatuses = [];
-                        try {
-                            $dlStatuses = $api->getStatusesReference();
-                        } catch (\Throwable) {}
+                        // Статусы ДЛ — жёстко заданный список (не делаем HTTP при каждом рендере)
+                        $dlStatuses = [
+                            ['status' => 'delivering',  'title' => 'Передан в доставку'],
+                            ['status' => 'arrived',     'title' => 'Прибыл в город получателя'],
+                            ['status' => 'inway',       'title' => 'Груз в пути'],
+                            ['status' => 'delivered',   'title' => 'Доставлен получателю'],
+                            ['status' => 'returned',    'title' => 'Возврат отправителю'],
+                            ['status' => 'cancelled',   'title' => 'Отменён'],
+                            ['status' => 'processing',  'title' => 'На обработке'],
+                            ['status' => 'ready',       'title' => 'Готов к выдаче'],
+                        ];
 
                         $rulesIn = $autoRules->findByDirection($s->insalesId, \ShippingBridge\AutomationRuleRepository::DIRECTION_INSALES_TO_DL);
                         $rulesOut = $autoRules->findByDirection($s->insalesId, \ShippingBridge\AutomationRuleRepository::DIRECTION_DL_TO_INSALES);
 
-                        $statusLabel = static function(string $permalink, array $list, string $labelKey = 'title'): string {
+                        $statusLabel = static function(string $val, array $list, string $keyField, string $labelField): string {
                             foreach ($list as $item) {
-                                $key = $item['permalink'] ?? $item['status'] ?? '';
-                                if ($key === $permalink) return $item[$labelKey] ?? $permalink;
+                                if (($item[$keyField] ?? '') === $val) return (string) ($item[$labelField] ?? $val);
                             }
-                            return $permalink;
+                            return $val;
                         };
                         ?>
 
@@ -1585,7 +1593,7 @@ final class AppSettingsHandler
                                     <?php foreach ($rulesIn as $rule): ?>
                                         <tr style="border-top:1px solid var(--line2)">
                                             <td style="padding:8px 8px">
-                                                <?= $h($statusLabel($rule['trigger_value'], $customStatuses, 'title')) ?>
+                                                <?= $h($statusLabel($rule['trigger_value'], $customStatuses, 'permalink', 'title')) ?>
                                                 <span style="color:var(--ink3);font-size:11px;margin-left:4px"><?= $h($rule['trigger_value']) ?></span>
                                             </td>
                                             <td style="padding:8px 8px;color:var(--ink2)">Создать заказ в ДЛ</td>
@@ -1657,11 +1665,11 @@ final class AppSettingsHandler
                                     <?php foreach ($rulesOut as $rule): ?>
                                         <tr style="border-top:1px solid var(--line2)">
                                             <td style="padding:8px 8px">
-                                                <?= $h($statusLabel($rule['trigger_value'], $dlStatuses, 'title')) ?>
+                                                <?= $h($statusLabel($rule['trigger_value'], $dlStatuses, 'status', 'title')) ?>
                                                 <span style="color:var(--ink3);font-size:11px;margin-left:4px"><?= $h($rule['trigger_value']) ?></span>
                                             </td>
                                             <td style="padding:8px 8px">
-                                                <?= $h($statusLabel($rule['action'], $customStatuses, 'title')) ?>
+                                                <?= $h($statusLabel($rule['action'], $customStatuses, 'permalink', 'title')) ?>
                                                 <span style="color:var(--ink3);font-size:11px;margin-left:4px"><?= $h($rule['action']) ?></span>
                                             </td>
                                             <td style="padding:8px 8px;text-align:right">

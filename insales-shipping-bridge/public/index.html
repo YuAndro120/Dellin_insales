@@ -742,19 +742,7 @@
       line-height: 1.4
     }
 
-    /* PRICING */
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 18px
-    }
-
-    @media (max-width:880px) {
-      .pricing-grid {
-        grid-template-columns: 1fr
-      }
-    }
-
+    /* CONTACT / LEAD FORM */
     .price-card {
       background: var(--bg-card);
       border: 1px solid var(--line);
@@ -879,7 +867,10 @@
       font-family: inherit
     }
 
-    .plan-form input[type="email"] {
+    .plan-form input[type="email"],
+    .plan-form input[type="text"],
+    .plan-form input[type="tel"],
+    .plan-form textarea {
       width: 100%;
       padding: 10px 12px;
       background: var(--bg-soft);
@@ -889,15 +880,32 @@
       font-size: 13.5px;
       font-family: var(--sans);
       outline: none;
-      transition: border-color .15s
+      transition: border-color .15s;
+      box-sizing: border-box
     }
 
-    .plan-form input[type="email"]:focus {
+    .plan-form textarea {
+      resize: vertical;
+      min-height: 72px;
+      line-height: 1.4
+    }
+
+    .plan-form input[type="email"]:focus,
+    .plan-form input[type="text"]:focus,
+    .plan-form input[type="tel"]:focus,
+    .plan-form textarea:focus {
       border-color: var(--amber)
     }
 
-    .plan-form input[type="email"]::placeholder {
+    .plan-form input::placeholder,
+    .plan-form textarea::placeholder {
       color: var(--ink-faint)
+    }
+
+    /* Единая карточка заявки — вместо сетки из трёх тарифов */
+    .contact-card {
+      max-width: 480px;
+      margin: 0 auto
     }
 
     /* HOW */
@@ -1079,12 +1087,6 @@
       "description": "Приложение интеграции Деловых Линий с интернет-магазинами на платформе inSales",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Web",
-      "offers": {
-        "@type": "Offer",
-        "price": "690",
-        "priceCurrency": "RUB",
-        "priceValidUntil": "2027-01-01"
-      },
       "provider": {
         "@type": "Person",
         "name": "Андронов Юрий Витальевич"
@@ -1114,11 +1116,10 @@
       <a href="#" class="nav-brand"><img src="/images/logo.png" alt="ДЛ Коннект" style="width:32px;height:32px">ДЛ Коннект</a>
       <div class="nav-links">
         <a href="#how">Как работает</a>
-        <a href="#pricing">Тарифы</a>
         <a href="#faq">Вопросы</a>
         <a href="#contacts">Контакты</a>
       </div>
-      <a href="#pricing" class="nav-cta">Подключить</a>
+      <a href="#contact" class="nav-cta">Оставить заявку</a>
     </div>
   </nav>
 
@@ -1130,15 +1131,15 @@
         <h1>Перестаньте оформлять<br>доставку <em>вручную</em></h1>
         <p class="hero-sub">ДЛ Коннект автоматически рассчитывает стоимость доставки по вашему договору и создаёт заявки в Деловые Линии прямо из inSales. Меньше рутины, меньше ошибок, больше времени на клиентов.</p>
         <div class="hero-actions">
-          <a href="#pricing" class="btn-primary">Попробовать бесплатно</a>
+          <a href="#contact" class="btn-primary">Оставить заявку</a>
           <a href="#how" class="btn-secondary">Как это работает</a>
         </div>
         <div class="hero-meta">
-          <span>14 дней бесплатно</span>
+          <span>Бесплатная установка</span>
           <span>·</span>
-          <span>Подключение за минуту</span>
+          <span>Настроим всё сами</span>
           <span>·</span>
-          <span>Без банковской карты</span>
+          <span>Без каталога inSales</span>
         </div>
       </div>
 
@@ -1216,9 +1217,9 @@
       <div class="steps">
         <div class="step">
           <div class="step-num">01</div>
-          <h4>Подключите приложение за минуту</h4>
-          <p>Устанавливаете приложение из каталога inSales, указываете токен Деловых Линий — без участия
-            разработчика.</p>
+          <h4>Оставьте заявку — установим бесплатно</h4>
+          <p>Не нужно искать приложение в каталоге inSales и разбираться с настройками самостоятельно — мы
+            подключим ДЛ Коннект к вашему магазину сами, бесплатно, и покажем, как им пользоваться.</p>
         </div>
         <div class="step">
           <div class="step-num">02</div>
@@ -1310,7 +1311,7 @@
         </div>
         <div class="feature">
           <div class="feature-num">02</div>
-          <h3>Заявки создаются автоматически <span style="font-size:11px;color:var(--ink-faint);font-weight:400;font-family:var(--mono);text-transform:none;letter-spacing:0">— тариф «Полный»</span></h3>
+          <h3>Заявки создаются автоматически</h3>
           <p>После оформления заказа данные сразу передаются в Деловые Линии — без участия менеджера.</p>
         </div>
         <div class="feature">
@@ -1359,100 +1360,36 @@
     </div>
   </section>
 
-  <section id="pricing">
+  <section id="contact">
     <div class="wrap">
       <div class="section-head">
-        <div class="section-eyebrow">Тарифы</div>
-        <h2>Выберите уровень автоматизации</h2>
-        <p class="section-desc">Попробуйте полный функционал бесплатно в течение 14 дней. Без ограничений и без
-          привязки банковской карты.</p>
+        <div class="section-eyebrow">Заявка</div>
+        <h2>Подключим ДЛ Коннект за вас</h2>
+        <p class="section-desc">Оставьте контакты — мы бесплатно установим и настроим интеграцию под ваш магазин
+          на inSales и свяжемся, чтобы обсудить детали.</p>
       </div>
 
-      <div class="roi-callout">
-        <p>Стоимость подписки обычно меньше одного часа работы менеджера в месяц. Если ДЛ Коннект экономит хотя бы 20–30 минут в день, он окупается многократно.</p>
+      <div class="price-card contact-card">
+        <form class="plan-form early-access-form" data-plan="contact">
+          <input type="text" name="name" placeholder="Имя" required>
+          <input type="tel" name="phone" placeholder="Телефон / WhatsApp" required>
+          <input type="text" name="company_name" placeholder="Магазин на inSales (необязательно)">
+          <textarea name="message" placeholder="Что нужно настроить, есть ли вопросы (необязательно)"></textarea>
+          <input type="hidden" name="plan" value="contact">
+          <input type="hidden" name="insales_id" class="js-insales-id">
+          <label class="recurrent-label consent-label">
+            <input type="checkbox" name="consent_pd" value="1" required class="consent-pd-check">
+            <span>Согласен на <a href="/privacy.html" target="_blank" style="color:var(--amber)">обработку
+                персональных данных</a></span>
+          </label>
+          <button type="submit" class="price-btn plan-submit"
+            style="background:var(--amber);color:#1a1208;border-color:var(--amber)">Оставить заявку</button>
+        </form>
+        <div class="early-access-thanks"
+          style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо!
+          Свяжемся с вами в ближайшее время.</div>
       </div>
-
-      <div class="pricing-grid">
-        <div class="price-card">
-          <div class="price-name">Старт</div>
-          <div class="price-amount">690 ₽<span> / мес</span></div>
-          <div class="price-trial">14 дней пробного периода</div>
-          <ul class="price-features">
-            <li><span class="price-check">✓</span>Расчёт стоимости со скидками ДЛ в корзине</li>
-            <li><span class="price-check">✓</span>Сроки доставки для покупателя</li>
-            <li><span class="price-check">✓</span>Все типы доставки ДЛ</li>
-          </ul>
-          <form class="plan-form early-access-form" data-plan="calc_only">
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="hidden" name="plan" value="calc_only">
-            <input type="hidden" name="insales_id" class="js-insales-id">
-            <label class="recurrent-label consent-label">
-              <input type="checkbox" name="consent_pd" value="1" required class="consent-pd-check">
-              <span>Согласен на <a href="/privacy.html" target="_blank" style="color:var(--amber)">обработку
-                  персональных данных</a></span>
-            </label>
-            <button type="submit" class="price-btn plan-submit">Начать бесплатно</button>
-          </form>
-          <div class="early-access-thanks"
-            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо!
-            Свяжемся с вами в
-            ближайшее время.</div>
-        </div>
-        <div class="price-card featured">
-          <div class="price-tag">Популярный</div>
-          <div class="price-name">Полный</div>
-          <div class="price-amount">1290 ₽<span> / мес</span></div>
-          <div class="price-trial">14 дней пробного периода</div>
-          <ul class="price-features">
-            <li><span class="price-check">✓</span>Всё из тарифа «Старт»</li>
-            <li><span class="price-check">✓</span>Оформление заявки в ДЛ из админки</li>
-            <li><span class="price-check">✓</span>Терминалы, забор от адреса, расписание</li>
-            <li><span class="price-check">✓</span>Полные настройки отправителя</li>
-          </ul>
-          <form class="plan-form early-access-form" data-plan="full">
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="hidden" name="plan" value="full">
-            <input type="hidden" name="insales_id" class="js-insales-id">
-            <label class="recurrent-label consent-label">
-              <input type="checkbox" name="consent_pd" value="1" required class="consent-pd-check">
-              <span>Согласен на <a href="/privacy.html" target="_blank" style="color:var(--amber)">обработку
-                  персональных данных</a></span>
-            </label>
-            <button type="submit" class="price-btn plan-submit">Начать бесплатно</button>
-          </form>
-          <div class="early-access-thanks"
-            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо!
-            Свяжемся с вами
-            в ближайшее время.</div>
-        </div>
-        <div class="price-card" style="opacity:.85">
-          <div class="price-name">Автоматизация</div>
-          <div class="price-amount">1990 ₽<span> / мес</span></div>
-          <div class="price-trial" style="color:var(--ink-faint)">Скоро — собираем ранний доступ</div>
-          <ul class="price-features">
-            <li><span class="price-check">✓</span>Всё из тарифа «Полный»</li>
-            <li><span class="price-check">✓</span>Действия по стадиям заказа inSales</li>
-            <li><span class="price-check">✓</span>Отчёты по затратам на логистику</li>
-            <li><span class="price-check">✓</span>Счета и платёжные ссылки</li>
-          </ul>
-          <form class="plan-form early-access-form" data-plan="automation">
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="hidden" name="plan" value="automation">
-            <input type="hidden" name="insales_id" class="js-insales-id">
-            <label class="recurrent-label consent-label">
-              <input type="checkbox" name="consent_pd" value="1" required class="consent-pd-check">
-              <span>Согласен на <a href="/privacy.html" target="_blank" style="color:var(--amber)">обработку
-                  персональных данных</a></span>
-            </label>
-            <button type="submit" class="price-btn plan-submit"
-              style="background:transparent;border:1px solid var(--amber);color:var(--amber)">Начать бесплатно</button>
-          </form>
-          <div class="early-access-thanks"
-            style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо!
-            Свяжемся с вами
-            в ближайшее время.</div>
-        </div>
-      </div>
+    </div>
   </section>
 
   <section id="faq">
@@ -1469,13 +1406,13 @@
         </div>
         <div class="faq-item">
           <div class="faq-q">Сколько занимает подключение?</div>
-          <div class="faq-a">Обычно меньше минуты — установите приложение из каталога inSales и укажите токен
-            доступа к Деловым Линиям. Настройка терминала или адреса забора занимает ещё пару минут.</div>
+          <div class="faq-a">Обычно не больше рабочего дня — вы оставляете заявку и данные доступа к Деловым
+            Линиям, а установку и настройку терминала или адреса забора мы делаем сами, без вашего участия.</div>
         </div>
         <div class="faq-item">
           <div class="faq-q">Нужен ли программист для подключения?</div>
-          <div class="faq-a">Нет, всё делается через понятный интерфейс настроек внутри inSales — без участия
-            разработчика.</div>
+          <div class="faq-a">Нет — установку и настройку делает наша команда бесплатно, вам не нужно ничего
+            устанавливать или настраивать самостоятельно.</div>
         </div>
         <div class="faq-item">
           <div class="faq-q">Работает ли с индивидуальными условиями Деловых Линий?</div>
@@ -1483,13 +1420,9 @@
             публичному прайсу перевозчика.</div>
         </div>
         <div class="faq-item">
-          <div class="faq-q">Что происходит после 14 дней пробного периода?</div>
-          <div class="faq-a">Если вы не выбрали тариф, доступ к оформлению заявок приостанавливается до оплаты. Все
-            ваши настройки и история заказов сохраняются.</div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-q">Можно ли сменить тариф или отменить подписку?</div>
-          <div class="faq-a">Да, смена тарифа и отмена подписки доступны при обращении в поддержку.</div>
+          <div class="faq-q">Сколько стоит подключение?</div>
+          <div class="faq-a">Установка и настройка — бесплатно. Оставьте заявку через форму ниже, и мы обсудим
+            условия использования индивидуально, под ваш магазин и объём заказов.</div>
         </div>
         <div class="faq-item">
           <div class="faq-q">Что делать, если возникнут сложности?</div>
@@ -1543,9 +1476,9 @@
   <!-- FINAL CTA -->
   <section class="final-cta">
     <div class="wrap">
-      <h2>Попробуйте ДЛ Коннект бесплатно</h2>
-      <p>Подключение займёт несколько минут. Все возможности доступны бесплатно в течение 14 дней.</p>
-      <a href="#pricing" class="btn-primary">Попробовать бесплатно</a>
+      <h2>Подключим ДЛ Коннект за вас — бесплатно</h2>
+      <p>Оставьте заявку, и мы сами всё установим и настроим под ваш магазин на inSales.</p>
+      <a href="#contact" class="btn-primary">Оставить заявку</a>
     </div>
   </section>
 
@@ -1573,28 +1506,11 @@
 
   <script>
     (function () {
+      // insales_id из URL — если форма открыта по ссылке из настроек уже
+      // установленного приложения, помечаем заявку принадлежностью к магазину.
       var params = new URLSearchParams(window.location.search);
       var insalesId = params.get('insales_id') || '';
-      var shop = params.get('shop') || '';
-      var atk = params.get('atk') || '';
-
-      document.querySelectorAll('.js-checkout-link').forEach(function (el) {
-        if (insalesId) {
-          var plan = el.getAttribute('data-plan');
-          el.href = '/checkout?plan=' + plan
-            + '&insales_id=' + encodeURIComponent(insalesId)
-            + '&shop=' + encodeURIComponent(shop)
-            + '&atk=' + encodeURIComponent(atk);
-        } else {
-          el.style.opacity = '0.4';
-          el.style.pointerEvents = 'none';
-        }
-      });
-
-      if (!insalesId) {
-        var notice = document.getElementById('no-shop-notice');
-        if (notice) notice.style.display = 'block';
-      }
+      document.querySelectorAll('.js-insales-id').forEach(function (el) { el.value = insalesId; });
 
       document.querySelectorAll('.early-access-form').forEach(function (form) {
         form.addEventListener('submit', function (e) {
@@ -1608,7 +1524,7 @@
           formData.append('source', 'landing');
           fetch('/insales/consent', { method: 'POST', body: formData })
             .catch(function () { });
-          fetch('/insales/early-access', { method: 'POST', body: formData })
+          fetch('/insales/lead', { method: 'POST', body: formData })
             .then(function (r) { return r.json(); })
             .then(function (data) {
               if (data.ok) {

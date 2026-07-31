@@ -27,6 +27,12 @@ final class Config
         // из .env перед реальным запуском, пользователи будут "оплачивать"
         // бесплатно. См. BillingPage::handlePlanSelection().
         public readonly bool $insalesBillingTestMode = false,
+        // Уведомления о заявках с лендинга (LeadNotifier) — оба необязательны,
+        // независимы друг от друга, см. комментарий в самом LeadNotifier.
+        public readonly ?string $telegramBotToken = null,
+        public readonly ?string $telegramChatId = null,
+        public readonly ?string $whatsappGatewayUrl = null,
+        public readonly ?string $whatsappTo = null,
     ) {}
 
     /** Полная конфигурация для API расчёта и справочников. */
@@ -52,6 +58,10 @@ final class Config
             landingUrl: self::opt('LANDING_URL'),
             tbankInvoicingToken: self::opt('TBANK_INVOICING_TOKEN'),
             insalesBillingTestMode: self::boolOpt('INSALES_BILLING_TEST_MODE'),
+            telegramBotToken: self::opt('TELEGRAM_BOT_TOKEN'),
+            telegramChatId: self::opt('TELEGRAM_CHAT_ID'),
+            whatsappGatewayUrl: self::opt('WHATSAPP_GATEWAY_URL'),
+            whatsappTo: self::opt('WHATSAPP_TO'),
         );
     }
 
@@ -84,6 +94,10 @@ final class Config
             landingUrl: self::opt('LANDING_URL'),
             tbankInvoicingToken: self::opt('TBANK_INVOICING_TOKEN'),
             insalesBillingTestMode: self::boolOpt('INSALES_BILLING_TEST_MODE'),
+            telegramBotToken: self::opt('TELEGRAM_BOT_TOKEN'),
+            telegramChatId: self::opt('TELEGRAM_CHAT_ID'),
+            whatsappGatewayUrl: self::opt('WHATSAPP_GATEWAY_URL'),
+            whatsappTo: self::opt('WHATSAPP_TO'),
         );
     }
 

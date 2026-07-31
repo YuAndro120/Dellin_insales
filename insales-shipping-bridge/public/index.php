@@ -220,8 +220,8 @@ if (str_starts_with($uri, '/insales/')) {
             \ShippingBridge\InSales\ConsentHandler::handle($config, $method);
             exit;
         }
-        if ($uri === '/insales/early-access' && $method === 'POST') {
-            \ShippingBridge\InSales\EarlyAccessHandler::handle($config, $method);
+        if ($uri === '/insales/lead' && $method === 'POST') {
+            \ShippingBridge\InSales\LandingLeadHandler::handle($config, $method);
             exit;
         }
         if (str_starts_with($uri, '/insales/orders/edit') && ($method === 'GET' || $method === 'POST')) {

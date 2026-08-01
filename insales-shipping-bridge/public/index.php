@@ -50,9 +50,16 @@ if ($uri === '/health' || $uri === '/v1/health') {
     exit;
 }
 
-$landingFiles = ['/', '/offer.html', '/refund.html', '/privacy.html'];
+$landingFiles = ['/', '/offer.html', '/refund.html', '/privacy.html', '/amocrm.html', '/amocrm-privacy.html'];
 if (in_array($uri, $landingFiles, true) && $method === 'GET') {
-    $file = $uri === '/' ? '/index.html' : $uri;
+    // Один и тот же бэкенд обслуживает два хоста: receptly.ru (лендинг
+    // ДЛ Коннект для inSales) и amo.dev.receptly.ru (пресейл ДЛ Коннект
+    // для amoCRM) — какой файл отдавать на "/", решаем по заголовку Host.
+    $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $isAmoLanding = str_starts_with($host, 'amo.dev.') || str_starts_with($host, 'amo-dev.');
+    $file = $uri === '/'
+        ? ($isAmoLanding ? '/amocrm.html' : '/index.html')
+        : $uri;
     $path = __DIR__ . $file;
     if (is_file($path)) {
         header('Content-Type: text/html; charset=utf-8');
@@ -220,8 +227,8 @@ if (str_starts_with($uri, '/insales/')) {
             \ShippingBridge\InSales\ConsentHandler::handle($config, $method);
             exit;
         }
-        if ($uri === '/insales/lead' && $method === 'POST') {
-            \ShippingBridge\InSales\LandingLeadHandler::handle($config, $method);
+        if ($uri === '/insales/early-access' && $method === 'POST') {
+            \ShippingBridge\InSales\EarlyAccessHandler::handle($config, $method);
             exit;
         }
         if (str_starts_with($uri, '/insales/orders/edit') && ($method === 'GET' || $method === 'POST')) {

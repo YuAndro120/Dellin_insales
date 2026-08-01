@@ -8,17 +8,23 @@ use ShippingBridge\Config;
 use ShippingBridge\Db;
 
 /**
- * Приём заявок с единой формы лендинга («Оставить заявку» — заменила три
- * тарифные карточки после отказа от публичных цен на сайте).
+ * Приём заявок с форм лендинга. Обслуживает обе страницы продукта:
+ *  - / (index.html)         — ДЛ Коннект для inSales, source=landing
+ *  - /amocrm.html            — ДЛ Коннект для amoCRM (пресейл), source=landing_amocrm
+ * ⚠️ Раньше source был захардкожен как 'landing' — с появлением второй
+ * посадочной страницы это смешивало заявки двух разных продуктов в одну
+ * кучу. Теперь source приходит из формы и валидируется по белому списку.
  *
- * ⚠️ Заменяет EarlyAccessHandler — тот вставлял inn/company_name/plan в
+ * Заменяет EarlyAccessHandler — тот вставлял inn/company_name/plan в
  * таблицу early_access_leads, у которой таких колонок не было; INSERT
  * падал на каждой заявке, и она молча терялась под общим catch(\Throwable).
- * Новая таблица landing_leads (миграция 017) заведена под реальные поля
- * формы. Обязательны только имя и телефон — остальное необязательно.
+ * Таблица landing_leads (миграция 017) заведена под реальные поля формы.
+ * Обязательны только имя и телефон — остальное необязательно.
  */
 final class LandingLeadHandler
 {
+    private const ALLOWED_SOURCES = ['landing', 'landing_amocrm'];
+
     public static function handle(Config $config, string $method): void
     {
         header('Content-Type: application/json; charset=utf-8');
@@ -34,6 +40,8 @@ final class LandingLeadHandler
         $companyName = trim((string) ($_POST['company_name'] ?? '')) ?: null;
         $message     = trim((string) ($_POST['message']      ?? '')) ?: null;
         $insalesId   = trim((string) ($_POST['insales_id']   ?? '')) ?: null;
+        $source      = trim((string) ($_POST['source']       ?? ''));
+        $source      = in_array($source, self::ALLOWED_SOURCES, true) ? $source : 'landing';
 
         if ($name === '') {
             http_response_code(422);
@@ -49,6 +57,7 @@ final class LandingLeadHandler
         $lead = [
             'name' => $name, 'phone' => $phone,
             'company_name' => $companyName, 'message' => $message,
+            'source' => $source,
         ];
 
         try {
@@ -59,7 +68,7 @@ final class LandingLeadHandler
             );
             $stmt->execute([
                 ':name' => $name, ':phone' => $phone, ':company' => $companyName,
-                ':message' => $message, ':iid' => $insalesId, ':src' => 'landing',
+                ':message' => $message, ':iid' => $insalesId, ':src' => $source,
             ]);
             $leadId = (int) $pdo->lastInsertId();
 
@@ -70,6 +79,7 @@ final class LandingLeadHandler
 
             \ShippingBridge\Logger::info($insalesId ?? '-', null, 'landing.lead', [
                 'lead_id' => $leadId,
+                'source' => $source,
                 'phone' => \ShippingBridge\Logger::maskPhone($phone),
                 'notified' => $notified,
             ]);

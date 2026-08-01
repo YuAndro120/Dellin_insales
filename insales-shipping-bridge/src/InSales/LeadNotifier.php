@@ -19,14 +19,19 @@ use ShippingBridge\Config;
  * WHATSAPP (неофициальный шлюз к личному номеру — формат Green API,
  * тот же формат поддерживают Wappi.pro, Chat2Desk и подобные сервисы;
  * если провайдер другой — понадобится подправить URL/тело запроса):
- *   WHATSAPP_GATEWAY_URL — например https://api.green-api.com/waInstance{id}/sendMessage/{token}
- *   WHATSAPP_TO          — номер получателя, формат 79991234567@c.us
+ *   WHATSAPP_GATEWAY_URL — например https://{apiUrl}/waInstance{id}/sendMessage/{token}
+ *   WHATSAPP_TO           — номер получателя, формат 79991234567@c.us
  * ⚠️ Такие шлюзы работают через привязку личного номера WhatsApp по
  * QR-коду и формально нарушают ToS WhatsApp — риск блокировки номера
  * есть, хоть на практике для низкого объёма личных уведомлений он невысок.
  */
 final class LeadNotifier
 {
+    private const PRODUCT_LABELS = [
+        'landing' => 'ДЛ Коннект для inSales',
+        'landing_amocrm' => 'ДЛ Коннект для amoCRM',
+    ];
+
     public static function notify(Config $config, array $lead): bool
     {
         $text = self::formatMessage($lead);
@@ -37,13 +42,14 @@ final class LeadNotifier
 
     private static function formatMessage(array $lead): string
     {
+        $product = self::PRODUCT_LABELS[$lead['source'] ?? ''] ?? 'ДЛ Коннект';
         $lines = [
-            'Новая заявка с лендинга ДЛ Коннект',
+            "Новая заявка — {$product}",
             'Имя: ' . $lead['name'],
             'Телефон: ' . $lead['phone'],
         ];
         if (!empty($lead['company_name'])) {
-            $lines[] = 'Магазин: ' . $lead['company_name'];
+            $lines[] = 'Компания/магазин: ' . $lead['company_name'];
         }
         if (!empty($lead['message'])) {
             $lines[] = 'Комментарий: ' . $lead['message'];

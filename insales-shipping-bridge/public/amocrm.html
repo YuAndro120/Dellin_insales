@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ДЛ Коннект для amoCRM — доставка Деловыми Линиями прямо из сделки</title>
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
+  <meta name="description"
+    content="ДЛ Коннект для amoCRM — расчёт стоимости и оформление доставки Деловыми Линиями прямо из карточки сделки. Сейчас закрытое тестирование перед публикацией в amoMarket — оставьте заявку.">
+  <meta property="og:title" content="ДЛ Коннект для amoCRM — доставка Деловыми Линиями из карточки сделки">
+  <meta property="og:description"
+    content="Расчёт по вашим скидкам ДЛ, автозаполнение заявки данными сделки, статус и накладная — сами в CRM. Закрытое тестирование, бесплатное подключение.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://amo.dev.receptly.ru/">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://amo.dev.receptly.ru/">
+  <link href="/fonts/fonts.css" rel="stylesheet">
+  <style>
+    :root {
+      /* Тёмная тема amoCRM/Kommo: #153043 — задокументированный фон
+         dark-theme самого amoCRM (developers.kommo.com/docs/dark-theme),
+         на него же опирались при вёрстке amoCRM-виджета ДЛ Коннект. */
+      --bg: #0e2233;
+      --bg-soft: #153043;
+      --bg-card: #17394f;
+      --line: #2c5872;
+      --line-soft: #22475d;
+      --ink: #eef3f6;
+      --ink-dim: #9fb4c2;
+      --ink-faint: #64828f;
+      /* Фирменный бирюзовый amoCRM (Pelorous #339DC7) — основной акцент. */
+      --amber: #33b6dd;
+      --amber-soft: #123246;
+      /* Персиковый — фирменный второй акцент amoCRM, используется точечно. */
+      --peach: #f2a765;
+      --peach-soft: #3a2a1c;
+      --green: #5fd6a0;
+      --green-soft: #123328;
+      --display: 'Space Grotesk', sans-serif;
+      --sans: 'Inter', sans-serif;
+      --mono: 'IBM Plex Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    html { scroll-behavior: smooth }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto }
+      * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important }
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased
+    }
+
+    a { color: inherit }
+    img, svg { display: block; max-width: 100% }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px }
+    :focus-visible { outline: 2px solid var(--amber); outline-offset: 3px }
+
+    /* NAV */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(22, 24, 28, .88);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line-soft)
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; max-width: 1100px; margin: 0 auto
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--display); font-weight: 600; font-size: 18px; text-decoration: none
+    }
+    .nav-brand .nav-tag {
+      font-family: var(--mono); font-size: 11px; color: var(--amber);
+      border: 1px solid var(--amber-soft); background: var(--amber-soft);
+      padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: .04em
+    }
+    .nav-links { display: flex; gap: 28px; font-size: 14.5px }
+    .nav-links a { text-decoration: none; color: var(--ink-dim); transition: color .15s }
+    .nav-links a:hover { color: var(--ink) }
+    .nav-cta {
+      background: var(--amber); color: #072230; font-weight: 600; font-size: 13.5px;
+      padding: 8px 16px; border-radius: 8px; text-decoration: none
+    }
+    @media (max-width: 720px) { .nav-links { display: none } }
+
+    /* EYEBROW / TYPE */
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--mono); font-size: 12px; color: var(--amber);
+      text-transform: uppercase; letter-spacing: .08em; margin-bottom: 20px
+    }
+    .eyebrow::before { content: ''; width: 5px; height: 5px; background: var(--amber); border-radius: 50% }
+
+    h1 {
+      font-family: var(--display); font-size: clamp(32px, 4.6vw, 48px);
+      font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 20px
+    }
+    h1 em { font-style: normal; color: var(--amber) }
+
+    .hero-sub { font-size: 17px; color: var(--ink-dim); max-width: 480px; margin-bottom: 32px; line-height: 1.6 }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px }
+
+    .btn-primary {
+      background: var(--amber); color: #072230; font-weight: 600; font-size: 15px;
+      padding: 13px 24px; border-radius: 9px; text-decoration: none; display: inline-block;
+      transition: transform .15s, box-shadow .15s; border: 0; cursor: pointer; font-family: inherit
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px -8px rgba(51, 182, 221, .5) }
+    .btn-secondary {
+      border: 1px solid var(--line); color: var(--ink); font-weight: 500; font-size: 15px;
+      padding: 12px 23px; border-radius: 9px; text-decoration: none; transition: border-color .15s
+    }
+    .btn-secondary:hover { border-color: var(--ink-faint) }
+
+    .hero-meta { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--ink-faint); font-family: var(--mono) }
+
+    .hero-grid {
+      display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; align-items: center;
+      padding: 64px 0 88px
+    }
+    @media (max-width: 880px) { .hero-grid { grid-template-columns: 1fr; padding: 40px 0 56px } }
+
+    /* SIGNATURE: deal-card mockup — узнаваемая карточка сделки amoCRM с панелью ДЛ Коннект */
+    .deal-mock {
+      background: var(--bg-card); border: 1px solid var(--line); border-radius: 14px;
+      overflow: hidden; box-shadow: 0 30px 70px -30px rgba(0,0,0,.55)
+    }
+    .deal-mock-top {
+      display: flex; align-items: center; gap: 6px; padding: 10px 14px;
+      border-bottom: 1px solid var(--line-soft); background: var(--bg-soft)
+    }
+    .deal-mock-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line) }
+    .deal-mock-url {
+      margin-left: 8px; font-family: var(--mono); font-size: 11px; color: var(--ink-faint)
+    }
+    /* SECTION HEAD */
+    .section-head { max-width: 580px; margin-bottom: 44px }
+    .section-head.center { margin-left: auto; margin-right: auto; text-align: center }
+    .section-eyebrow {
+      font-family: var(--mono); font-size: 12px; color: var(--amber);
+      text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px
+    }
+    h2 {
+      font-family: var(--display); font-size: clamp(24px, 3.2vw, 33px);
+      font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; margin-bottom: 14px
+    }
+    .section-desc { color: var(--ink-dim); font-size: 15.5px; line-height: 1.65 }
+
+    section { padding: 64px 0; border-bottom: 1px solid var(--line-soft) }
+
+    /* PAIN */
+    .pain-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px }
+    @media (max-width: 720px) { .pain-grid { grid-template-columns: 1fr } }
+    .pain-card {
+      background: var(--bg-card); border: 1px solid var(--line); border-radius: 12px;
+      padding: 20px 22px; display: flex; gap: 14px; align-items: flex-start
+    }
+    .pain-mark {
+      flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+      border: 1px solid var(--peach-soft); color: var(--peach);
+      display: flex; align-items: center; justify-content: center; font-size: 13px; font-family: var(--mono)
+    }
+    .pain-card p { font-size: 14.5px; color: var(--ink-dim); line-height: 1.55 }
+    .pain-card strong { color: var(--ink); font-weight: 600 }
+
+    /* STEPS */
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px }
+    @media (max-width: 880px) { .steps { grid-template-columns: 1fr 1fr } }
+    @media (max-width: 560px) { .steps { grid-template-columns: 1fr } }
+    .step-num {
+      font-family: var(--mono); font-size: 12px; color: var(--amber);
+      border: 1px solid var(--amber-soft); background: var(--amber-soft);
+      width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px
+    }
+    .step h4 { font-family: var(--display); font-size: 15px; font-weight: 600; margin-bottom: 8px }
+    .step p { font-size: 13.5px; color: var(--ink-dim); line-height: 1.55 }
+
+    /* BENEFITS */
+    .benefit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px }
+    @media (max-width: 880px) { .benefit-grid { grid-template-columns: 1fr 1fr } }
+    @media (max-width: 560px) { .benefit-grid { grid-template-columns: 1fr } }
+    .benefit-card {
+      background: var(--bg-card); border: 1px solid var(--line); border-radius: 12px; padding: 20px
+    }
+    .benefit-card .b-check { color: var(--green); font-family: var(--mono); font-size: 13px; margin-bottom: 10px; display: block }
+    .benefit-card h4 { font-family: var(--display); font-size: 14.5px; font-weight: 600; margin-bottom: 6px }
+    .benefit-card p { font-size: 13px; color: var(--ink-dim); line-height: 1.5 }
+
+    /* FAQ */
+    .faq-list { display: flex; flex-direction: column; gap: 0 }
+    .faq-item { padding: 20px 0; border-top: 1px solid var(--line-soft) }
+    .faq-item:first-child { border-top: 0 }
+    .faq-q { font-family: var(--display); font-size: 15.5px; font-weight: 600; margin-bottom: 8px }
+    .faq-a { font-size: 14.5px; color: var(--ink-dim); line-height: 1.6 }
+
+    /* CONTACT / LEAD FORM */
+    .contact-card {
+      max-width: 480px; margin: 0 auto;
+      background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; padding: 30px 26px
+    }
+    .plan-form { display: flex; flex-direction: column; gap: 10px }
+    .plan-form input[type="email"], .plan-form input[type="text"], .plan-form input[type="tel"], .plan-form textarea {
+      width: 100%; padding: 10px 12px; background: var(--bg-soft); border: 1px solid var(--line);
+      border-radius: 9px; color: var(--ink); font-size: 13.5px; font-family: var(--sans);
+      outline: none; transition: border-color .15s; box-sizing: border-box
+    }
+    .plan-form textarea { resize: vertical; min-height: 72px; line-height: 1.4 }
+    .plan-form input:focus, .plan-form textarea:focus { border-color: var(--amber) }
+    .plan-form input::placeholder, .plan-form textarea::placeholder { color: var(--ink-faint) }
+    .recurrent-label { display: flex; align-items: flex-start; gap: 7px; font-size: 11.5px; color: var(--ink-faint); cursor: pointer; line-height: 1.4 }
+    .recurrent-label input { margin-top: 2px; flex-shrink: 0 }
+    .plan-submit { width: 100%; cursor: pointer; font-family: inherit; text-align: center; padding: 12px; border-radius: 9px; font-weight: 600; font-size: 14.5px; border: 1px solid var(--line) }
+
+    .final-cta { text-align: center; padding: 72px 0; border-bottom: 0 }
+    .final-cta h2 { margin-bottom: 10px }
+    .final-cta p { color: var(--ink-dim); margin-bottom: 26px; font-size: 15.5px }
+
+    footer { padding: 32px 0 90px }
+    .footer-row {
+      display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      font-size: 12.5px; color: var(--ink-faint)
+    }
+    .footer-row a { color: var(--amber); text-decoration: none }
+  </style>
+</head>
+
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-brand"><img src="/images/logo.png" alt="ДЛ Коннект" style="width:28px;height:28px">ДЛ Коннект <span class="nav-tag">для amoCRM</span></a>
+      <div class="nav-links">
+        <a href="#how">Как работает</a>
+        <a href="#faq">Вопросы</a>
+      </div>
+      <a href="#contact" class="nav-cta">Оставить заявку</a>
+    </div>
+  </nav>
+
+  <header class="wrap hero-grid">
+    <div>
+      <div class="eyebrow">Скоро в amoMarket · сейчас закрытое тестирование</div>
+      <h1>Доставка Деловыми Линиями — <em>прямо в сделке</em> amoCRM</h1>
+      <p class="hero-sub">Менеджер считает стоимость и сроки по вашему договору с Деловыми Линиями, оформляет
+        заявку и видит статус доставки — не выходя из карточки сделки. Мы тестируем продукт с первыми
+        пользователями перед публикацией в каталоге amoMarket.</p>
+      <div class="hero-actions">
+        <a href="#contact" class="btn-primary">Оставить заявку на тест</a>
+        <a href="#how" class="btn-secondary">Как это работает</a>
+      </div>
+      <div class="hero-meta">
+        <span>Бесплатно на время теста</span>
+        <span>·</span>
+        <span>Подключаем сами</span>
+        <span>·</span>
+        <span>Без каталога amoMarket</span>
+      </div>
+    </div>
+
+    <div class="deal-mock" aria-hidden="true">
+      <div class="deal-mock-top">
+        <span class="deal-mock-dot"></span><span class="deal-mock-dot"></span><span class="deal-mock-dot"></span>
+        <span class="deal-mock-url">amocrm.ru/leads/detail/37142531</span>
+      </div>
+      <img src="/images/widget-screenshot.png" alt="Панель ДЛ Коннект в карточке сделки amoCRM: получатель, габариты груза, стоимость и срок доставки, кнопки «Рассчитать» и «Создать заявку»" style="display:block;width:100%;height:auto">
+    </div>
+  </header>
+
+  <section id="pain">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-eyebrow">Знакомая картина?</div>
+        <h2>Доставка живёт отдельно от сделки</h2>
+        <p class="section-desc">amoCRM хранит всю историю работы с клиентом, но как только доходит до
+          отправки — менеджер уходит в личный кабинет Деловых Линий и работает вручную.</p>
+      </div>
+      <div class="pain-grid">
+        <div class="pain-card">
+          <div class="pain-mark">1</div>
+          <p><strong>Стоимость считается в другой вкладке.</strong> Менеджер открывает калькулятор ДЛ отдельно,
+            вводит габариты и адрес заново — то, что уже есть в сделке.</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-mark">2</div>
+          <p><strong>Публичный калькулятор — не ваш тариф.</strong> Сайт ДЛ показывает цену по прайсу
+            перевозчика, а не по вашему договору со скидками — клиенту называют не ту сумму.</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-mark">3</div>
+          <p><strong>Данные переносятся вручную.</strong> Имя, телефон и адрес получателя копируются из
+            сделки в форму ДЛ — лишний повод для опечатки в адресе или телефоне.</p>
+        </div>
+        <div class="pain-card">
+          <div class="pain-mark">4</div>
+          <p><strong>Статус узнаёте от клиента.</strong> «А где мой заказ?» — и менеджер идёт проверять
+            в личном кабинете ДЛ, потому что в самой сделке этой информации нет.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-eyebrow">Как это работает</div>
+        <h2>Четыре шага — без выхода из amoCRM</h2>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <h4>Оставляете заявку</h4>
+          <p>Пока идёт закрытое тестирование — подключаем ДЛ Коннект к вашему аккаунту amoCRM бесплатно и
+            сами.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <h4>Считаете в сделке</h4>
+          <p>Виджет в карточке сделки показывает стоимость и срок по вашему договору с Деловыми Линиями —
+            не по публичному прайсу.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <h4>Оформляете в один клик</h4>
+          <p>Получатель, адрес и груз подставляются из сделки. Отправитель — из сохранённых настроек склада.
+            Заявка уходит в ДЛ без второй формы.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <h4>Статус приходит сам</h4>
+          <p>Номер накладной, статус и итоговая стоимость доставки записываются в сделку автоматически —
+            звонить и проверять не нужно.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="benefits">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-eyebrow">Что это даёт</div>
+        <h2>Не только экономия времени</h2>
+      </div>
+      <div class="benefit-grid">
+        <div class="benefit-card">
+          <span class="b-check">✓</span>
+          <h4>Не покидаете amoCRM</h4>
+          <p>Расчёт, заявка и статус — в той же вкладке, где менеджер уже работает со сделкой.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="b-check">✓</span>
+          <h4>Ваши скидки, а не прайс ДЛ</h4>
+          <p>Расчёт учитывает договор и персональные тарифы — клиенту сразу называют верную цену.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="b-check">✓</span>
+          <h4>Меньше ручных ошибок</h4>
+          <p>Адрес и телефон получателя берутся из сделки, а не перепечатываются менеджером заново.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="b-check">✓</span>
+          <h4>Автоматический трекинг</h4>
+          <p>Статус и номер накладной обновляются в сделке сами — без ручных проверок в кабинете ДЛ.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="b-check">✓</span>
+          <h4>Расчётная и фактическая цена</h4>
+          <p>После приёмки груза в сделке видна и цена расчёта, и итоговая — удобно сверять расходы на
+            логистику.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="b-check">✓</span>
+          <h4>Несколько складов и терминалов</h4>
+          <p>Забор от адреса или сдача на терминал — настраивается один раз для каждого склада отправителя.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-eyebrow">Вопросы</div>
+        <h2>Коротко о важном</h2>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-q">Нужен ли мне договор с Деловыми Линиями?</div>
+          <div class="faq-a">Да, ДЛ Коннект работает поверх вашего личного кабинета Деловых Линий — нужен
+            персональный токен доступа (PAT), который вы получаете в настройках интеграции ДЛ.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Когда продукт появится в каталоге amoMarket?</div>
+          <div class="faq-a">Сейчас идёт закрытое тестирование на ограниченном числе аккаунтов. Публикацию в
+            amoMarket планируем после того, как обкатаем продукт на первых пользователях — оставьте заявку,
+            чтобы попасть в их число.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Сколько это будет стоить?</div>
+          <div class="faq-a">На этапе тестирования подключение и использование бесплатны. Условия после
+            публикации в amoMarket объявим отдельно и заранее предупредим действующих пользователей.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Нужен ли программист для подключения?</div>
+          <div class="faq-a">Нет — на этапе теста мы сами подключаем виджет к вашему аккаунту amoCRM и
+            помогаем с первоначальной настройкой склада и реквизитов.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Насколько это безопасно для данных Деловых Линий?</div>
+          <div class="faq-a">Токен доступа к вашему личному кабинету ДЛ хранится в зашифрованном виде на
+            сервере и используется только для запросов от вашего аккаунта amoCRM — третьим лицам не
+            передаётся.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="wrap">
+      <div class="section-head center">
+        <div class="section-eyebrow">Заявка на тестирование</div>
+        <h2>Подключим ДЛ Коннект к вашему amoCRM</h2>
+        <p class="section-desc">Оставьте контакты — бесплатно подключим виджет на время тестирования и
+          поможем с настройкой.</p>
+      </div>
+
+      <div class="contact-card">
+        <form class="plan-form early-access-form" data-plan="contact">
+          <input type="text" name="name" placeholder="Имя" required>
+          <input type="tel" name="phone" placeholder="Телефон / WhatsApp" required>
+          <input type="text" name="company_name" placeholder="Поддомен amoCRM (необязательно)">
+          <textarea name="message" placeholder="Что возите, какой объём заказов (необязательно)"></textarea>
+          <input type="hidden" name="plan" value="contact">
+          <input type="hidden" name="source" value="landing_amocrm">
+          <input type="hidden" name="insales_id" class="js-insales-id">
+          <label class="recurrent-label consent-label">
+            <input type="checkbox" name="consent_pd" value="1" required class="consent-pd-check">
+            <span>Согласен на <a href="/amocrm-privacy.html" target="_blank" style="color:var(--amber)">обработку
+                персональных данных</a></span>
+          </label>
+          <button type="submit" class="plan-submit"
+            style="background:var(--amber);color:#072230;border-color:var(--amber)">Оставить заявку</button>
+        </form>
+        <div class="early-access-thanks"
+          style="display:none;font-size:12.5px;color:var(--green);text-align:center;margin-top:8px">Спасибо!
+          Свяжемся с вами в ближайшее время.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final-cta" style="border-bottom:0">
+    <div class="wrap">
+      <h2>Попробуйте одними из первых</h2>
+      <p>Мы тестируем ДЛ Коннект для amoCRM перед публикацией в amoMarket — заявки принимаем ограниченно.</p>
+      <a href="#contact" class="btn-primary">Оставить заявку</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap footer-row">
+      <span>© 2026 ИП Андронов Ю. В. · ДЛ Коннект для amoCRM</span>
+      <span>ДЛ Коннект — независимая интеграция, не аффилирована с ООО «Деловые Линии» и amoCRM</span>
+      <a href="/amocrm-privacy.html">Обработка персональных данных</a>
+    </div>
+  </footer>
+
+  <!-- Cookie banner -->
+  <div id="cookieBanner"
+    style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:#153043;border-top:1px solid #2c5872;padding:14px 24px">
+    <div
+      style="max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div style="font-size:13px;color:#9fb4c2;line-height:1.5">
+        Мы используем куки для корректной работы сайта.
+        <a href="/amocrm-privacy.html" style="color:#33b6dd;text-decoration:none">Политика конфиденциальности</a>
+      </div>
+      <button id="cookieAccept"
+        style="background:#33b6dd;color:#072230;border:0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Принять</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var insalesId = params.get('insales_id') || '';
+      document.querySelectorAll('.js-insales-id').forEach(function (el) { el.value = insalesId; });
+
+      document.querySelectorAll('.early-access-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var btn = form.querySelector('button');
+          var thanks = form.nextElementSibling;
+          var originalText = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = 'Отправляем…';
+          var formData = new FormData(form);
+          fetch('/insales/consent', { method: 'POST', body: formData }).catch(function () { });
+          fetch('/insales/lead', { method: 'POST', body: formData })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (data.ok) {
+                form.style.display = 'none';
+                if (thanks) thanks.style.display = 'block';
+              } else {
+                btn.disabled = false;
+                btn.textContent = originalText;
+                alert(data.error || 'Не удалось отправить заявку');
+              }
+            })
+            .catch(function () {
+              btn.disabled = false;
+              btn.textContent = originalText;
+              alert('Ошибка сети, попробуйте ещё раз');
+            });
+        });
+      });
+    })();
+
+    (function () {
+      if (!document.cookie.includes('cookie_ok=1')) {
+        var banner = document.getElementById('cookieBanner');
+        if (banner) banner.style.display = 'block';
+      }
+      var btn = document.getElementById('cookieAccept');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          document.cookie = 'cookie_ok=1;max-age=' + (365 * 24 * 3600) + ';path=/;samesite=lax';
+          var banner = document.getElementById('cookieBanner');
+          if (banner) banner.style.display = 'none';
+        });
+      }
+    })();
+  </script>
+</body>
+
+</html>

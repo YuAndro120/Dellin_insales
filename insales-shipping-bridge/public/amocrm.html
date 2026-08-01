@@ -133,9 +133,10 @@
 
     /* SIGNATURE: deal-card mockup — узнаваемая карточка сделки amoCRM с панелью ДЛ Коннект */
     .deal-mock {
-      background: var(--bg-card); border: 1px solid var(--line); border-radius: 14px;
-      overflow: hidden; box-shadow: 0 30px 70px -30px rgba(0,0,0,.55)
-    }
+  background: var(--bg-card); border: 1px solid var(--line); border-radius: 14px;
+  overflow: hidden; box-shadow: 0 30px 70px -30px rgba(0,0,0,.55);
+  margin-right: calc(-1 * max(0px, (100vw - 1100px) / 2 - 24px));
+}
     .deal-mock-top {
       display: flex; align-items: center; gap: 6px; padding: 10px 14px;
       border-bottom: 1px solid var(--line-soft); background: var(--bg-soft)

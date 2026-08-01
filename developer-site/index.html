@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Юрий Андронов — разработка полного цикла</title>
+<meta name="description" content="Один разработчик — весь цикл: интеграции, SaaS, AI, безопасность, запуск. Любые разработки, кроме 1С.">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body>
+
+<div class="progress" aria-hidden="true"></div>
+
+<header>
+  <nav class="wrap topbar" aria-label="Основная навигация">
+    <a class="name" href="index.html">Андронов&nbsp;/ Разработка</a>
+    <div class="navlinks">
+      <a href="index.html" aria-current="page">Главная</a>
+      <a href="cases.html">Кейсы</a>
+      <a href="blog.html">Блог</a>
+      <a href="#contact">Контакт</a>
+    </div>
+    <span class="status">Открыт к проектам</span>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <!-- Герой -->
+  <div class="hero reveal">
+    <canvas id="hero3d" aria-hidden="true"></canvas>
+    <div class="hero-inner">
+      <h1>
+        Любые разработки.
+        <span class="except">Кроме <span class="strike">1С</span><a class="fnref" href="#fn1" aria-label="Сноска: почему без 1С">1</a></span>
+      </h1>
+      <p>
+        Один разработчик — весь цикл: архитектура, код, интеграции, безопасность,
+        сервер, запуск. <em>Вы платите за продукт, который работает и приносит
+        деньги, — а не за менеджеров, созвоны и презентации о проделанной работе.</em>
+      </p>
+      <div class="cta-row">
+        <a class="btn" href="mailto:hello@receptly.ru?subject=Проект">Обсудить проект</a>
+        <a class="sidelink" href="cases.html">Смотреть кейсы: SaaS в продакшене →</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="proof reveal">
+    <span>SaaS в продакшене</span>
+    <span>Соответствие 152-ФЗ</span>
+    <span>API-интеграции</span>
+    <span>AI / LLM</span>
+    <span>Работа по договору с ИП</span>
+  </div>
+
+  <!-- Боли -->
+  <section id="pain" class="reveal">
+    <div class="eyebrow">Вы это уже проходили</div>
+    <h2>Почему проекты умирают, не дойдя до продакшена</h2>
+
+    <div class="pains">
+      <div class="pain">
+        <div class="quote">Фрилансер перестал отвечать на третьей неделе</div>
+        <div class="cost">Проект завис на 80%. Код где-то есть, но никто не знает, как его запустить. Новый исполнитель предлагает «переписать с нуля».</div>
+      </div>
+      <div class="pain">
+        <div class="quote">Агентство насчитало полтора миллиона</div>
+        <div class="cost">Треть бюджета — аккаунт-менеджеры, созвоны и красивые отчёты. Ваша задача при этом достаётся джуну.</div>
+      </div>
+      <div class="pain">
+        <div class="quote">Всё работает — но только на ноутбуке разработчика</div>
+        <div class="cost">Сервер, домен, деплой и бэкапы внезапно «не входили в задачу». Продукт есть, продукта нет.</div>
+      </div>
+      <div class="pain">
+        <div class="quote">А кто займётся 152-ФЗ?</div>
+        <div class="cost">Программист кивает на юриста, юрист — на программиста. Штраф Роскомнадзора приходит вам.</div>
+      </div>
+      <div class="pain">
+        <div class="quote">Хотим добавить одну кнопку</div>
+        <div class="cost">Это заявка в таск-трекер, оценка, спринт и две недели ожидания. Кнопка стоит как небольшой автомобиль.</div>
+      </div>
+    </div>
+
+    <p class="pains-close">
+      Все пять историй случаются в разрыве между людьми: между кодером и девопсом,
+      между студией и подрядчиком, между юристом и программистом.
+      <b>У меня этого разрыва нет — весь цикл в одних руках, и отвечает за результат
+      один конкретный человек.</b>
+    </p>
+  </section>
+
+  <!-- Услуги -->
+  <section id="services" class="reveal">
+    <div class="eyebrow">Что я делаю</div>
+    <h2>От схемы базы до кнопки «Оплатить»</h2>
+
+    <div class="services">
+      <div class="service">
+        <h3>Интеграции и&nbsp;API</h3>
+        <p>Свяжу CRM, интернет-магазин, службу доставки, платёжку — что угодно с REST API. Вебхуки с проверкой подписи, ретраи, кэширование, обработка отказов.</p>
+        <div class="stack">PHP 8.4<br>REST · Webhooks<br>MariaDB</div>
+      </div>
+
+      <div class="service">
+        <h3>SaaS и&nbsp;веб-приложения под&nbsp;ключ</h3>
+        <p>Проектирую, пишу, разворачиваю и сопровождаю. Результат — работающий сервис на сервере, а не макет в Figma.</p>
+        <div class="stack">Linux VPS · Nginx<br>Git-деплой<br>Matomo</div>
+      </div>
+
+      <div class="service">
+        <h3>AI-интеграции</h3>
+        <p>LLM-функции внутри продукта: Claude API, MCP-серверы, автоматизация рутины на моделях. Пилот за дни, а не кварталы.</p>
+        <div class="stack">Claude API<br>MCP · RAG<br>Автоматизация</div>
+      </div>
+
+      <div class="service">
+        <h3>Безопасность и&nbsp;152-ФЗ</h3>
+        <p>Приведу сервис в соответствие закону: политика ПДн, уведомление Роскомнадзора, self-hosted шрифты, CSP-заголовки, rate limiting. Проходил этот путь на собственном продукте.</p>
+        <div class="stack">152-ФЗ · РКН<br>CSP · Rate limit<br>Аудит</div>
+      </div>
+
+      <div class="service">
+        <h3>Лендинги и&nbsp;интерфейсы</h3>
+        <p>Редакторский минимализм: быстро грузится, легко читается, не выглядит как шаблон из конструктора. Тексты — тоже я.</p>
+        <div class="stack">HTML / CSS / JS<br>UX · Тексты</div>
+      </div>
+
+      <div class="service">
+        <h3>iOS-приложения</h3>
+        <p>Нативный SwiftUI без кроссплатформенных компромиссов. От прототипа до App Store.</p>
+        <div class="stack">Swift · SwiftUI</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Кейсы: тизеры -->
+  <section id="cases" class="reveal">
+    <div class="eyebrow">Кейсы</div>
+    <h2>Два продукта, собранные в одиночку</h2>
+
+    <a class="case-mini" href="cases.html#dl-connect">
+      <div>
+        <div class="case-tag">В продакшене · Маркетплейс inSales</div>
+        <h3>ДЛ Коннект</h3>
+        <p class="about">SaaS-интеграция «Деловых Линий» и inSales: расчёт доставки, заявки и статусы прямо в админке магазина. Инженерия, продукт и 152-ФЗ — из одних рук.</p>
+      </div>
+      <span class="go">Разбор →</span>
+    </a>
+
+    <a class="case-mini" href="cases.html#cerevio">
+      <div>
+        <div class="case-tag">В разработке · iOS</div>
+        <h3>Cerevio</h3>
+        <p class="about">Приложение о смысле, а не о привычках: логотерапия Франкла, рамка «боль → цель → шаг», нативный SwiftUI и подключаемый слой AI-провайдеров.</p>
+      </div>
+      <span class="go">Разбор →</span>
+    </a>
+
+    <p class="cases-cta">
+      Хотите так же для своей задачи? —
+      <a class="sidelink" href="mailto:hello@receptly.ru?subject=Проект">Обсудить проект</a>
+    </p>
+  </section>
+
+  <!-- Принципы -->
+  <section id="how" class="reveal">
+    <div class="eyebrow">Как я работаю</div>
+    <h2>Коротко о правилах</h2>
+
+    <div class="principles">
+      <div class="principle">
+        <h3>Прямой контакт</h3>
+        <p>Пишете мне — отвечаю я. Делаю тоже я. Между вами и кодом нет прослойки из аккаунт-менеджеров.</p>
+      </div>
+      <div class="principle">
+        <h3>Официально</h3>
+        <p>Договор с ИП, закрывающие документы, безнал. Юридическое образование — бонус: читаю договоры до подписания, а не после.</p>
+      </div>
+      <div class="principle">
+        <h3>Минимум лишнего</h3>
+        <p>Не люблю лишние сущности — ни в коде, ни в интерфейсах, ни в переписке. Меньше кода — меньше багов.</p>
+      </div>
+      <div class="principle">
+        <h3>Прод, а не презентация</h3>
+        <p>Работа считается сделанной, когда сервис работает на сервере и им пользуются. Не раньше.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Контакт -->
+  <section id="contact" class="contact reveal">
+    <div class="contact-inner">
+      <div>
+        <div class="eyebrow">Контакт</div>
+        <h2>Расскажите, что нужно построить</h2>
+        <p class="hint">Опишите задачу в двух-трёх предложениях. В течение дня отвечу
+        с вилкой сроков и бюджета. Если задача не моя — скажу честно и подскажу,
+        кого искать. Это бесплатно и ни к чему не обязывает.</p>
+      </div>
+      <div class="contact-links">
+        <span class="label">Почта</span>
+        <a href="mailto:hello@receptly.ru">hello@receptly.ru</a>
+        <span class="label">Telegram</span>
+        <a href="https://t.me/username" rel="noopener">@username</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="footnote" id="fn1"><sup>1</sup>Принципиальная позиция. Обсуждению не подлежит.</p>
+    <p class="requisites">
+      ИП Андронов Юрий Витальевич · ИНН 550315094488 · ОГРНИП 326554300001476 · г.&nbsp;Омск<br>
+      © 2026 · Сайт не использует cookies и сторонние трекеры
+    </p>
+  </div>
+</footer>
+
+<script src="js/three.min.js"></script>
+<script src="js/hero3d.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>

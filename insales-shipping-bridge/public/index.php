@@ -68,6 +68,36 @@ if (in_array($uri, $landingFiles, true) && $method === 'GET') {
     }
 }
 
+// robots.txt / sitemap.xml — тоже по хосту (см. комментарий выше про
+// $isAmoLanding). ⚠️ КОРРЕКЦИЯ: раньше это были статичные файлы в
+// public/ — общие для обоих хостов, поэтому amo.dev.receptly.ru
+// физически не мог получить собственный sitemap/robots (оба домена
+// отдавали содержимое receptly.ru). Статичные файлы нужно удалить из
+// public/, иначе веб-сервер отдаст их напрямую, не доходя до PHP.
+if (($uri === '/robots.txt' || $uri === '/sitemap.xml') && $method === 'GET') {
+    $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $isAmoLanding = str_starts_with($host, 'amo.dev.') || str_starts_with($host, 'amo-dev.');
+    $base = $isAmoLanding ? 'https://amo.dev.receptly.ru' : 'https://receptly.ru';
+
+    if ($uri === '/robots.txt') {
+        header('Content-Type: text/plain; charset=utf-8');
+        echo "User-agent: *\nAllow: /\nDisallow: /insales/\nDisallow: /admin/\nSitemap: {$base}/sitemap.xml\n";
+        exit;
+    }
+
+    header('Content-Type: application/xml; charset=utf-8');
+    echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+    $pages = $isAmoLanding
+        ? [['/', 'weekly', '1.0'], ['/amocrm-privacy.html', 'monthly', '0.3']]
+        : [['/', 'weekly', '1.0'], ['/offer.html', 'monthly', '0.3'], ['/privacy.html', 'monthly', '0.3']];
+    foreach ($pages as [$path, $freq, $priority]) {
+        echo "  <url>\n    <loc>{$base}{$path}</loc>\n    <changefreq>{$freq}</changefreq>\n    <priority>{$priority}</priority>\n  </url>\n";
+    }
+    echo '</urlset>';
+    exit;
+}
+
 $externalCheckoutUris = [
     '/insales/external/v2/courier',
     '/insales/external/v2/pickup_points',

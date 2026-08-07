@@ -146,19 +146,23 @@
     }
     @media (max-width: 880px) { .hero-grid { grid-template-columns: 1fr; padding: 40px 0 56px } }
 
-    /* SIGNATURE: deal-card mockup — узнаваемая карточка сделки amoCRM с панелью ДЛ Коннект */
+    /* SIGNATURE: реальный скрин виджета ДЛ Коннект в сделке amoCRM — без фейкового браузер-хрома */
     .deal-mock {
-  background: var(--bg-card); border: 1px solid var(--line); border-radius: 14px;
-  overflow: hidden; box-shadow: 0 30px 70px -30px rgba(0,0,0,.55);
-  margin-right: calc(-1 * max(0px, (100vw - 1100px) / 2 - 24px));
-}
-    .deal-mock-top {
-      display: flex; align-items: center; gap: 6px; padding: 10px 14px;
-      border-bottom: 1px solid var(--line-soft); background: var(--bg-soft)
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background:
+        radial-gradient(circle at 28% 18%, var(--amber-soft), transparent 62%),
+        var(--bg-soft);
+      border: 1px solid var(--line-soft); border-radius: 20px;
+      padding: 36px 28px 30px; box-shadow: 0 30px 70px -30px rgba(0,0,0,.55);
     }
-    .deal-mock-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line) }
-    .deal-mock-url {
-      margin-left: 8px; font-family: var(--mono); font-size: 11px; color: var(--ink-faint)
+    .deal-mock img {
+      display: block; width: 100%; max-width: 300px; height: auto;
+      border-radius: 12px; border: 1px solid var(--line);
+      box-shadow: 0 20px 44px -20px rgba(0,0,0,.6);
+    }
+    .deal-mock-caption {
+      margin-top: 18px; font-family: var(--mono); font-size: 12px;
+      color: var(--ink-faint); text-align: center; letter-spacing: .01em
     }
     /* SECTION HEAD */
     .section-head { max-width: 580px; margin-bottom: 44px }
@@ -350,11 +354,8 @@
     </div>
 
     <div class="deal-mock" aria-hidden="true">
-      <div class="deal-mock-top">
-        <span class="deal-mock-dot"></span><span class="deal-mock-dot"></span><span class="deal-mock-dot"></span>
-        <span class="deal-mock-url">amocrm.ru/leads/detail/37142531</span>
-      </div>
-      <img src="/images/widget-screenshot.png" alt="Панель ДЛ Коннект в карточке сделки amoCRM: получатель, габариты груза, стоимость и срок доставки, кнопки «Рассчитать» и «Создать заявку»" style="display:block;width:100%;height:auto">
+      <img src="/images/widget-screenshot.png" alt="Виджет ДЛ Коннект в карточке сделки amoCRM: получатель, габариты груза, объявленная стоимость, тариф, итоговая стоимость и срок доставки, кнопка «Создать заявку»">
+      <div class="deal-mock-caption">Виджет ДЛ Коннект — прямо в карточке сделки amoCRM</div>
     </div>
   </header>
 

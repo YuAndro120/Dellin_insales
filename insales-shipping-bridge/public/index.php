@@ -35,7 +35,11 @@ header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
 header('X-XSS-Protection: 1; mode=block');
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://suggestions.dadata.ru; frame-ancestors 'none';");
+// ⚠️ КОРРЕКЦИЯ: добавлен mc.yandex.ru в script-src/connect-src — иначе
+// счётчик Яндекс.Метрики на лендингах (amocrm.html) блокируется CSP
+// (тег script.src грузится динамически через document.createElement,
+// не попадает под 'self', сам счётчик тоже шлёт запросы на mc.yandex.ru).
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://suggestions.dadata.ru https://mc.yandex.ru; frame-ancestors 'none';");
 
 if ($method === 'OPTIONS') {
     http_response_code(204);

@@ -39,7 +39,12 @@ header('X-XSS-Protection: 1; mode=block');
 // счётчик Яндекс.Метрики на лендингах (amocrm.html) блокируется CSP
 // (тег script.src грузится динамически через document.createElement,
 // не попадает под 'self', сам счётчик тоже шлёт запросы на mc.yandex.ru).
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://suggestions.dadata.ru https://mc.yandex.ru; frame-ancestors 'none';");
+// ⚠️ КОРРЕКЦИЯ 2: вебвизор/карта скроллинга/аналитика форм (включены в
+// init счётчика) реально проверил через "Проверить счётчик" в самой
+// Метрике — консоль показала ещё 2 блокировки: wss://mc.yandex.ru
+// (websocket вебвизора, отдельная схема от https, CSP её не покрывает
+// автоматически) и https://yastatic.net (form-selector, аналитика форм).
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://suggestions.dadata.ru https://mc.yandex.ru wss://mc.yandex.ru; frame-ancestors 'none';");
 
 if ($method === 'OPTIONS') {
     http_response_code(204);

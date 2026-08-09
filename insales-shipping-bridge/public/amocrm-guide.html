@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Инструкция по настройке — ДЛ Коннект для amoCRM</title>
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
+  <meta name="description"
+    content="Пошаговая инструкция: как подключить ДЛ Коннект к amoCRM, получить ключ виджета и APPKEY/PAT Деловых Линий, настроить склад отправителя и оформить первую заявку из сделки.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://amo.dev.receptly.ru/amocrm-guide.html">
+  <link href="/fonts/fonts.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0e2233;
+      --bg-soft: #153043;
+      --bg-card: #17394f;
+      --line: #2c5872;
+      --line-soft: #22475d;
+      --ink: #eef3f6;
+      --ink-dim: #9fb4c2;
+      --ink-faint: #64828f;
+      --amber: #33b6dd;
+      --amber-soft: #123246;
+      --peach: #f2a765;
+      --peach-soft: #3a2a1c;
+      --green: #5fd6a0;
+      --green-soft: #123328;
+      --display: 'Space Grotesk', sans-serif;
+      --sans: 'Inter', sans-serif;
+      --mono: 'IBM Plex Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+    html { scroll-behavior: smooth }
+    body { font-family: var(--sans); background: var(--bg); color: var(--ink); line-height: 1.65; font-size: 16px; -webkit-font-smoothing: antialiased }
+    a { color: var(--amber) }
+    img { display: block; max-width: 100% }
+
+    .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px }
+
+    /* NAV */
+    .nav { position: sticky; top: 0; z-index: 50; background: rgba(22, 24, 28, .88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-soft) }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; max-width: 1100px; margin: 0 auto }
+    .nav-brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 600; font-size: 18px; text-decoration: none; color: var(--ink) }
+    .nav-brand .nav-tag { font-family: var(--mono); font-size: 11px; color: var(--amber); border: 1px solid var(--amber-soft); background: var(--amber-soft); padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: .04em }
+    .nav-back { font-size: 13.5px; color: var(--ink-dim); text-decoration: none }
+    .nav-back:hover { color: var(--ink) }
+
+    .hero-head { padding: 56px 0 40px; text-align: center }
+    .eyebrow { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12px; color: var(--amber); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 18px; justify-content: center }
+    .eyebrow::before { content: ''; width: 5px; height: 5px; background: var(--amber); border-radius: 50% }
+    h1 { font-family: var(--display); font-size: clamp(28px, 4.2vw, 40px); font-weight: 600; letter-spacing: -.02em; line-height: 1.15; margin-bottom: 14px }
+    .hero-sub { color: var(--ink-dim); font-size: 16px; max-width: 540px; margin: 0 auto; line-height: 1.6 }
+
+    /* TOC */
+    .toc { background: var(--bg-card); border: 1px solid var(--line); border-radius: 14px; padding: 20px 24px; margin: 0 0 56px }
+    .toc-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); margin-bottom: 12px }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 8px }
+    .toc-list a { color: var(--ink-dim); text-decoration: none; font-size: 14.5px; display: flex; gap: 8px }
+    .toc-list a:hover { color: var(--amber) }
+    .toc-num { font-family: var(--mono); color: var(--amber); flex-shrink: 0 }
+
+    /* STEPS */
+    .step-block { padding: 0 0 52px; scroll-margin-top: 80px }
+    .step-head { display: flex; align-items: center; gap: 16px; margin-bottom: 18px }
+    .step-num-badge { width: 40px; height: 40px; border-radius: 50%; background: var(--amber-soft); border: 1px solid var(--line); color: var(--amber); font-family: var(--display); font-weight: 600; font-size: 17px; display: flex; align-items: center; justify-content: center; flex-shrink: 0 }
+    .step-head h2 { font-family: var(--display); font-size: 21px; font-weight: 600; letter-spacing: -.01em }
+    .step-body { padding-left: 56px }
+    .step-body p { color: var(--ink-dim); font-size: 15px; margin-bottom: 14px; line-height: 1.65 }
+    .step-body ol, .step-body ul { color: var(--ink-dim); margin: 0 0 14px 20px; font-size: 15px; line-height: 1.75 }
+    .step-body li { margin-bottom: 6px }
+    .step-body strong { color: var(--ink); font-weight: 600 }
+    .step-body code { font-family: var(--mono); font-size: 13px; background: var(--bg-soft); color: var(--amber); padding: 2px 6px; border-radius: 5px; border: 1px solid var(--line) }
+    @media (max-width: 600px) { .step-body { padding-left: 0; margin-top: 8px } .step-head { align-items: flex-start } }
+
+    .note-box { background: var(--bg-card); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; padding: 14px 18px; margin: 16px 0; font-size: 14px; color: var(--ink-dim); line-height: 1.6 }
+    .note-box strong { color: var(--ink) }
+    .note-box.warn { border-left-color: var(--peach) }
+
+    .link-box { background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin: 16px 0; font-size: 14px; color: var(--ink-dim) }
+    .link-box a { font-weight: 500 }
+
+    /* FAQ */
+    .faq-item { border-bottom: 1px solid var(--line-soft); padding: 18px 0 }
+    .faq-item:last-child { border-bottom: 0 }
+    .faq-q { font-weight: 600; color: var(--ink); font-size: 15px; margin-bottom: 6px }
+    .faq-a { color: var(--ink-dim); font-size: 14.5px; line-height: 1.6 }
+
+    .support-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; padding: 32px; text-align: center; margin-bottom: 64px }
+    .support-card h3 { font-family: var(--display); font-size: 19px; font-weight: 600; margin-bottom: 8px }
+    .support-card p { color: var(--ink-dim); font-size: 14.5px; margin-bottom: 18px }
+    .btn-primary { display: inline-block; background: var(--amber); color: #072230; font-weight: 600; font-size: 14.5px; padding: 11px 22px; border-radius: 9px; text-decoration: none }
+
+    footer { border-top: 1px solid var(--line-soft); padding: 28px 0; font-size: 13px; color: var(--ink-faint); text-align: center }
+    footer a { color: var(--ink-faint) }
+  </style>
+</head>
+
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/amocrm.html" class="nav-brand"><img src="/images/logo.png" alt="ДЛ Коннект" style="width:28px;height:28px">ДЛ Коннект <span class="nav-tag">для amoCRM</span></a>
+      <a href="/amocrm.html" class="nav-back">← О продукте</a>
+    </div>
+  </nav>
+
+  <div class="hero-head wrap">
+    <div class="eyebrow">Инструкция по настройке</div>
+    <h1>Как подключить и настроить ДЛ Коннект</h1>
+    <p class="hero-sub">От заявки на подключение до первой заявки на доставку из сделки. Занимает 10–15 минут вместе
+      с получением ключей на стороне Деловых Линий.</p>
+  </div>
+
+  <div class="wrap">
+    <div class="toc">
+      <div class="toc-title">Содержание</div>
+      <ul class="toc-list">
+        <li><span class="toc-num">01</span><a href="#connect">Подключение интеграции к вашему аккаунту</a></li>
+        <li><span class="toc-num">02</span><a href="#widgetkey">Ключ ДЛ Коннект (widget_key)</a></li>
+        <li><span class="toc-num">03</span><a href="#dellin">APPKEY и токен (PAT) Деловых Линий</a></li>
+        <li><span class="toc-num">04</span><a href="#settings">Настройки виджета в amoCRM</a></li>
+        <li><span class="toc-num">05</span><a href="#warehouse">Склад отправителя</a></li>
+        <li><span class="toc-num">06</span><a href="#usage">Расчёт и заявка из карточки сделки</a></li>
+        <li><span class="toc-num">07</span><a href="#limits">Бесплатный лимит и подписка</a></li>
+        <li><span class="toc-num">08</span><a href="#faq">Частые проблемы</a></li>
+      </ul>
+    </div>
+
+    <!-- STEP 1 -->
+    <section class="step-block" id="connect">
+      <div class="step-head">
+        <div class="step-num-badge">01</div>
+        <h2>Подключение интеграции к вашему аккаунту</h2>
+      </div>
+      <div class="step-body">
+        <p>ДЛ Коннект пока не в открытом каталоге amoMarket — на время теста мы подключаем интеграцию к вашему
+          аккаунту вручную и бесплатно.</p>
+        <ol>
+          <li>Оставьте заявку на странице <a href="/amocrm.html#contact">amo.dev.receptly.ru</a> — укажите поддомен
+            вашего аккаунта amoCRM (например, <code>yourcompany.amocrm.ru</code>).</li>
+          <li>Мы пришлём ссылку на установку через OAuth — стандартное окно amoCRM с запросом прав доступа.</li>
+          <li>После подтверждения интеграция появится в разделе <strong>Настройки → Интеграции</strong> вашего
+            аккаунта.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="step-block" id="widgetkey">
+      <div class="step-head">
+        <div class="step-num-badge">02</div>
+        <h2>Ключ ДЛ Коннект (widget_key)</h2>
+      </div>
+      <div class="step-body">
+        <p>Сразу после установки открывается страница с уникальным ключом интеграции — полем <code>Ключ ДЛ
+          Коннект</code>. Он нужен для настройки виджета на следующем шаге.</p>
+        <div class="note-box warn"><strong>Ключ показывается только один раз.</strong> Скопируйте его сразу.
+          Если потеряли — отключите интеграцию в разделе «Интеграции» и подключите заново через ту же ссылку:
+          ключ не перегенерируется, страница с ним просто откроется снова.</div>
+      </div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="step-block" id="dellin">
+      <div class="step-head">
+        <div class="step-num-badge">03</div>
+        <h2>APPKEY и токен (PAT) Деловых Линий</h2>
+      </div>
+      <div class="step-body">
+        <p>Виджет считает и оформляет доставку от имени вашей организации по вашему договору с Деловыми Линиями —
+          для этого нужна пара ключей API, а не логин/пароль от личного кабинета.</p>
+        <ol>
+          <li>Войдите в <a href="https://www.dellin.ru/cabinet/" target="_blank" rel="noopener">личный кабинет
+            Деловых Линий</a> под своей организацией.</li>
+          <li>Перейдите в раздел <strong>Настройки → Интеграция API</strong>.</li>
+          <li>Скопируйте <strong>APPKEY</strong> приложения и выпустите/скопируйте <strong>персональный токен
+            (PAT)</strong>.</li>
+        </ol>
+        <div class="note-box"><strong>Важно:</strong> PAT — это полноценный доступ к оформлению заявок от имени
+          вашей организации. В ДЛ Коннект он хранится в зашифрованном виде и не показывается повторно после
+          сохранения — если нужно поменять, выпустите новый токен в личном кабинете ДЛ и вставьте его в настройки
+          заново.</div>
+      </div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="step-block" id="settings">
+      <div class="step-head">
+        <div class="step-num-badge">04</div>
+        <h2>Настройки виджета в amoCRM</h2>
+      </div>
+      <div class="step-body">
+        <p>В разделе <strong>Настройки → Интеграции → ДЛ Коннект</strong> откройте настройки виджета и заполните:</p>
+        <ul>
+          <li><code>Ключ ДЛ Коннект</code> — значение из шага 2;</li>
+          <li><code>APPKEY Деловых Линий</code> и <code>Персональный токен (PAT) Деловых Линий</code> — значения из
+            шага 3;</li>
+          <li>чекбокс согласия на передачу данных сделки (ФИО, телефон, адрес получателя) — без него сохранение
+            не пройдёт.</li>
+        </ul>
+        <p>Сохраните настройки. Если реквизиты неверны, ошибку покажет сама форма настроек — авторизация в ДЛ
+          проверяется сразу при сохранении.</p>
+      </div>
+    </section>
+
+    <!-- STEP 5 -->
+    <section class="step-block" id="warehouse">
+      <div class="step-head">
+        <div class="step-num-badge">05</div>
+        <h2>Склад отправителя</h2>
+      </div>
+      <div class="step-body">
+        <p>Прежде чем считать доставку, нужно указать хотя бы один склад-отправитель — там же, в расширенных
+          настройках интеграции, в разделе <strong>«Склады отправителя»</strong>:</p>
+        <ul>
+          <li>адрес склада или терминал ДЛ, откуда забирают грузы;</li>
+          <li>организационно-правовая форма и реквизиты отправителя (по ИНН — подтягиваются автоматически);</li>
+          <li>контактное лицо на складе — имя и телефон, по которому Деловые Линии свяжутся при заборе груза.</li>
+        </ul>
+        <p>Складов может быть несколько — например, для разных регионов отгрузки. В карточке сделки менеджер
+          выбирает нужный склад из списка.</p>
+      </div>
+    </section>
+
+    <!-- STEP 6 -->
+    <section class="step-block" id="usage">
+      <div class="step-head">
+        <div class="step-num-badge">06</div>
+        <h2>Расчёт и заявка из карточки сделки</h2>
+      </div>
+      <div class="step-body">
+        <p>Настройка на этом закончена. Дальше — обычная работа со сделкой:</p>
+        <ol>
+          <li>Откройте карточку сделки — в панели виджетов справа появится блок <strong>«ДЛ»</strong>.</li>
+          <li>Заполните получателя, адрес и габариты груза — часть полей подставится из карточки сделки
+            автоматически.</li>
+          <li>Выберите тариф (Авто, Экспресс, Авиа, МГГ) — виджет покажет стоимость и срок по вашему договору.</li>
+          <li>Нажмите <strong>«Создать заявку»</strong> — номер накладной, статус и итоговая стоимость запишутся
+            в поля сделки сами, без второй формы и звонков в ДЛ.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- STEP 7 -->
+    <section class="step-block" id="limits">
+      <div class="step-head">
+        <div class="step-num-badge">07</div>
+        <h2>Бесплатный лимит и подписка</h2>
+      </div>
+      <div class="step-body">
+        <p>На тестовом периоде доступно бесплатно до 10 заявок на доставку в месяц. Когда лимит подходит к концу,
+          виджет заранее предупреждает об этом в карточке сделки. После оформления подписки ограничение по
+          количеству заявок снимается.</p>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="step-block" id="faq">
+      <div class="step-head">
+        <div class="step-num-badge">08</div>
+        <h2>Частые проблемы</h2>
+      </div>
+      <div class="step-body" style="padding-left:0">
+        <div class="faq-item">
+          <div class="faq-q">Виджет пишет «Виджет не настроен»</div>
+          <div class="faq-a">Не заполнены или неверны APPKEY/PAT в настройках интеграции — вернитесь к шагу 4.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Виджет пишет «Склад отправителя не настроен»</div>
+          <div class="faq-a">В расширенных настройках интеграции не заполнен ни один склад — см. шаг 5.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Расчёт возвращает ошибку</div>
+          <div class="faq-a">Чаще всего — устаревший или отозванный PAT, либо незаполненные обязательные поля
+            получателя. Подробности ошибки видно прямо в карточке сделки; если неясно — напишите в поддержку с
+            номером сделки.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Потерял ключ ДЛ Коннект (widget_key)</div>
+          <div class="faq-a">Отключите и заново подключите интеграцию по той же ссылке — ключ останется прежним,
+            страница с ним откроется снова (см. шаг 2).</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="support-card">
+      <h3>Остались вопросы?</h3>
+      <p>Подключаем и настраиваем интеграцию сами, если что-то не получается</p>
+      <a href="mailto:g120255908@gmail.com" class="btn-primary">Написать в поддержку</a>
+    </div>
+
+    <div class="link-box">
+      См. также: <a href="/amocrm-privacy.html">Политика обработки персональных данных ДЛ Коннект для amoCRM</a>
+    </div>
+  </div>
+
+  <footer>
+    © 2026 ИП Андронов Ю. В. · <a href="/amocrm.html">ДЛ Коннект для amoCRM</a>
+  </footer>
+
+</body>
+</html>

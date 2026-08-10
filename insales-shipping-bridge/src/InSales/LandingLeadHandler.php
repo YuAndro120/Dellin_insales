@@ -42,6 +42,12 @@ final class LandingLeadHandler
         $insalesId   = trim((string) ($_POST['insales_id']   ?? '')) ?: null;
         $source      = trim((string) ($_POST['source']       ?? ''));
         $source      = in_array($source, self::ALLOWED_SOURCES, true) ? $source : 'landing';
+        // Метки канала (vc.ru/Habr/...) — привязываются к самой заявке, а не
+        // только к визиту в Метрике, чтобы не терять атрибуцию при смене
+        // устройства между переходом по ссылке и заполнением формы.
+        $utmSource   = mb_substr(trim((string) ($_POST['utm_source']   ?? '')), 0, 64) ?: null;
+        $utmMedium   = mb_substr(trim((string) ($_POST['utm_medium']   ?? '')), 0, 64) ?: null;
+        $utmCampaign = mb_substr(trim((string) ($_POST['utm_campaign'] ?? '')), 0, 64) ?: null;
 
         if ($name === '') {
             http_response_code(422);
@@ -57,18 +63,19 @@ final class LandingLeadHandler
         $lead = [
             'name' => $name, 'phone' => $phone,
             'company_name' => $companyName, 'message' => $message,
-            'source' => $source,
+            'source' => $source, 'utm_source' => $utmSource,
         ];
 
         try {
             $pdo = Db::pdo($config);
             $stmt = $pdo->prepare(
-                'INSERT INTO landing_leads (name, phone, company_name, message, insales_id, source)
-                 VALUES (:name, :phone, :company, :message, :iid, :src)'
+                'INSERT INTO landing_leads (name, phone, company_name, message, insales_id, source, utm_source, utm_medium, utm_campaign)
+                 VALUES (:name, :phone, :company, :message, :iid, :src, :utm_source, :utm_medium, :utm_campaign)'
             );
             $stmt->execute([
                 ':name' => $name, ':phone' => $phone, ':company' => $companyName,
                 ':message' => $message, ':iid' => $insalesId, ':src' => $source,
+                ':utm_source' => $utmSource, ':utm_medium' => $utmMedium, ':utm_campaign' => $utmCampaign,
             ]);
             $leadId = (int) $pdo->lastInsertId();
 

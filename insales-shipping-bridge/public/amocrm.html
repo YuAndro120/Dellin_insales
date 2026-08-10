@@ -541,6 +541,9 @@
           <input type="hidden" name="plan" value="contact">
           <input type="hidden" name="source" value="landing_amocrm">
           <input type="hidden" name="insales_id" class="js-insales-id">
+          <input type="hidden" name="utm_source" class="js-utm-source">
+          <input type="hidden" name="utm_medium" class="js-utm-medium">
+          <input type="hidden" name="utm_campaign" class="js-utm-campaign">
           <label class="recurrent-label consent-label">
             <input type="checkbox" name="consent_pd" value="1" required class="consent-pd-check">
             <span>Согласен на <a href="/amocrm-privacy.html" target="_blank" style="color:var(--amber)">обработку
@@ -592,6 +595,19 @@
       var params = new URLSearchParams(window.location.search);
       var insalesId = params.get('insales_id') || '';
       document.querySelectorAll('.js-insales-id').forEach(function (el) { el.value = insalesId; });
+
+      // UTM-метки канала (vc.ru/Habr/...): запоминаем первый заход в
+      // localStorage, чтобы метка не терялась, если человек почитал
+      // /amocrm-guide.html или вернулся на сайт позже без ?utm_* в адресе,
+      // а форму заполнил уже потом.
+      ['utm_source', 'utm_medium', 'utm_campaign'].forEach(function (key) {
+        var fromUrl = params.get(key);
+        if (fromUrl) {
+          try { localStorage.setItem(key, fromUrl); } catch (e) { }
+        }
+        var value = fromUrl || (function () { try { return localStorage.getItem(key) || ''; } catch (e) { return ''; } })();
+        document.querySelectorAll('.js-' + key.replace('_', '-')).forEach(function (el) { el.value = value; });
+      });
 
       document.querySelectorAll('.early-access-form').forEach(function (form) {
         form.addEventListener('submit', function (e) {

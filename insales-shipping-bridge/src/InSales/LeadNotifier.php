@@ -51,6 +51,9 @@ final class LeadNotifier
         if (!empty($lead['company_name'])) {
             $lines[] = 'Компания/магазин: ' . $lead['company_name'];
         }
+        if (!empty($lead['utm_source'])) {
+            $lines[] = 'Канал: ' . $lead['utm_source'];
+        }
         if (!empty($lead['message'])) {
             $lines[] = 'Комментарий: ' . $lead['message'];
         }

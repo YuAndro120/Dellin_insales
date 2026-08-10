@@ -98,7 +98,7 @@ if (($uri === '/robots.txt' || $uri === '/sitemap.xml') && $method === 'GET') {
     echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
     echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
     $pages = $isAmoLanding
-        ? [['/', 'weekly', '1.0'], ['/amocrm-privacy.html', 'monthly', '0.3']]
+        ? [['/', 'weekly', '1.0'], ['/amocrm-guide.html', 'weekly', '0.6'], ['/amocrm-privacy.html', 'monthly', '0.3']]
         : [['/', 'weekly', '1.0'], ['/offer.html', 'monthly', '0.3'], ['/privacy.html', 'monthly', '0.3']];
     foreach ($pages as [$path, $freq, $priority]) {
         echo "  <url>\n    <loc>{$base}{$path}</loc>\n    <changefreq>{$freq}</changefreq>\n    <priority>{$priority}</priority>\n  </url>\n";

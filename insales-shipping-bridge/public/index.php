@@ -107,6 +107,76 @@ if (($uri === '/robots.txt' || $uri === '/sitemap.xml') && $method === 'GET') {
     exit;
 }
 
+// POST /deploy/webhook — приёмник push-хука GitHub: проверяет подпись,
+// запускает deploy/pull-deploy.sh (git fetch + reset --hard в корне
+// репозитория на сервере). Своя авторизация (HMAC-подпись GitHub), поэтому
+// роутится здесь отдельной веткой, до всех остальных проверок конфигурации.
+// Паттерн перенесён из backend/src/Handlers/DeployWebhookHandler.php
+// (репозиторий amoCRM-бэкенда) — там это уже боевое решение.
+if ($uri === '/deploy/webhook') {
+    if ($method !== 'POST') {
+        Response::json(['error' => 'method_not_allowed'], 405);
+        exit;
+    }
+
+    $envFile = dirname(__DIR__) . '/.env';
+    $env = [];
+    if (is_file($envFile)) {
+        foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
+                continue;
+            }
+            [$k, $v] = explode('=', $line, 2);
+            $env[trim($k)] = trim($v, " \t\"'");
+        }
+    }
+    $secret = $env['DEPLOY_WEBHOOK_SECRET'] ?? '';
+    if ($secret === '') {
+        Response::json(['error' => 'not_configured', 'message' => 'DEPLOY_WEBHOOK_SECRET не задан в .env'], 500);
+        exit;
+    }
+
+    $body = file_get_contents('php://input') ?: '';
+    $signature = $_SERVER['HTTP_X_HUB_SIGNATURE_256'] ?? '';
+    $expected = 'sha256=' . hash_hmac('sha256', $body, $secret);
+    if ($signature === '' || !hash_equals($expected, $signature)) {
+        Response::json(['error' => 'forbidden', 'message' => 'Неверная подпись вебхука'], 403);
+        exit;
+    }
+
+    // GitHub шлёт ping сразу после создания вебхука — отвечаем без деплоя.
+    if (($_SERVER['HTTP_X_GITHUB_EVENT'] ?? '') === 'ping') {
+        Response::json(['pong' => true]);
+        exit;
+    }
+
+    $payload = json_decode($body, true);
+    $payload = is_array($payload) ? $payload : [];
+    $branch = $env['DEPLOY_BRANCH'] ?? 'main';
+    $ref = (string) ($payload['ref'] ?? '');
+    if ($ref !== "refs/heads/{$branch}") {
+        Response::json(['skipped' => true, 'reason' => "ref {$ref} != refs/heads/{$branch}"]);
+        exit;
+    }
+
+    if (!function_exists('shell_exec')) {
+        Response::json(['error' => 'internal', 'message' => 'shell_exec отключён в disable_functions — автодеплой недоступен'], 500);
+        exit;
+    }
+
+    $script = dirname(__DIR__) . '/deploy/pull-deploy.sh';
+    $output = (string) (shell_exec('bash ' . escapeshellarg($script) . ' 2>&1') ?? '');
+    $success = str_contains($output, 'DEPLOY_OK');
+
+    if (!$success) {
+        Response::json(['error' => 'deploy_failed', 'output_tail' => mb_substr(trim($output), -2000)], 500);
+        exit;
+    }
+    Response::json(['deployed' => true, 'commit' => (string) ($payload['after'] ?? '')]);
+    exit;
+}
+
 $externalCheckoutUris = [
     '/insales/external/v2/courier',
     '/insales/external/v2/pickup_points',

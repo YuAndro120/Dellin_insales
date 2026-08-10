@@ -1,3 +1,4 @@
 /.env
 /var/cache/*.json
 !var/cache/.gitkeep
+/var/deploy.log

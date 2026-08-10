@@ -336,6 +336,15 @@ if (str_starts_with($uri, '/insales/')) {
             \ShippingBridge\InSales\ConsentHandler::handle($config, $method);
             exit;
         }
+        // ⚠️ КРИТИЧНО: форма на лендингах (amocrm.html и index.html) шлёт сюда —
+        // маршрут отсутствовал вообще (класс LandingLeadHandler существовал, но
+        // не был подключён в роутере), поэтому заявки падали с 404 молча для
+        // пользователя (JS показывал "Не удалось отправить заявку"). Реального
+        // приёма заявок с сайта не было, пока этот маршрут не появился.
+        if ($uri === '/insales/lead' && $method === 'POST') {
+            \ShippingBridge\InSales\LandingLeadHandler::handle($config, $method);
+            exit;
+        }
         if ($uri === '/insales/early-access' && $method === 'POST') {
             \ShippingBridge\InSales\EarlyAccessHandler::handle($config, $method);
             exit;

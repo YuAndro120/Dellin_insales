@@ -92,9 +92,11 @@
       padding: 14px 24px; max-width: 1100px; margin: 0 auto
     }
     .nav-brand {
-      display: flex; align-items: center; gap: 10px;
-      font-family: var(--display); font-weight: 600; font-size: 18px; text-decoration: none
+      display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1;
+      font-family: var(--display); font-weight: 600; font-size: 18px; text-decoration: none;
+      white-space: nowrap
     }
+    .nav-brand img { flex-shrink: 0 }
     .nav-brand .nav-tag {
       font-family: var(--mono); font-size: 11px; color: var(--amber);
       border: 1px solid var(--amber-soft); background: var(--amber-soft);
@@ -105,9 +107,18 @@
     .nav-links a:hover { color: var(--ink) }
     .nav-cta {
       background: var(--amber); color: #072230; font-weight: 600; font-size: 13.5px;
-      padding: 8px 16px; border-radius: 8px; text-decoration: none
+      padding: 8px 16px; border-radius: 8px; text-decoration: none; flex-shrink: 0; white-space: nowrap
     }
     @media (max-width: 720px) { .nav-links { display: none } }
+    /* Мобильная шапка: бренд + тег + CTA в одну строку не помещались —
+       текст переносился/обрезался ("для amoc...") и CTA визуально "раздувался".
+       Убираем декоративный тег и ужимаем отступы, чтобы всё осталось в один ряд. */
+    @media (max-width: 480px) {
+      .nav-inner { padding: 12px 16px; gap: 10px }
+      .nav-brand { font-size: 16px }
+      .nav-brand .nav-tag { display: none }
+      .nav-cta { padding: 8px 13px; font-size: 12.5px }
+    }
 
     /* EYEBROW / TYPE */
     .eyebrow {
@@ -598,6 +609,7 @@
               if (data.ok) {
                 form.style.display = 'none';
                 if (thanks) thanks.style.display = 'block';
+                if (window.ym) ym(111388273, 'reachGoal', 'lead_submit');
               } else {
                 btn.disabled = false;
                 btn.textContent = originalText;
@@ -609,6 +621,16 @@
               btn.textContent = originalText;
               alert('Ошибка сети, попробуйте ещё раз');
             });
+        });
+      });
+    })();
+
+    // Цели Метрики: клики по CTA (намерение) отдельно от lead_submit (факт заявки) —
+    // видно, где теряются посетители между "нажал кнопку" и "отправил форму".
+    (function () {
+      document.querySelectorAll('.btn-primary, .nav-cta').forEach(function (el) {
+        el.addEventListener('click', function () {
+          if (window.ym) ym(111388273, 'reachGoal', 'cta_click', { href: el.getAttribute('href') || '' });
         });
       });
     })();

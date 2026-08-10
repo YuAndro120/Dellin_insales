@@ -2,6 +2,19 @@
 <html lang="ru">
 
 <head>
+  <!-- Yandex.Metrika counter (тот же счётчик, что на /amocrm.html — иначе переходы
+       на инструкцию не попадают в аналитику вообще, страница была без счётчика) -->
+  <script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+      m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+      m[i].l=1*new Date();
+      for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+      k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=111388273', 'ym');
+    ym(111388273, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+  </script>
+  <noscript><div><img src="https://mc.yandex.ru/watch/111388273" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+  <!-- /Yandex.Metrika counter -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Инструкция по настройке — ДЛ Коннект для amoCRM</title>
@@ -44,10 +57,18 @@
     /* NAV */
     .nav { position: sticky; top: 0; z-index: 50; background: rgba(22, 24, 28, .88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-soft) }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; max-width: 1100px; margin: 0 auto }
-    .nav-brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 600; font-size: 18px; text-decoration: none; color: var(--ink) }
+    .nav-brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; font-family: var(--display); font-weight: 600; font-size: 18px; text-decoration: none; color: var(--ink); white-space: nowrap }
+    .nav-brand img { flex-shrink: 0 }
     .nav-brand .nav-tag { font-family: var(--mono); font-size: 11px; color: var(--amber); border: 1px solid var(--amber-soft); background: var(--amber-soft); padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: .04em }
-    .nav-back { font-size: 13.5px; color: var(--ink-dim); text-decoration: none }
+    .nav-back { font-size: 13.5px; color: var(--ink-dim); text-decoration: none; flex-shrink: 0; white-space: nowrap }
     .nav-back:hover { color: var(--ink) }
+    /* Мобильная шапка: см. комментарий в amocrm.html — тот же фикс переноса/обрезания */
+    @media (max-width: 480px) {
+      .nav-inner { padding: 12px 16px; gap: 10px }
+      .nav-brand { font-size: 16px }
+      .nav-brand .nav-tag { display: none }
+      .nav-back { font-size: 12.5px }
+    }
 
     .hero-head { padding: 56px 0 40px; text-align: center }
     .eyebrow { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12px; color: var(--amber); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 18px; justify-content: center }
